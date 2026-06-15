@@ -5,8 +5,8 @@ import {
     StyleSheet,
     View,
     Pressable,
-    SafeAreaView,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // ── Colour & style tokens (from your GlobalStyles) ──────────────────
 const Color = {
@@ -36,18 +36,22 @@ const TOOLS = [
 
 // ── Bottom nav items ─────────────────────────────────────────────────
 const NAV_ITEMS = [
-    { label: "Home", emoji: "🏠", active: true },
-    { label: "Translator", emoji: "🔤", active: false },
-    { label: "Assistant", emoji: "✦", active: false },
-    { label: "Community", emoji: "👥", active: false },
-    { label: "Tasks", emoji: "📋", active: false },
-    { label: "Journal", emoji: "♡", active: false },
+    { label: "Home", emoji: "🏠", active: true, screen: "Home" },
+    { label: "Translator", emoji: "🔤", active: false, screen: "Translator" },
+    { label: "Assistant", emoji: "⚖", active: false, screen: "Assistant" },
+    { label: "Community", emoji: "👥", active: false, screen: "Community" },
+    { label: "Tasks", emoji: "📋", active: false, screen: "Tasks" },
+    { label: "Journal", emoji: "♡", active: false, screen: "Journal" },
 ];
 
 // ════════════════════════════════════════════════════════════════════
-export default function HomeDashboard() {
+export default function HomeDashboard({ navigation }: any) {
+    const insets = useSafeAreaInsets(); // <── Medimos los bordes físicos reales del teléfono
+
     return (
-        <SafeAreaView style={s.root}>
+        // CAMBIO CLAVE: Cambiamos SafeAreaView por un View normal controlado manualmente.
+        // insets.top evita que la barra superior choque con la cámara o el notch.
+        <View style={[s.root, { paddingTop: insets.top }]}>
 
             {/* ── Top app bar ── */}
             <View style={s.topBar}>
@@ -111,9 +115,19 @@ export default function HomeDashboard() {
             </ScrollView>
 
             {/* ── Bottom navigation ── */}
-            <View style={s.bottomNav}>
+            {/* CAMBIO CLAVE: Si el Huawei tiene barra de botones, insets.bottom valdrá aprox. 48.
+                Le sumamos tus 12 de diseño original para despegar los íconos de forma perfecta. */}
+            <View style={[s.bottomNav, { paddingBottom: 12 + insets.bottom }]}>
                 {NAV_ITEMS.map((item) => (
-                    <Pressable key={item.label} style={s.navItem} onPress={() => { }}>
+                    <Pressable
+                        key={item.label}
+                        style={s.navItem}
+                        onPress={() => {
+                            if (item.screen && item.screen !== "Home") {
+                                navigation?.navigate(item.screen);
+                            }
+                        }}
+                    >
                         <Text style={[s.navEmoji, item.active && s.navEmojiActive]}>
                             {item.emoji}
                         </Text>
@@ -124,7 +138,7 @@ export default function HomeDashboard() {
                 ))}
             </View>
 
-        </SafeAreaView>
+        </View>
     );
 }
 
@@ -161,7 +175,7 @@ const s = StyleSheet.create({
     scrollContent: {
         paddingHorizontal: 16,
         paddingTop: 20,
-        paddingBottom: 100,
+        paddingBottom: 40, // Reducido un poco para que combine mejor con el nuevo espacio dinámico inferior
         gap: 16,
     },
 
@@ -297,7 +311,6 @@ const s = StyleSheet.create({
         borderTopWidth: 1,
         borderTopColor: Color.linkWater,
         paddingTop: 8,
-        paddingBottom: 12,
         paddingHorizontal: 4,
     },
     navItem: {
