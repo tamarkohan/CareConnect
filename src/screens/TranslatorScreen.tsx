@@ -5,9 +5,12 @@ import {
     StyleSheet,
     Pressable,
     ScrollView,
-
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import TopBar from "../components/TopBar";
+import { useLang } from "../AppContext";
+import { T } from "../translations";
+
 // ── Tokens ───────────────────────────────────────────────────────────
 const Color = {
     aliceBlue: "#f3faff",
@@ -61,7 +64,7 @@ const RECENT_TRANSLATIONS: TranslationItem[] = [
         tagBg: Color.slanBg,
         tagText: Color.slanText,
         time: "Yesterday",
-        original: 'הוא צפוי ספור "דיוט"',
+        original: 'הוא צפвой ספור "דיוט"',
         translated: '"He is feeling unwell/cranky today."',
         note: "(Lit: He is upside down)",
     },
@@ -81,18 +84,14 @@ const RECENT_TRANSLATIONS: TranslationItem[] = [
 type Props = { navigation?: any };
 
 export default function TranslatorScreen({ navigation }: Props) {
+    const insets = useSafeAreaInsets();
+    const { lang } = useLang();
+    const t = T[lang];
+
     return (
-        <SafeAreaView style={s.root}>
-            {/* ── Top bar ── */}
-            <View style={s.topBar}>
-                <Pressable style={s.menuBtn} onPress={() => { }}>
-                    <Text style={s.menuIcon}>☰</Text>
-                </Pressable>
-                <Text style={s.title}>Translator</Text>
-                <Pressable style={s.globeBtn} onPress={() => { }}>
-                    <Text style={s.globeIcon}>🌐</Text>
-                </Pressable>
-            </View>
+        <View style={[s.root, { paddingTop: insets.top }]}>
+            {/* ── Top bar Real Conectada ── */}
+            <TopBar title={t.navTranslator} navigation={navigation} />
 
             {/* ── Content ── */}
             <ScrollView
@@ -162,18 +161,18 @@ export default function TranslatorScreen({ navigation }: Props) {
                 </View>
             </ScrollView>
 
-            {/* ── Bottom navigation ── */}
-            <View style={s.bottomNav}>
+            {/* ── Bottom navigation Corregida para Huawei ── */}
+            <View style={[s.bottomNav, { paddingBottom: 12 + insets.bottom }]}>
                 {[
-                    { label: "Home", emoji: "🏠", screen: "Home" },
-                    { label: "Translator", emoji: "🔤", screen: "Translator", active: true },
-                    { label: "Assistant", emoji: "⚖", screen: "Assistant" },
-                    { label: "Community", emoji: "👥", screen: "Community" },
-                    { label: "Tasks", emoji: "📋", screen: "Tasks" },
-                    { label: "Journal", emoji: "♡", screen: "Journal" },
+                    { labelKey: "navHome" as const, emoji: "🏠", screen: "Home" },
+                    { labelKey: "navTranslator" as const, emoji: "🔤", screen: "Translator", active: true },
+                    { labelKey: "navAssistant" as const, emoji: "⚖", screen: "Assistant" },
+                    { labelKey: "navCommunity" as const, emoji: "👥", screen: "Community" },
+                    { labelKey: "navTasks" as const, emoji: "📋", screen: "Tasks" },
+                    { labelKey: "navJournal" as const, emoji: "♡", screen: "Journal" },
                 ].map((item) => (
                     <Pressable
-                        key={item.label}
+                        key={item.labelKey}
                         style={s.navItem}
                         onPress={() => {
                             if (item.screen !== "Translator") {
@@ -185,20 +184,18 @@ export default function TranslatorScreen({ navigation }: Props) {
                             {item.emoji}
                         </Text>
                         <Text style={[s.navLabel, item.active && s.navLabelActive]}>
-                            {item.label}
+                            {t[item.labelKey]}
                         </Text>
                     </Pressable>
                 ))}
             </View>
-        </SafeAreaView>
+        </View>
     );
 }
 
 // ════════════════════════════════════════════════════════════════════
 const s = StyleSheet.create({
     root: { flex: 1, backgroundColor: Color.aliceBlue },
-
-    // Top bar
     topBar: {
         flexDirection: "row",
         alignItems: "center",
@@ -211,36 +208,18 @@ const s = StyleSheet.create({
     },
     menuBtn: { padding: 4 },
     menuIcon: { fontSize: 20, color: Color.blackPearl },
-    title: {
-        fontSize: 18,
-        fontWeight: "700",
-        color: Color.endeavour,
-    },
+    title: { fontSize: 18, fontWeight: "700", color: Color.endeavour },
     globeBtn: { padding: 4 },
     globeIcon: { fontSize: 20 },
-
-    // Scroll
     scroll: { flex: 1 },
     scrollContent: {
         paddingHorizontal: 16,
         paddingTop: 16,
-        paddingBottom: 100,
+        paddingBottom: 40,
         gap: 16,
     },
-
-    // Heading
-    heading: {
-        fontSize: 20,
-        fontWeight: "700",
-        color: Color.blackPearl,
-    },
-    subheading: {
-        fontSize: 14,
-        color: Color.mako,
-        marginBottom: 4,
-    },
-
-    // Info card
+    heading: { fontSize: 20, fontWeight: "700", color: Color.blackPearl },
+    subheading: { fontSize: 14, color: Color.mako, marginBottom: 4 },
     infoCard: {
         backgroundColor: "#f3e5f5",
         borderRadius: 12,
@@ -251,32 +230,11 @@ const s = StyleSheet.create({
         flexDirection: "row",
         gap: 12,
     },
-    infoIcon: {
-        fontSize: 20,
-        color: "#7b1fa2",
-        marginTop: 2,
-    },
+    infoIcon: { fontSize: 20, color: "#7b1fa2", marginTop: 2 },
     infoContent: { flex: 1, gap: 8 },
-    infoTitle: {
-        fontSize: 13,
-        color: "#6a1b9a",
-        fontWeight: "600",
-        lineHeight: 18,
-    },
-    infoHighlight: {
-        fontSize: 11,
-        color: "#6a1b9a",
-        fontWeight: "700",
-        textTransform: "uppercase",
-        letterSpacing: 0.5,
-    },
-
-    // Input modes
-    inputModes: {
-        flexDirection: "row",
-        gap: 12,
-        marginVertical: 8,
-    },
+    infoTitle: { fontSize: 13, color: "#6a1b9a", fontWeight: "600", lineHeight: 18 },
+    infoHighlight: { fontSize: 11, color: "#6a1b9a", fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 },
+    inputModes: { flexDirection: "row", gap: 12, marginVertical: 8 },
     mode: {
         flex: 1,
         borderRadius: 12,
@@ -293,20 +251,8 @@ const s = StyleSheet.create({
     modeType: { backgroundColor: Color.yellowType },
     modeScan: { backgroundColor: Color.greenScan },
     modeEmoji: { fontSize: 24 },
-    modeLabel: {
-        fontSize: 12,
-        fontWeight: "600",
-        color: Color.white,
-        textAlign: "center",
-    },
-
-    // Recent translations
-    recentTitle: {
-        fontSize: 16,
-        fontWeight: "700",
-        color: Color.blackPearl,
-        marginTop: 8,
-    },
+    modeLabel: { fontSize: 12, fontWeight: "600", color: Color.white, textAlign: "center" },
+    recentTitle: { fontSize: 16, fontWeight: "700", color: Color.blackPearl, marginTop: 8 },
     recentList: { gap: 12 },
     recentItem: {
         backgroundColor: Color.white,
@@ -322,80 +268,26 @@ const s = StyleSheet.create({
         shadowRadius: 2,
         elevation: 1,
     },
-
-    // Tag
-    tag: {
-        borderRadius: 8,
-        paddingHorizontal: 10,
-        paddingVertical: 6,
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-    },
-    tagText: {
-        fontSize: 11,
-        fontWeight: "600",
-    },
-    tagTime: {
-        fontSize: 10,
-        color: Color.mako,
-    },
-
-    // Original text
-    originalText: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: Color.blackPearl,
-        lineHeight: 20,
-    },
-
-    // Translated
-    translatedRow: {
-        flexDirection: "row",
-        gap: 8,
-        alignItems: "flex-start",
-    },
-    translatedIcon: {
-        fontSize: 14,
-        color: Color.endeavour,
-        marginTop: 2,
-    },
+    tag: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+    tagText: { fontSize: 11, fontWeight: "600" },
+    tagTime: { fontSize: 10, color: Color.mako },
+    originalText: { fontSize: 14, fontWeight: "600", color: Color.blackPearl, lineHeight: 20 },
+    translatedRow: { flexDirection: "row", gap: 8, alignItems: "flex-start" },
+    translatedIcon: { fontSize: 14, color: Color.endeavour, marginTop: 2 },
     translatedContent: { flex: 1, gap: 2 },
-    translatedText: {
-        fontSize: 13,
-        color: Color.endeavour,
-        fontWeight: "500",
-        lineHeight: 18,
-    },
-    translatedNote: {
-        fontSize: 11,
-        color: Color.mako,
-        fontStyle: "italic",
-    },
-
-    // Bottom nav
+    translatedText: { fontSize: 13, color: Color.endeavour, fontWeight: "500", lineHeight: 18 },
+    translatedNote: { fontSize: 11, color: Color.mako, fontStyle: "italic" },
     bottomNav: {
         flexDirection: "row",
         backgroundColor: Color.aliceBlue,
         borderTopWidth: 1,
         borderTopColor: Color.linkWater,
         paddingTop: 8,
-        paddingBottom: 12,
         paddingHorizontal: 4,
     },
-    navItem: {
-        flex: 1,
-        alignItems: "center",
-        gap: 2,
-    },
+    navItem: { flex: 1, alignItems: "center", gap: 2 },
     navEmoji: { fontSize: 20 },
     navEmojiActive: { color: Color.endeavour },
-    navLabel: {
-        fontSize: 10,
-        color: Color.mako,
-    },
-    navLabelActive: {
-        color: Color.endeavour,
-        fontWeight: "600",
-    },
+    navLabel: { fontSize: 10, color: Color.mako },
+    navLabelActive: { color: Color.endeavour, fontWeight: "600" },
 });

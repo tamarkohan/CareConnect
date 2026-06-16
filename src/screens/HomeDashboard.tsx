@@ -7,6 +7,9 @@ import {
     Pressable,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import TopBar from "../components/TopBar";
+import { useLang } from "../AppContext";
+import { T } from "../translations";
 
 // ── Colour & style tokens (from your GlobalStyles) ──────────────────
 const Color = {
@@ -24,45 +27,37 @@ const Color = {
 
 // ── Tool card data ───────────────────────────────────────────────────
 const TOOLS = [
-    { id: "1", label: "Arrival Guides", emoji: "▶" },
-    { id: "2", label: "Safety & Shelters", emoji: "⚠" },
-    { id: "3", label: "Migration Support", emoji: "🌐" },
-    { id: "4", label: "PIBA Application", emoji: "✦" },
-    { id: "5", label: "Public Transportation Use", emoji: "🚌" },
-    { id: "6", label: "Remittance Applications", emoji: "💲" },
-    { id: "7", label: "FAQs for Caring\nfor Elderly Clients", emoji: "📍" },
-    { id: "8", label: "About US", emoji: "ℹ" },
+    { id: "1", labelKey: "arrivalGuides" as const, emoji: "▶" },
+    { id: "2", labelKey: "safetyShelters" as const, emoji: "⚠" },
+    { id: "3", labelKey: "migrationSupport" as const, emoji: "🌐" },
+    { id: "4", labelKey: "pibaApp" as const, emoji: "✦" },
+    { id: "5", labelKey: "publicTransport" as const, emoji: "🚌" },
+    { id: "6", labelKey: "remittanceApps" as const, emoji: "💲" },
+    { id: "7", labelKey: "faqElderly" as const, emoji: "📍" },
+    { id: "8", labelKey: "aboutUs" as const, emoji: "ℹ" },
 ];
 
 // ── Bottom nav items ─────────────────────────────────────────────────
 const NAV_ITEMS = [
-    { label: "Home", emoji: "🏠", active: true, screen: "Home" },
-    { label: "Translator", emoji: "🔤", active: false, screen: "Translator" },
-    { label: "Assistant", emoji: "⚖", active: false, screen: "Assistant" },
-    { label: "Community", emoji: "👥", active: false, screen: "Community" },
-    { label: "Tasks", emoji: "📋", active: false, screen: "Tasks" },
-    { label: "Journal", emoji: "♡", active: false, screen: "Journal" },
+    { labelKey: "navHome" as const, emoji: "🏠", active: true, screen: "Home" },
+    { labelKey: "navTranslator" as const, emoji: "🔤", active: false, screen: "Translator" },
+    { labelKey: "navAssistant" as const, emoji: "⚖", active: false, screen: "Assistant" },
+    { labelKey: "navCommunity" as const, emoji: "👥", active: false, screen: "Community" },
+    { labelKey: "navTasks" as const, emoji: "📋", active: false, screen: "Tasks" },
+    { labelKey: "navJournal" as const, emoji: "♡", active: false, screen: "Journal" },
 ];
 
 // ════════════════════════════════════════════════════════════════════
 export default function HomeDashboard({ navigation }: any) {
-    const insets = useSafeAreaInsets(); // <── Medimos los bordes físicos reales del teléfono
+    const insets = useSafeAreaInsets();
+    const { lang } = useLang();
+    const t = T[lang];
 
     return (
-        // CAMBIO CLAVE: Cambiamos SafeAreaView por un View normal controlado manualmente.
-        // insets.top evita que la barra superior choque con la cámara o el notch.
         <View style={[s.root, { paddingTop: insets.top }]}>
 
-            {/* ── Top app bar ── */}
-            <View style={s.topBar}>
-                <Pressable style={s.menuBtn}>
-                    <Text style={s.menuIcon}>☰</Text>
-                </Pressable>
-                <Text style={s.appTitle}>CareConnect Israel</Text>
-                <Pressable style={s.globeBtn}>
-                    <Text style={s.globeIcon}>🌐</Text>
-                </Pressable>
-            </View>
+            {/* ── Top app bar (with working hamburger + language picker) ── */}
+            <TopBar title={t.appTitle} navigation={navigation} />
 
             {/* ── Scrollable content ── */}
             <ScrollView
@@ -71,7 +66,7 @@ export default function HomeDashboard({ navigation }: any) {
                 showsVerticalScrollIndicator={false}
             >
                 {/* Greeting */}
-                <Text style={s.greeting}>Good morning, Rohit</Text>
+                <Text style={s.greeting}>{t.goodMorning}</Text>
 
                 {/* Weather pill */}
                 <View style={s.weatherPill}>
@@ -83,7 +78,7 @@ export default function HomeDashboard({ navigation }: any) {
                     <View style={s.wordHeader}>
                         <View style={s.wordHeaderLeft}>
                             <Text style={s.wordIcon}>🔤</Text>
-                            <Text style={s.wordLabel}>WORD OF THE DAY</Text>
+                            <Text style={s.wordLabel}>{t.wordOfDay}</Text>
                         </View>
                         <Text style={s.speakerIcon}>🔊</Text>
                     </View>
@@ -91,36 +86,34 @@ export default function HomeDashboard({ navigation }: any) {
                         <Text style={s.hebrewWord}>תודה</Text>
                         <Text style={s.phonetic}> / Toda /</Text>
                     </View>
-                    <Text style={s.translation}>Thank you</Text>
+                    <Text style={s.translation}>{t.thankYou}</Text>
                 </View>
 
                 {/* Essential Tools heading */}
-                <Text style={s.sectionTitle}>Essential Tools</Text>
+                <Text style={s.sectionTitle}>{t.essentialTools}</Text>
 
                 {/* My Agency – full-width CTA */}
                 <Pressable style={s.agencyBtn} onPress={() => { }}>
                     <Text style={s.agencyIcon}>📞</Text>
-                    <Text style={s.agencyLabel}>My Agency</Text>
+                    <Text style={s.agencyLabel}>{t.myAgency}</Text>
                 </Pressable>
 
                 {/* 2-column tool grid */}
                 <View style={s.grid}>
-                    {TOOLS.map((tool, i) => (
+                    {TOOLS.map((tool) => (
                         <Pressable key={tool.id} style={s.toolCard} onPress={() => { }}>
                             <Text style={s.toolEmoji}>{tool.emoji}</Text>
-                            <Text style={s.toolLabel}>{tool.label}</Text>
+                            <Text style={s.toolLabel}>{t[tool.labelKey]}</Text>
                         </Pressable>
                     ))}
                 </View>
             </ScrollView>
 
             {/* ── Bottom navigation ── */}
-            {/* CAMBIO CLAVE: Si el Huawei tiene barra de botones, insets.bottom valdrá aprox. 48.
-                Le sumamos tus 12 de diseño original para despegar los íconos de forma perfecta. */}
             <View style={[s.bottomNav, { paddingBottom: 12 + insets.bottom }]}>
                 {NAV_ITEMS.map((item) => (
                     <Pressable
-                        key={item.label}
+                        key={item.labelKey}
                         style={s.navItem}
                         onPress={() => {
                             if (item.screen && item.screen !== "Home") {
@@ -132,7 +125,7 @@ export default function HomeDashboard({ navigation }: any) {
                             {item.emoji}
                         </Text>
                         <Text style={[s.navLabel, item.active && s.navLabelActive]}>
-                            {item.label}
+                            {t[item.labelKey]}
                         </Text>
                     </Pressable>
                 ))}
@@ -149,33 +142,12 @@ const s = StyleSheet.create({
         backgroundColor: Color.aliceBlue,
     },
 
-    // Top bar
-    topBar: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        backgroundColor: Color.aliceBlue,
-        borderBottomWidth: 1,
-        borderBottomColor: Color.linkWater,
-    },
-    menuBtn: { padding: 4 },
-    menuIcon: { fontSize: 20, color: Color.blackPearl },
-    appTitle: {
-        fontSize: 18,
-        fontWeight: "700",
-        color: Color.endeavour,
-    },
-    globeBtn: { padding: 4 },
-    globeIcon: { fontSize: 20 },
-
     // Scroll
     scroll: { flex: 1 },
     scrollContent: {
         paddingHorizontal: 16,
         paddingTop: 20,
-        paddingBottom: 40, // Reducido un poco para que combine mejor con el nuevo espacio dinámico inferior
+        paddingBottom: 40,
         gap: 16,
     },
 
