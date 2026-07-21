@@ -23,7 +23,6 @@
       "favicon": "./src/assets/favicon.png"
     },
     "plugins": [
-      "expo-image",
       "expo-font"
     ]
   }
