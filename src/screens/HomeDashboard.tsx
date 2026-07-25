@@ -41,10 +41,10 @@ const TOOLS = [
 const NAV_ITEMS = [
     { labelKey: "navHome" as const, emoji: "🏠", active: true, screen: "Home" },
     { labelKey: "navTranslator" as const, emoji: "🔤", active: false, screen: "Translator" },
-    { labelKey: "navAssistant" as const, emoji: "⚖", active: false, screen: "Assistant" },
+    { labelKey: "navAssistant" as const, emoji: "⚖️", active: false, screen: "Assistant" },
     { labelKey: "navCommunity" as const, emoji: "👥", active: false, screen: "Community" },
     { labelKey: "navTasks" as const, emoji: "📋", active: false, screen: "Tasks" },
-    { labelKey: "navJournal" as const, emoji: "♡", active: false, screen: "Journal" },
+    { labelKey: "navJournal" as const, emoji: "📓", active: false, screen: "Journal" },
 ];
 
 // ════════════════════════════════════════════════════════════════════

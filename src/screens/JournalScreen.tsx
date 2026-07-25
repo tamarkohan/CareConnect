@@ -10,7 +10,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import TopBar from "../components/TopBar";
 import { useLang } from "../AppContext";
-import { T } from "../translations";
+import { T, LangCode, formatEntryDateTime } from "../translations";
 
 // ── Tokens ───────────────────────────────────────────────────────────
 const Color = {
@@ -30,11 +30,11 @@ const Color = {
 // ── Nav items ─────────────────────────────────────────────────────────
 const NAV_ITEMS = [
     { labelKey: "navHome" as const, emoji: "🏠", screen: "Home" },
-    { labelKey: "navTranslator" as const, emoji: "交", screen: "Translator" },
-    { labelKey: "navAssistant" as const, emoji: "✦", screen: "Assistant" },
+    { labelKey: "navTranslator" as const, emoji: "🔤", screen: "Translator" },
+    { labelKey: "navAssistant" as const, emoji: "⚖️", screen: "Assistant" },
     { labelKey: "navCommunity" as const, emoji: "👥", screen: "Community" },
     { labelKey: "navTasks" as const, emoji: "📋", screen: "Tasks" },
-    { labelKey: "navJournal" as const, emoji: "♡", screen: "Journal", active: true },
+    { labelKey: "navJournal" as const, emoji: "📓", screen: "Journal", active: true },
 ];
 
 // ── Book tabs ─────────────────────────────────────────────────────────
@@ -43,29 +43,52 @@ type BookType = "burden" | "gratitude";
 // ── Mood emojis ───────────────────────────────────────────────────────
 const MOODS = ["😢", "😐", "🙂", "😊", "😄"];
 
-// ── Past entries ──────────────────────────────────────────────────────
+// ── Entry data model ─────────────────────────────────────────────────
+// ⚠️ SEED / EXAMPLE DATA ONLY.
+//
+// In production, entries are per-user and come from the backend or
+// on-device storage, appended live via setEntries() every time the
+// person saves a new entry below. Seed entries here happen to have
+// text pre-translated in every language (pulled straight from T, so
+// there's no duplication); real entries the user writes only exist in
+// the language they typed — getEntryText() below gracefully falls
+// back to whatever language is available so nothing ever renders blank.
 type Entry = {
     id: string;
     book: BookType;
     mood: string;
-    date: string;
-    text: string;
+    timestamp: number;
+    text: Partial<Record<LangCode, string>>;
 };
 
-const INITIAL_ENTRIES: Entry[] = [
+function getEntryText(entry: Entry, lang: LangCode): string {
+    return entry.text[lang] ?? entry.text.en ?? Object.values(entry.text)[0] ?? "";
+}
+
+const buildSeedEntries = (): Entry[] => [
     {
         id: "1",
         book: "burden",
         mood: "😢",
-        date: "Oct 24 · 8:30 PM",
-        text: "Today was really hard. The language barrier made a simple doctor's visit incredibly stressful.",
+        timestamp: Date.now() - 26 * 60 * 60 * 1000, // yesterday evening
+        text: {
+            en: T.en.journalEntry1,
+            tl: T.tl.journalEntry1,
+            ml: T.ml.journalEntry1,
+            ru: T.ru.journalEntry1,
+        },
     },
     {
         id: "2",
         book: "gratitude",
         mood: "😊",
-        date: "Oct 23 · 9:00 AM",
-        text: "I am grateful for a quiet morning and the successful completion of Mr. Cohen's physical therapy routine without any pain.",
+        timestamp: Date.now() - 30 * 60 * 60 * 1000, // yesterday morning
+        text: {
+            en: T.en.journalEntry2,
+            tl: T.tl.journalEntry2,
+            ml: T.ml.journalEntry2,
+            ru: T.ru.journalEntry2,
+        },
     },
 ];
 
@@ -79,9 +102,7 @@ export default function JournalScreen({ navigation }: Props) {
     const [activeBook, setActiveBook] = React.useState<BookType>("gratitude");
     const [selectedMood, setSelectedMood] = React.useState<number | null>(3);
     const [entryText, setEntryText] = React.useState("");
-    const [entries, setEntries] = React.useState<Entry[]>(INITIAL_ENTRIES);
-
-    const placeholder = activeBook === "burden" ? "I want to release..." : "I am grateful for...";
+    const [entries, setEntries] = React.useState<Entry[]>(buildSeedEntries());
 
     const saveEntry = () => {
         if (!entryText.trim()) return;
@@ -89,8 +110,10 @@ export default function JournalScreen({ navigation }: Props) {
             id: Date.now().toString(),
             book: activeBook,
             mood: selectedMood !== null ? MOODS[selectedMood] : "🙂",
-            date: "Just now",
-            text: entryText.trim(),
+            timestamp: Date.now(),
+            // Only the language it was actually written in — see
+            // getEntryText() for the display fallback.
+            text: { [lang]: entryText.trim() },
         };
         setEntries((prev) => [newEntry, ...prev]);
         setEntryText("");
@@ -108,7 +131,7 @@ export default function JournalScreen({ navigation }: Props) {
                 contentContainerStyle={s.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
-                <Text style={s.subheading}>A private space to release stress and record moments of gratitude.</Text>
+                <Text style={s.subheading}>{t.journalSub}</Text>
 
                 {/* Book tabs */}
                 <View style={s.tabRow}>
@@ -117,11 +140,18 @@ export default function JournalScreen({ navigation }: Props) {
                         onPress={() => setActiveBook("burden")}
                     >
                         <Text style={s.tabEmoji}>🩶</Text>
-                        <View>
-                            <Text style={[s.tabTitle, activeBook === "burden" && s.tabTitleActive]}>
-                                Burden Book
+                        <View style={s.tabTextWrap}>
+                            <Text
+                                style={[s.tabTitle, activeBook === "burden" && s.tabTitleActive]}
+                                numberOfLines={1}
+                                adjustsFontSizeToFit
+                                minimumFontScale={0.8}
+                            >
+                                {t.burdenBook}
                             </Text>
-                            <Text style={s.tabSub}>(Vent & release)</Text>
+                            <Text style={s.tabSub} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+                                {t.burdenBookSub}
+                            </Text>
                         </View>
                     </Pressable>
                     <Pressable
@@ -129,11 +159,18 @@ export default function JournalScreen({ navigation }: Props) {
                         onPress={() => setActiveBook("gratitude")}
                     >
                         <Text style={s.tabEmoji}>💚</Text>
-                        <View>
-                            <Text style={[s.tabTitle, activeBook === "gratitude" && s.tabTitleActive]}>
-                                Gratitude Book
+                        <View style={s.tabTextWrap}>
+                            <Text
+                                style={[s.tabTitle, activeBook === "gratitude" && s.tabTitleActive]}
+                                numberOfLines={1}
+                                adjustsFontSizeToFit
+                                minimumFontScale={0.8}
+                            >
+                                {t.gratitudeBook}
                             </Text>
-                            <Text style={s.tabSub}>(Positive moments)</Text>
+                            <Text style={s.tabSub} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+                                {t.gratitudeBookSub}
+                            </Text>
                         </View>
                     </Pressable>
                 </View>
@@ -141,7 +178,7 @@ export default function JournalScreen({ navigation }: Props) {
                 {/* Entry card */}
                 <View style={s.entryCard}>
                     {/* Mood selector */}
-                    <Text style={s.moodLabel}>HOW ARE YOU FEELING?</Text>
+                    <Text style={s.moodLabel}>{t.howFeeling}</Text>
                     <View style={s.moodRow}>
                         {MOODS.map((emoji, i) => (
                             <Pressable
@@ -157,7 +194,7 @@ export default function JournalScreen({ navigation }: Props) {
                     {/* Text input */}
                     <TextInput
                         style={s.entryInput}
-                        placeholder={placeholder}
+                        placeholder={activeBook === "burden" ? t.wantRelease : t.gratefulFor}
                         placeholderTextColor={Color.mako}
                         value={entryText}
                         onChangeText={setEntryText}
@@ -168,12 +205,12 @@ export default function JournalScreen({ navigation }: Props) {
 
                     {/* Save button */}
                     <Pressable style={s.saveBtn} onPress={saveEntry}>
-                        <Text style={s.saveBtnText}>Save Entry</Text>
+                        <Text style={s.saveBtnText}>{t.saveEntry}</Text>
                     </Pressable>
                 </View>
 
                 {/* Recent entries */}
-                <Text style={s.sectionTitle}>Recent Entries</Text>
+                <Text style={s.sectionTitle}>{t.recentEntries}</Text>
                 <View style={s.entriesList}>
                     {entries.map((entry) => (
                         <View
@@ -189,22 +226,27 @@ export default function JournalScreen({ navigation }: Props) {
                                     s.entryBookBadge,
                                     entry.book === "burden" ? s.burdenBadge : s.gratitudeBadge,
                                 ]}>
-                                    <Text style={[
-                                        s.entryBookText,
-                                        entry.book === "burden" ? s.burdenText : s.gratitudeText,
-                                    ]}>
-                                        {entry.book === "burden" ? "Burden Book" : "Gratitude Book"}
+                                    <Text
+                                        style={[
+                                            s.entryBookText,
+                                            entry.book === "burden" ? s.burdenText : s.gratitudeText,
+                                        ]}
+                                        numberOfLines={1}
+                                    >
+                                        {entry.book === "burden" ? t.burdenBookLabel : t.gratitudeBookLabel}
                                     </Text>
                                 </View>
-                                <Text style={s.entryDate}>{entry.date}</Text>
+                                <Text style={s.entryDate} numberOfLines={1}>
+                                    {formatEntryDateTime(new Date(entry.timestamp), lang)}
+                                </Text>
                             </View>
-                            <Text style={s.entryBody}>{entry.text}</Text>
+                            <Text style={s.entryBody}>{getEntryText(entry, lang)}</Text>
                         </View>
                     ))}
                 </View>
             </ScrollView>
 
-            {/* ── Bottom navigation Corregida para Huawei ── */}
+            {/* ── Bottom navigation ── */}
             <View style={[s.bottomNav, { paddingBottom: 12 + insets.bottom }]}>
                 {NAV_ITEMS.map((item) => (
                     <Pressable
@@ -215,7 +257,14 @@ export default function JournalScreen({ navigation }: Props) {
                         }}
                     >
                         <Text style={[s.navEmoji, item.active && s.navEmojiActive]}>{item.emoji}</Text>
-                        <Text style={[s.navLabel, item.active && s.navLabelActive]}>{t[item.labelKey]}</Text>
+                        <Text
+                            style={[s.navLabel, item.active && s.navLabelActive]}
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
+                            minimumFontScale={0.75}
+                        >
+                            {t[item.labelKey]}
+                        </Text>
                     </Pressable>
                 ))}
             </View>
@@ -226,21 +275,6 @@ export default function JournalScreen({ navigation }: Props) {
 // ════════════════════════════════════════════════════════════════════
 const s = StyleSheet.create({
     root: { flex: 1, backgroundColor: Color.aliceBlue },
-    topBar: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        backgroundColor: Color.aliceBlue,
-        borderBottomWidth: 1,
-        borderBottomColor: Color.linkWater,
-    },
-    menuBtn: { padding: 4 },
-    menuIcon: { fontSize: 20, color: Color.blackPearl },
-    title: { fontSize: 18, fontWeight: "700", color: Color.endeavour },
-    globeBtn: { padding: 4 },
-    globeIcon: { fontSize: 20 },
     scroll: { flex: 1 },
     scrollContent: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24, gap: 16 },
     subheading: { fontSize: 13, color: Color.mako, lineHeight: 18 },
@@ -253,9 +287,10 @@ const s = StyleSheet.create({
         borderColor: Color.linkWater,
         padding: 8,
     },
-    tab: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 10, paddingVertical: 10, borderRadius: 8 },
+    tab: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 10, paddingVertical: 10, borderRadius: 8, minWidth: 0 },
     tabActive: { borderWidth: 1.5, borderColor: Color.endeavour, backgroundColor: "#f0f8ff" },
     tabEmoji: { fontSize: 20 },
+    tabTextWrap: { flex: 1, minWidth: 0 },
     tabTitle: { fontSize: 13, fontWeight: "600", color: Color.mako },
     tabTitleActive: { color: Color.blackPearl },
     tabSub: { fontSize: 10, color: Color.mako },
@@ -290,9 +325,9 @@ const s = StyleSheet.create({
     entryItem: { borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, gap: 8, borderWidth: 1 },
     entryBurden: { backgroundColor: Color.lightPink, borderColor: "#f8bbd0" },
     entryGratitude: { backgroundColor: Color.lightGreen, borderColor: "#c8e6c9" },
-    entryHeader: { flexDirection: "row", alignItems: "center", gap: 8 },
+    entryHeader: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap", rowGap: 4 },
     entryMood: { fontSize: 20 },
-    entryBookBadge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
+    entryBookBadge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, flexShrink: 1, maxWidth: "60%" },
     burdenBadge: { backgroundColor: "#fce4ec" },
     gratitudeBadge: { backgroundColor: "#e8f5e9" },
     entryBookText: { fontSize: 11, fontWeight: "700" },

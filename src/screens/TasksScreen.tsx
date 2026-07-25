@@ -29,11 +29,11 @@ const Color = {
 // ── Nav items ─────────────────────────────────────────────────────────
 const NAV_ITEMS = [
     { labelKey: "navHome" as const, emoji: "🏠", screen: "Home" },
-    { labelKey: "navTranslator" as const, emoji: "交", screen: "Translator" },
-    { labelKey: "navAssistant" as const, emoji: "✦", screen: "Assistant" },
+    { labelKey: "navTranslator" as const, emoji: "🔤", screen: "Translator" },
+    { labelKey: "navAssistant" as const, emoji: "⚖️", screen: "Assistant" },
     { labelKey: "navCommunity" as const, emoji: "👥", screen: "Community" },
     { labelKey: "navTasks" as const, emoji: "📋", screen: "Tasks", active: true },
-    { labelKey: "navJournal" as const, emoji: "♡", screen: "Journal" },
+    { labelKey: "navJournal" as const, emoji: "📓", screen: "Journal" },
 ];
 
 // ── Task type ─────────────────────────────────────────────────────────
@@ -45,13 +45,6 @@ type Task = {
     overdue?: boolean;
 };
 
-const INITIAL_TASKS: Task[] = [
-    { id: "1", label: "Take morning medication", time: "8:00 AM", done: true },
-    { id: "2", label: "Breakfast meal", time: "8:30 AM", done: true },
-    { id: "3", label: "Call employer re-schedule", time: "10:00 AM", done: false, overdue: true },
-    { id: "4", label: "Go for a walk", time: "2:00 PM", done: false },
-    { id: "5", label: "Take afternoon medication", time: "4:00 PM", done: false },
-];
 
 // ════════════════════════════════════════════════════════════════════
 type Props = { navigation?: any };
@@ -60,7 +53,17 @@ export default function TasksScreen({ navigation }: Props) {
     const insets = useSafeAreaInsets();
     const { lang } = useLang();
     const t = T[lang];
-    const [tasks, setTasks] = React.useState<Task[]>(INITIAL_TASKS);
+    const [tasks, setTasks] = React.useState<Task[]>([]);
+
+    React.useEffect(() => {
+        setTasks([
+            { id: "1", label: t.task1, time: "8:00 AM", done: true },
+            { id: "2", label: t.task2, time: "8:30 AM", done: true },
+            { id: "3", label: t.task3, time: "10:00 AM", done: false, overdue: true },
+            { id: "4", label: t.task4, time: "2:00 PM", done: false },
+            { id: "5", label: t.task5, time: "4:00 PM", done: false },
+        ]);
+    }, [lang]);
 
     const pending = tasks.filter((t) => !t.done).length;
 
@@ -82,15 +85,15 @@ export default function TasksScreen({ navigation }: Props) {
                 showsVerticalScrollIndicator={false}
             >
                 {/* Heading */}
-                <Text style={s.heading}>Today's Tasks</Text>
-                <Text style={s.subheading}>Tuesday, May 5 · {pending} pending</Text>
+                <Text style={s.heading}>{t.tasksHeading}</Text>
+                <Text style={s.subheading}>{t.tasksSub} · {pending} {t.pending}</Text>
 
                 {/* Reminder card */}
                 <View style={s.reminderCard}>
                     <Text style={s.reminderIcon}>🧘</Text>
                     <Text style={s.reminderText}>
-                        <Text style={s.reminderBold}>Reminder: </Text>
-                        You've been working for 4 hours. Try to take a 10-minute rest or short walk if your patient is resting.
+                        <Text style={s.reminderBold}>{t.reminder}</Text>
+                        {t.reminderBody}
                     </Text>
                 </View>
 
@@ -122,7 +125,7 @@ export default function TasksScreen({ navigation }: Props) {
 
                 {/* Manage Tasks button */}
                 <Pressable style={s.manageBtn}>
-                    <Text style={s.manageBtnText}>Manage Tasks</Text>
+                    <Text style={s.manageBtnText}>{t.manageTasks}</Text>
                 </Pressable>
             </ScrollView>
 
@@ -137,7 +140,14 @@ export default function TasksScreen({ navigation }: Props) {
                         }}
                     >
                         <Text style={[s.navEmoji, item.active && s.navEmojiActive]}>{item.emoji}</Text>
-                        <Text style={[s.navLabel, item.active && s.navLabelActive]}>{t[item.labelKey]}</Text>
+                        <Text
+                            style={[s.navLabel, item.active && s.navLabelActive]}
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
+                            minimumFontScale={0.75}
+                        >
+                            {t[item.labelKey]}
+                        </Text>
                     </Pressable>
                 ))}
             </View>

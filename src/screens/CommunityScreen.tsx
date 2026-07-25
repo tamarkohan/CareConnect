@@ -10,7 +10,14 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import TopBar from "../components/TopBar";
 import { useLang } from "../AppContext";
-import { T } from "../translations";
+import {
+    T,
+    MapFilterId,
+    SUPPORT_NETWORKS,
+    INFLUENCERS,
+    MAP_RESULTS,
+    RELIGIOUS_PLACES,
+} from "../translations";
 
 // ── Tokens ───────────────────────────────────────────────────────────
 const Color = {
@@ -31,71 +38,15 @@ const Color = {
 // ── Nav items ─────────────────────────────────────────────────────────
 const NAV_ITEMS = [
     { labelKey: "navHome" as const, emoji: "🏠", screen: "Home" },
-    { labelKey: "navTranslator" as const, emoji: "交", screen: "Translator" },
-    { labelKey: "navAssistant" as const, emoji: "✦", screen: "Assistant" },
+    { labelKey: "navTranslator" as const, emoji: "🔤", screen: "Translator" },
+    { labelKey: "navAssistant" as const, emoji: "⚖️", screen: "Assistant" },
     { labelKey: "navCommunity" as const, emoji: "👥", screen: "Community", active: true },
     { labelKey: "navTasks" as const, emoji: "📋", screen: "Tasks" },
-    { labelKey: "navJournal" as const, emoji: "♡", screen: "Journal" },
+    { labelKey: "navJournal" as const, emoji: "📓", screen: "Journal" },
 ];
 
 // ── Map filter tabs ───────────────────────────────────────────────────
-const MAP_FILTERS = ["Caregivers", "Clinics", "Taxis"] as const;
-type MapFilter = typeof MAP_FILTERS[number];
-
-// ── Data ─────────────────────────────────────────────────────────────
-const SUPPORT_NETWORKS = [
-    { id: "1", name: "Haifa Filipino\nCaregivers", type: "WhatsApp Group", emoji: "💬", bg: "#e8f5e9" },
-    { id: "2", name: "St. Joseph\nParish Events", type: "Community Center", emoji: "⛪", bg: Color.lightYellow },
-];
-
-const INFLUENCERS = [
-    { id: "1", title: "Hebrew Basics for\nCaregivers", author: "Shyni Babu", platform: "YouTube", emoji: "▶" },
-    { id: "2", title: "Navigating Transport", author: "Maria Santos", platform: "TikTok", emoji: "▶" },
-];
-
-const MAP_RESULTS: Record<MapFilter, Array<{ id: string; name: string; distance: string; action: string; color: string }>> = {
-    Caregivers: [
-        { id: "1", name: "Priya", distance: "100m away", action: "Chat", color: "#7c3aed" },
-        { id: "2", name: "Maria S.", distance: "500m away", action: "Chat", color: "#2e7d32" },
-    ],
-    Clinics: [
-        { id: "1", name: "Horev Clinic", distance: "100m away", action: "Info & Directions", color: "#7c3aed" },
-        { id: "2", name: "Hadar Clinic", distance: "1km away", action: "Info & Directions", color: "#2e7d32" },
-    ],
-    Taxis: [
-        { id: "1", name: "Taxi Stop", distance: "500m away", action: "Info & Directions", color: "#f57c00" },
-    ],
-};
-
-const RELIGIOUS_PLACES = [
-    {
-        id: "1",
-        name: "Nazareth (נצרת)",
-        district: "Northern District",
-        tag: "Religious Site",
-        tagBg: Color.lightYellow,
-        tagText: "#b45309",
-        desc: "A major pilgrimage center featuring the Basilica of the Annunciation. Accessible via direct buses from Haifa and Tel Aviv.",
-    },
-    {
-        id: "2",
-        name: "Stella Maris Monastery",
-        district: "Haifa District",
-        tag: "Religious Site",
-        tagBg: Color.lightYellow,
-        tagText: "#b45309",
-        desc: "A 19th-century Carmelite monastery located on the slopes of Mount Carmel in Haifa, offering beautiful panoramic views of the Mediterranean Sea.",
-    },
-    {
-        id: "3",
-        name: "Church of the Holy Sepulchre",
-        district: "Jerusalem District",
-        tag: "Religious Site",
-        tagBg: Color.lightYellow,
-        tagText: "#b45309",
-        desc: "Located in the Christian Quarter of the Old City of Jerusalem, it is considered one of the holiest sites in Christianity.",
-    },
-];
+const MAP_FILTERS: MapFilterId[] = ["caregivers", "clinics", "taxis"];
 
 // ════════════════════════════════════════════════════════════════════
 type Props = { navigation?: any };
@@ -104,11 +55,14 @@ export default function CommunityScreen({ navigation }: Props) {
     const insets = useSafeAreaInsets();
     const { lang } = useLang();
     const t = T[lang];
-    const [activeFilter, setActiveFilter] = React.useState<MapFilter>("Caregivers");
+    const [activeFilter, setActiveFilter] = React.useState<MapFilterId>("caregivers");
     const [searchText, setSearchText] = React.useState("");
 
     const results = MAP_RESULTS[activeFilter];
-    const actionLabel = activeFilter === "Caregivers" ? "Go to all chats" : activeFilter === "Clinics" ? "Go to all Clinics" : "Go to all transport information";
+    const actionLabel =
+        activeFilter === "caregivers" ? t.goToChats :
+            activeFilter === "clinics" ? t.goToClinics :
+                t.goToTransport;
 
     return (
         <View style={[s.root, { paddingTop: insets.top }]}>
@@ -121,13 +75,13 @@ export default function CommunityScreen({ navigation }: Props) {
                 contentContainerStyle={s.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
-                <Text style={s.subheading}>Connect with others and explore essential locations.</Text>
+                <Text style={s.subheading}>{t.communityHeading}</Text>
 
                 {/* Search */}
                 <View style={s.searchRow}>
                     <TextInput
                         style={s.searchInput}
-                        placeholder="Find places (Religious sites, transit)..."
+                        placeholder={t.communitySearch}
                         placeholderTextColor={Color.mako}
                         value={searchText}
                         onChangeText={setSearchText}
@@ -138,22 +92,22 @@ export default function CommunityScreen({ navigation }: Props) {
                 </View>
 
                 {/* Local Support Networks */}
-                <Text style={s.sectionTitle}>Local Support Networks</Text>
+                <Text style={s.sectionTitle}>{t.localNetworks}</Text>
                 <View style={s.networkRow}>
                     {SUPPORT_NETWORKS.map((n) => (
                         <Pressable key={n.id} style={[s.networkCard, { backgroundColor: n.bg }]}>
                             <Text style={s.networkEmoji}>{n.emoji}</Text>
                             <Text style={s.networkName}>{n.name}</Text>
-                            <Text style={s.networkType}>{n.type}</Text>
+                            <Text style={s.networkType} numberOfLines={2}>{t[n.typeKey]}</Text>
                         </Pressable>
                     ))}
                 </View>
                 <Pressable>
-                    <Text style={s.seeMore}>See more...</Text>
+                    <Text style={s.seeMore}>{t.seeMore}</Text>
                 </Pressable>
 
                 {/* Learn from Influencers */}
-                <Text style={s.sectionTitle}>Learn from Influencers</Text>
+                <Text style={s.sectionTitle}>{t.learnInfluencers}</Text>
                 <View style={s.influencerRow}>
                     {INFLUENCERS.map((item) => (
                         <Pressable key={item.id} style={s.influencerCard}>
@@ -162,18 +116,20 @@ export default function CommunityScreen({ navigation }: Props) {
                                     <Text style={s.playIcon}>▶</Text>
                                 </View>
                             </View>
-                            <Text style={s.influencerTitle}>{item.title}</Text>
-                            <Text style={s.influencerAuthor}>{item.author} • {item.platform}</Text>
+                            <Text style={s.influencerTitle}>{item.title[lang]}</Text>
+                            <Text style={s.influencerAuthor} numberOfLines={1}>
+                                {item.author} • {item.platform}
+                            </Text>
                         </Pressable>
                     ))}
                 </View>
                 <Pressable>
-                    <Text style={s.seeMore}>See more...</Text>
+                    <Text style={s.seeMore}>{t.seeMore}</Text>
                 </Pressable>
 
                 {/* Near You map section */}
                 <View style={s.nearYouHeader}>
-                    <Text style={s.sectionTitle}>Near You:</Text>
+                    <Text style={s.sectionTitle}>{t.nearYou}</Text>
                     <View style={s.filterRow}>
                         {MAP_FILTERS.map((f) => (
                             <Pressable
@@ -181,8 +137,13 @@ export default function CommunityScreen({ navigation }: Props) {
                                 style={[s.filterChip, activeFilter === f && s.filterChipActive]}
                                 onPress={() => setActiveFilter(f)}
                             >
-                                <Text style={[s.filterChipText, activeFilter === f && s.filterChipTextActive]}>
-                                    {f}
+                                <Text
+                                    style={[s.filterChipText, activeFilter === f && s.filterChipTextActive]}
+                                    numberOfLines={1}
+                                    adjustsFontSizeToFit
+                                    minimumFontScale={0.75}
+                                >
+                                    {t[f]}
                                 </Text>
                             </Pressable>
                         ))}
@@ -193,37 +154,40 @@ export default function CommunityScreen({ navigation }: Props) {
                 <View style={s.mapContainer}>
                     <View style={s.mapPlaceholder}>
                         <Text style={s.mapEmoji}>🗺</Text>
-                        <Text style={s.mapLabel}>Map View</Text>
+                        <Text style={s.mapLabel}>{t.mapView}</Text>
                     </View>
                     <View style={s.locationBadge}>
                         <Text style={s.locationDot}>●</Text>
-                        <Text style={s.locationText}>Location sharing enabled to see nearby caregivers, medical care, taxi stops and more.</Text>
+                        <Text style={s.locationText}>{t.locationEnabled}</Text>
                     </View>
                 </View>
 
                 {/* Results list */}
                 <View style={s.resultsList}>
-                    {results.map((r) => (
-                        <View key={r.id} style={s.resultItem}>
-                            <View style={[s.resultAvatar, { backgroundColor: r.color }]}>
-                                <Text style={s.resultAvatarText}>{r.name.charAt(0)}</Text>
+                    {results.map((r) => {
+                        const displayName = r.nameKey ? t[r.nameKey] : r.name!;
+                        return (
+                            <View key={r.id} style={s.resultItem}>
+                                <View style={[s.resultAvatar, { backgroundColor: r.color }]}>
+                                    <Text style={s.resultAvatarText}>{displayName.charAt(0)}</Text>
+                                </View>
+                                <View style={s.resultInfo}>
+                                    <Text style={s.resultName} numberOfLines={1}>{displayName}</Text>
+                                    <Text style={s.resultDistance}>{t[r.distanceKey]}</Text>
+                                </View>
+                                <Pressable style={s.resultActionBtn}>
+                                    <Text style={s.resultActionText} numberOfLines={1}>{t[r.actionKey]}</Text>
+                                </Pressable>
                             </View>
-                            <View style={s.resultInfo}>
-                                <Text style={s.resultName}>{r.name}</Text>
-                                <Text style={s.resultDistance}>{r.distance}</Text>
-                            </View>
-                            <Pressable style={s.resultActionBtn}>
-                                <Text style={s.resultActionText}>{r.action}</Text>
-                            </Pressable>
-                        </View>
-                    ))}
+                        );
+                    })}
                     <Pressable>
                         <Text style={s.seeMoreCenter}>{actionLabel}</Text>
                     </Pressable>
                 </View>
 
                 {/* Popular Religious Places */}
-                <Text style={s.sectionTitle}>Popular Religious Places</Text>
+                <Text style={s.sectionTitle}>{t.popularReligious}</Text>
                 <View style={s.religiousList}>
                     {RELIGIOUS_PLACES.map((place) => (
                         <View key={place.id} style={s.religiousCard}>
@@ -233,19 +197,23 @@ export default function CommunityScreen({ navigation }: Props) {
                             </View>
                             <View style={s.religiousBody}>
                                 <View style={s.religiousTagRow}>
-                                    <View style={[s.religiousTag, { backgroundColor: place.tagBg }]}>
-                                        <Text style={[s.religiousTagText, { color: place.tagText }]}>{place.tag}</Text>
+                                    <View style={[s.religiousTag, { backgroundColor: Color.lightYellow }]}>
+                                        <Text style={[s.religiousTagText, { color: "#b45309" }]}>
+                                            {t.religiousSiteTag}
+                                        </Text>
                                     </View>
-                                    <Text style={s.religiousDistrict}>{place.district}</Text>
+                                    <Text style={s.religiousDistrict} numberOfLines={1}>
+                                        {t[place.districtKey]}
+                                    </Text>
                                     <Pressable style={s.bookmarkBtn}>
                                         <Text style={s.bookmarkIcon}>🔖</Text>
                                     </Pressable>
                                 </View>
                                 <Text style={s.religiousName}>{place.name}</Text>
-                                <Text style={s.religiousDesc}>{place.desc}</Text>
+                                <Text style={s.religiousDesc}>{place.desc[lang]}</Text>
                                 <Pressable style={s.moovitBtn}>
                                     <Text style={s.moovitIcon}>🚌</Text>
-                                    <Text style={s.moovitText}>Moovit/Google Maps</Text>
+                                    <Text style={s.moovitText}>{t.moovitLabel}</Text>
                                 </Pressable>
                             </View>
                         </View>
@@ -253,7 +221,7 @@ export default function CommunityScreen({ navigation }: Props) {
                 </View>
             </ScrollView>
 
-            {/* ── Bottom navigation Corregida para Huawei ── */}
+            {/* ── Bottom navigation ── */}
             <View style={[s.bottomNav, { paddingBottom: 12 + insets.bottom }]}>
                 {NAV_ITEMS.map((item) => (
                     <Pressable
@@ -264,7 +232,14 @@ export default function CommunityScreen({ navigation }: Props) {
                         }}
                     >
                         <Text style={[s.navEmoji, item.active && s.navEmojiActive]}>{item.emoji}</Text>
-                        <Text style={[s.navLabel, item.active && s.navLabelActive]}>{t[item.labelKey]}</Text>
+                        <Text
+                            style={[s.navLabel, item.active && s.navLabelActive]}
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
+                            minimumFontScale={0.75}
+                        >
+                            {t[item.labelKey]}
+                        </Text>
                     </Pressable>
                 ))}
             </View>
@@ -275,21 +250,6 @@ export default function CommunityScreen({ navigation }: Props) {
 // ════════════════════════════════════════════════════════════════════
 const s = StyleSheet.create({
     root: { flex: 1, backgroundColor: Color.aliceBlue },
-    topBar: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        backgroundColor: Color.aliceBlue,
-        borderBottomWidth: 1,
-        borderBottomColor: Color.linkWater,
-    },
-    menuBtn: { padding: 4 },
-    menuIcon: { fontSize: 20, color: Color.blackPearl },
-    title: { fontSize: 18, fontWeight: "700", color: Color.endeavour },
-    globeBtn: { padding: 4 },
-    globeIcon: { fontSize: 20 },
     scroll: { flex: 1 },
     scrollContent: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 24, gap: 12 },
     subheading: { fontSize: 13, color: Color.mako },
@@ -331,7 +291,7 @@ const s = StyleSheet.create({
     influencerAuthor: { fontSize: 11, color: Color.mako },
     nearYouHeader: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
     filterRow: { flexDirection: "row", gap: 8 },
-    filterChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: Color.linkWater, backgroundColor: Color.white },
+    filterChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: Color.linkWater, backgroundColor: Color.white, maxWidth: 110 },
     filterChipActive: { backgroundColor: Color.endeavour, borderColor: Color.endeavour },
     filterChipText: { fontSize: 12, color: Color.mako, fontWeight: "500" },
     filterChipTextActive: { color: Color.white, fontWeight: "700" },
@@ -349,14 +309,14 @@ const s = StyleSheet.create({
     resultInfo: { flex: 1 },
     resultName: { fontSize: 14, fontWeight: "600", color: Color.blackPearl },
     resultDistance: { fontSize: 12, color: Color.mako },
-    resultActionBtn: { backgroundColor: Color.endeavour, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7 },
+    resultActionBtn: { backgroundColor: Color.endeavour, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7, maxWidth: 130 },
     resultActionText: { fontSize: 12, color: Color.white, fontWeight: "600" },
     religiousList: { gap: 16 },
     religiousCard: { backgroundColor: Color.white, borderRadius: 12, borderWidth: 1, borderColor: Color.linkWater, overflow: "hidden" },
     religiousImage: { height: 120, backgroundColor: "#c8dfc8", alignItems: "center", justifyContent: "center" },
     religiousImageEmoji: { fontSize: 40 },
     religiousBody: { padding: 14, gap: 8 },
-    religiousTagRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+    religiousTagRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
     religiousTag: { borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4 },
     religiousTagText: { fontSize: 11, fontWeight: "600" },
     religiousDistrict: { fontSize: 11, color: Color.mako, flex: 1 },

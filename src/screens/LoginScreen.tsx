@@ -1,4 +1,7 @@
 import * as React from "react";
+import { useLang } from "../AppContext";
+import { LangCode } from "../translations";
+
 import {
     View,
     Text,
@@ -108,13 +111,13 @@ export default function LoginScreen({ navigation }: Props) {
     const [tab, setTab] = React.useState<"phone" | "email">("phone");
     const [value, setValue] = React.useState("");
     const [showLangs, setShowLangs] = React.useState(false);
-
+    const { setLang: setGlobalLang } = useLang();
     const t = T[lang];
     const currentLang = LANGUAGES.find(l => l.code === lang)!;
 
     const handleContinue = () => {
         if (!value.trim()) return;
-        // Navigate to home after login (swap with OTP screen later)
+        setGlobalLang(lang as LangCode);
         navigation?.navigate("Home");
     };
 
@@ -255,7 +258,7 @@ const s = StyleSheet.create({
     // Language pill
     langPill: {
         position: "absolute",
-        top: 16, right: 16,
+        top: 52, right: 16,
         backgroundColor: "rgba(255,255,255,0.85)",
         borderRadius: 20,
         paddingHorizontal: 12,
@@ -266,7 +269,7 @@ const s = StyleSheet.create({
     // Language dropdown
     langDropdown: {
         position: "absolute",
-        top: 50, right: 16,
+        top: 88, right: 16,
         backgroundColor: Color.white,
         borderRadius: 10,
         shadowColor: "#000",
@@ -295,7 +298,7 @@ const s = StyleSheet.create({
         borderTopRightRadius: 24,
         marginTop: -20,
         paddingHorizontal: 24,
-        paddingTop: 32,
+        paddingTop: 44,
         paddingBottom: 40,
         gap: 16,
     },

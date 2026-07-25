@@ -9,7 +9,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import TopBar from "../components/TopBar";
 import { useLang } from "../AppContext";
-import { T } from "../translations";
+import { T, LangCode, formatRelativeTime } from "../translations";
 
 // ── Tokens ───────────────────────────────────────────────────────────
 const Color = {
@@ -23,7 +23,7 @@ const Color = {
 
     // Input mode colors
     blueMic: "#005dac",
-    yellowType: "#ffdfa0",
+    yellowType: "#e6a817",
     greenScan: "#4caf50",
 
     // Tag colors
@@ -35,48 +35,122 @@ const Color = {
     transitText: "#1565c0",
 };
 
-// ── Recent translation item ──────────────────────────────────────────
-type TranslationItem = {
-    id: string;
-    tag: string;
-    tagBg: string;
-    tagText: string;
-    time: string;
-    original: string;
-    translated: string;
-    note?: string;
+// ── Nav items ─────────────────────────────────────────────────────────
+const NAV_ITEMS = [
+    { labelKey: "navHome" as const, emoji: "🏠", screen: "Home" },
+    { labelKey: "navTranslator" as const, emoji: "🔤", screen: "Translator", active: true },
+    { labelKey: "navAssistant" as const, emoji: "⚖", screen: "Assistant" },
+    { labelKey: "navCommunity" as const, emoji: "👥", screen: "Community" },
+    { labelKey: "navTasks" as const, emoji: "📋", screen: "Tasks" },
+    { labelKey: "navJournal" as const, emoji: "📓", screen: "Journal" },
+];
+
+// ── Translation history data model ────────────────────────────────────
+// A category is a label id — the display string is looked up from `T`
+// so it renders in whichever language is currently selected.
+type TranslationCategory = "medical" | "slang" | "transit";
+
+const CATEGORY_STYLE: Record<TranslationCategory, { bg: string; text: string }> = {
+    medical: { bg: Color.medicalBg, text: Color.medicalText },
+    slang: { bg: Color.slanBg, text: Color.slanText },
+    transit: { bg: Color.transitBg, text: Color.transitText },
 };
 
-const RECENT_TRANSLATIONS: TranslationItem[] = [
+const CATEGORY_LABEL_KEY: Record<TranslationCategory, "catMedical" | "catSlang" | "catTransit"> = {
+    medical: "catMedical",
+    slang: "catSlang",
+    transit: "catTransit",
+};
+
+type TranslationEntry = {
+    id: string;
+    category: TranslationCategory;
+    // Real timestamp (ms) so the displayed time is computed live and
+    // always matches the currently selected language.
+    timestamp: number;
+    // The original Hebrew text — this never changes language, it's a
+    // direct transcription/scan of what was actually said or written.
+    hebrewText: string;
+    // How to *read* the Hebrew out loud, spelled out per language
+    // (e.g. "Tachana Merkazit" under "תחנה מרכזית").
+    phonetic: Record<LangCode, string>;
+    // The actual meaning of the phrase, in each language.
+    translated: Record<LangCode, string>;
+    // Optional literal-translation aside (e.g. "(Lit: he is wrung out)")
+    note?: Partial<Record<LangCode, string>>;
+};
+
+// ─────────────────────────────────────────────────────────────────────
+// ⚠️ SEED / EXAMPLE DATA ONLY.
+//
+// In production this list is per-user and would come from the backend
+// or local device storage (e.g. a `useUserTranslations()` hook backed
+// by an API call or AsyncStorage), populated every time the person
+// uses the mic / write / camera flows below. The shape of each object
+// (category, hebrewText, phonetic, translated) is exactly what any
+// future translation-result payload should be normalized into before
+// being appended here via `setRecentTranslations(prev => [entry, ...prev])`.
+// ─────────────────────────────────────────────────────────────────────
+const SEED_TRANSLATIONS: TranslationEntry[] = [
     {
         id: "1",
-        tag: "Medical Letter / Pill Box",
-        tagBg: Color.medicalBg,
-        tagText: Color.medicalText,
-        time: "2 hrs ago",
-        original: "ליקח תרופות בחום אחרי",
-        translated: "Take twice a day after meals.",
-        note: undefined,
+        category: "medical",
+        timestamp: Date.now() - 2 * 60 * 60 * 1000, // 2 hours ago
+        hebrewText: "לקחת פעמיים ביום אחרי האוכל",
+        phonetic: {
+            en: "Lakachat pa'amayim bayom acharei ha'ochel",
+            tl: "Lakachat pa'amayim bayom acharei ha'ochel",
+            ml: "ലകാഹത് പഅമായിം ബയോം അഹറേയ് ഹാഓഹെൽ",
+            ru: "Лакахат паамаим баём ахарей аохель",
+        },
+        translated: {
+            en: "Take twice a day after meals.",
+            tl: "Inumin nang dalawang beses sa isang araw pagkatapos kumain.",
+            ml: "ഭക്ഷണത്തിന് ശേഷം ദിവസത്തിൽ രണ്ടു തവണ കഴിക്കുക.",
+            ru: "Принимайте два раза в день после еды.",
+        },
     },
     {
         id: "2",
-        tag: "Israeli Slang",
-        tagBg: Color.slanBg,
-        tagText: Color.slanText,
-        time: "Yesterday",
-        original: 'הוא צפвой ספור "דיוט"',
-        translated: '"He is feeling unwell/cranky today."',
-        note: "(Lit: He is upside down)",
+        category: "slang",
+        timestamp: Date.now() - 26 * 60 * 60 * 1000, // yesterday
+        hebrewText: "הוא היום קצת סחוט",
+        phonetic: {
+            en: "Hu hayom ktzat sachut",
+            tl: "Hu hayom ktzat sachut",
+            ml: "ഹു ഹയോം ക്റ്റാറ്റ് സഹൂത്",
+            ru: "Ху хайом ктцат сахут",
+        },
+        translated: {
+            en: "He's a bit exhausted today.",
+            tl: "Medyo pagod siya ngayon.",
+            ml: "അവന് ഇന്ന് അല്പം ക്ഷീണിതനാണ്.",
+            ru: "Он сегодня немного вымотан.",
+        },
+        note: {
+            en: "(Lit: he is wrung out)",
+            tl: "(Literal: siya ay pinigain)",
+            ml: "(അക്ഷരാർത്ഥത്തിൽ: അവൻ പിഴിഞ്ഞെടുത്തു)",
+            ru: "(Букв.: он выжат)",
+        },
     },
     {
         id: "3",
-        tag: "Transit / Location",
-        tagBg: Color.transitBg,
-        tagText: Color.transitText,
-        time: "Mon",
-        original: 'תחנת מרכזית הפקון"',
-        translated: '"HaMifratz Central Station"',
-        note: undefined,
+        category: "transit",
+        timestamp: Date.now() - 4 * 24 * 60 * 60 * 1000, // a few days ago
+        hebrewText: "תחנה מרכזית",
+        phonetic: {
+            en: "Tachana Merkazit",
+            tl: "Tachana Merkazit",
+            ml: "തഹാന മെർകസീത്",
+            ru: "Тахана Мерказит",
+        },
+        translated: {
+            en: "Central Station",
+            tl: "Sentral na Istasyon",
+            ml: "സെൻട്രൽ സ്റ്റേഷൻ",
+            ru: "Центральная станция",
+        },
     },
 ];
 
@@ -87,6 +161,10 @@ export default function TranslatorScreen({ navigation }: Props) {
     const insets = useSafeAreaInsets();
     const { lang } = useLang();
     const t = T[lang];
+
+    // Seeded with example data for now — see SEED_TRANSLATIONS comment
+    // above for how this plugs into real per-user data later.
+    const [recentTranslations, setRecentTranslations] = React.useState<TranslationEntry[]>(SEED_TRANSLATIONS);
 
     return (
         <View style={[s.root, { paddingTop: insets.top }]}>
@@ -100,17 +178,15 @@ export default function TranslatorScreen({ navigation }: Props) {
                 showsVerticalScrollIndicator={false}
             >
                 {/* Heading */}
-                <Text style={s.heading}>Contextual Translator</Text>
-                <Text style={s.subheading}>Made especially for you.</Text>
+                <Text style={s.heading}>{t.translatorHeading}</Text>
+                <Text style={s.subheading}>{t.translatorSub}</Text>
 
                 {/* Info card */}
                 <View style={s.infoCard}>
                     <Text style={s.infoIcon}>ℹ</Text>
                     <View style={s.infoContent}>
-                        <Text style={s.infoTitle}>
-                            Unlike standard apps, our AI understands context. Perfect for Israeli slang, complex medical terms and reading handwritten notes.
-                        </Text>
-                        <Text style={s.infoHighlight}>HIGH-QUALITY AUDIO FOR MALAYALAM, HINDI & TAGALOG</Text>
+                        <Text style={s.infoTitle}>{t.infoCardText}</Text>
+                        <Text style={s.infoHighlight}>{t.infoCardHighlight}</Text>
                     </View>
                 </View>
 
@@ -118,72 +194,98 @@ export default function TranslatorScreen({ navigation }: Props) {
                 <View style={s.inputModes}>
                     <Pressable style={[s.mode, s.modeMic]} onPress={() => { }}>
                         <Text style={s.modeEmoji}>🎤</Text>
-                        <Text style={s.modeLabel}>Speak to Translate</Text>
+                        <Text
+                            style={s.modeLabel}
+                            numberOfLines={2}
+                            adjustsFontSizeToFit
+                            minimumFontScale={0.75}
+                        >
+                            {t.speakTranslate}
+                        </Text>
                     </Pressable>
                     <Pressable style={[s.mode, s.modeType]} onPress={() => { }}>
                         <Text style={s.modeEmoji}>✏</Text>
-                        <Text style={s.modeLabel}>Write in any language</Text>
+                        <Text
+                            style={s.modeLabel}
+                            numberOfLines={2}
+                            adjustsFontSizeToFit
+                            minimumFontScale={0.75}
+                        >
+                            {t.writeAny}
+                        </Text>
                     </Pressable>
                     <Pressable style={[s.mode, s.modeScan]} onPress={() => { }}>
                         <Text style={s.modeEmoji}>📷</Text>
-                        <Text style={s.modeLabel}>Scan or Take Photo</Text>
+                        <Text
+                            style={s.modeLabel}
+                            numberOfLines={2}
+                            adjustsFontSizeToFit
+                            minimumFontScale={0.75}
+                        >
+                            {t.scanPhoto}
+                        </Text>
                     </Pressable>
                 </View>
 
                 {/* Recent translations */}
-                <Text style={s.recentTitle}>Recent Translations</Text>
+                <Text style={s.recentTitle}>{t.recentTranslations}</Text>
                 <View style={s.recentList}>
-                    {RECENT_TRANSLATIONS.map((item) => (
-                        <Pressable key={item.id} style={s.recentItem} onPress={() => { }}>
-                            {/* Tag */}
-                            <View style={[s.tag, { backgroundColor: item.tagBg }]}>
-                                <Text style={[s.tagText, { color: item.tagText }]}>
-                                    {item.tag}
-                                </Text>
-                                <Text style={s.tagTime}>{item.time}</Text>
-                            </View>
-
-                            {/* Original text */}
-                            <Text style={s.originalText}>{item.original}</Text>
-
-                            {/* Translated text with note */}
-                            <View style={s.translatedRow}>
-                                <Text style={s.translatedIcon}>↪</Text>
-                                <View style={s.translatedContent}>
-                                    <Text style={s.translatedText}>{item.translated}</Text>
-                                    {item.note && (
-                                        <Text style={s.translatedNote}>{item.note}</Text>
-                                    )}
+                    {recentTranslations.map((item) => {
+                        const cat = CATEGORY_STYLE[item.category];
+                        const note = item.note?.[lang];
+                        return (
+                            <Pressable key={item.id} style={s.recentItem} onPress={() => { }}>
+                                {/* Tag */}
+                                <View style={[s.tag, { backgroundColor: cat.bg }]}>
+                                    <Text style={[s.tagText, { color: cat.text }]}>
+                                        {t[CATEGORY_LABEL_KEY[item.category]]}
+                                    </Text>
+                                    <Text style={s.tagTime}>
+                                        {formatRelativeTime(new Date(item.timestamp), lang)}
+                                    </Text>
                                 </View>
-                            </View>
-                        </Pressable>
-                    ))}
+
+                                {/* Original Hebrew — always stays in Hebrew */}
+                                <Text style={s.originalText}>{item.hebrewText}</Text>
+
+                                {/* Phonetic reading, in the current language */}
+                                <Text style={s.phoneticText}>{item.phonetic[lang]}</Text>
+
+                                {/* Translated meaning with optional note */}
+                                <View style={s.translatedRow}>
+                                    <Text style={s.translatedIcon}>↪</Text>
+                                    <View style={s.translatedContent}>
+                                        <Text style={s.translatedText}>{item.translated[lang]}</Text>
+                                        {note ? (
+                                            <Text style={s.translatedNote}>{note}</Text>
+                                        ) : null}
+                                    </View>
+                                </View>
+                            </Pressable>
+                        );
+                    })}
                 </View>
             </ScrollView>
 
-            {/* ── Bottom navigation Corregida para Huawei ── */}
+            {/* ── Bottom navigation ── */}
             <View style={[s.bottomNav, { paddingBottom: 12 + insets.bottom }]}>
-                {[
-                    { labelKey: "navHome" as const, emoji: "🏠", screen: "Home" },
-                    { labelKey: "navTranslator" as const, emoji: "🔤", screen: "Translator", active: true },
-                    { labelKey: "navAssistant" as const, emoji: "⚖", screen: "Assistant" },
-                    { labelKey: "navCommunity" as const, emoji: "👥", screen: "Community" },
-                    { labelKey: "navTasks" as const, emoji: "📋", screen: "Tasks" },
-                    { labelKey: "navJournal" as const, emoji: "♡", screen: "Journal" },
-                ].map((item) => (
+                {NAV_ITEMS.map((item) => (
                     <Pressable
                         key={item.labelKey}
                         style={s.navItem}
                         onPress={() => {
-                            if (item.screen !== "Translator") {
-                                navigation?.navigate(item.screen);
-                            }
+                            if (!item.active) navigation?.navigate(item.screen);
                         }}
                     >
                         <Text style={[s.navEmoji, item.active && s.navEmojiActive]}>
                             {item.emoji}
                         </Text>
-                        <Text style={[s.navLabel, item.active && s.navLabelActive]}>
+                        <Text
+                            style={[s.navLabel, item.active && s.navLabelActive]}
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
+                            minimumFontScale={0.75}
+                        >
                             {t[item.labelKey]}
                         </Text>
                     </Pressable>
@@ -196,21 +298,6 @@ export default function TranslatorScreen({ navigation }: Props) {
 // ════════════════════════════════════════════════════════════════════
 const s = StyleSheet.create({
     root: { flex: 1, backgroundColor: Color.aliceBlue },
-    topBar: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        backgroundColor: Color.aliceBlue,
-        borderBottomWidth: 1,
-        borderBottomColor: Color.linkWater,
-    },
-    menuBtn: { padding: 4 },
-    menuIcon: { fontSize: 20, color: Color.blackPearl },
-    title: { fontSize: 18, fontWeight: "700", color: Color.endeavour },
-    globeBtn: { padding: 4 },
-    globeIcon: { fontSize: 20 },
     scroll: { flex: 1 },
     scrollContent: {
         paddingHorizontal: 16,
@@ -234,13 +321,16 @@ const s = StyleSheet.create({
     infoContent: { flex: 1, gap: 8 },
     infoTitle: { fontSize: 13, color: "#6a1b9a", fontWeight: "600", lineHeight: 18 },
     infoHighlight: { fontSize: 11, color: "#6a1b9a", fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 },
-    inputModes: { flexDirection: "row", gap: 12, marginVertical: 8 },
+    inputModes: { flexDirection: "row", gap: 10, marginVertical: 8 },
     mode: {
         flex: 1,
         borderRadius: 12,
-        paddingVertical: 16,
+        paddingVertical: 14,
+        paddingHorizontal: 4,
         alignItems: "center",
+        justifyContent: "center",
         gap: 8,
+        minHeight: 84,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.05,
@@ -250,8 +340,8 @@ const s = StyleSheet.create({
     modeMic: { backgroundColor: Color.blueMic },
     modeType: { backgroundColor: Color.yellowType },
     modeScan: { backgroundColor: Color.greenScan },
-    modeEmoji: { fontSize: 24 },
-    modeLabel: { fontSize: 12, fontWeight: "600", color: Color.white, textAlign: "center" },
+    modeEmoji: { fontSize: 22 },
+    modeLabel: { fontSize: 12, lineHeight: 15, fontWeight: "600", color: Color.white, textAlign: "center" },
     recentTitle: { fontSize: 16, fontWeight: "700", color: Color.blackPearl, marginTop: 8 },
     recentList: { gap: 12 },
     recentItem: {
@@ -261,17 +351,18 @@ const s = StyleSheet.create({
         borderColor: Color.linkWater,
         paddingHorizontal: 14,
         paddingVertical: 12,
-        gap: 8,
+        gap: 6,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.05,
         shadowRadius: 2,
         elevation: 1,
     },
-    tag: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+    tag: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, flexDirection: "row", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", rowGap: 2 },
     tagText: { fontSize: 11, fontWeight: "600" },
     tagTime: { fontSize: 10, color: Color.mako },
     originalText: { fontSize: 14, fontWeight: "600", color: Color.blackPearl, lineHeight: 20 },
+    phoneticText: { fontSize: 12, color: Color.mako, fontStyle: "italic", lineHeight: 16, marginTop: -2 },
     translatedRow: { flexDirection: "row", gap: 8, alignItems: "flex-start" },
     translatedIcon: { fontSize: 14, color: Color.endeavour, marginTop: 2 },
     translatedContent: { flex: 1, gap: 2 },

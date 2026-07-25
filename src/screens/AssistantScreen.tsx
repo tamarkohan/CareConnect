@@ -8,6 +8,7 @@ import {
     TextInput,
     KeyboardAvoidingView,
     Platform,
+    Keyboard,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import TopBar from "../components/TopBar";
@@ -31,11 +32,11 @@ const Color = {
 // ── Nav items ────────────────────────────────────────────────────────
 const NAV_ITEMS = [
     { labelKey: "navHome" as const, emoji: "🏠", screen: "Home" },
-    { labelKey: "navTranslator" as const, emoji: "交", screen: "Translator" },
-    { labelKey: "navAssistant" as const, emoji: "✦", screen: "Assistant", active: true },
+    { labelKey: "navTranslator" as const, emoji: "🔤", screen: "Translator" },
+    { labelKey: "navAssistant" as const, emoji: "⚖️", screen: "Assistant", active: true },
     { labelKey: "navCommunity" as const, emoji: "👥", screen: "Community" },
     { labelKey: "navTasks" as const, emoji: "📋", screen: "Tasks" },
-    { labelKey: "navJournal" as const, emoji: "♡", screen: "Journal" },
+    { labelKey: "navJournal" as const, emoji: "📓", screen: "Journal" },
 ];
 
 // ── Message type ─────────────────────────────────────────────────────
@@ -46,19 +47,7 @@ type Message = {
     highlight?: string; // red-highlighted portion
 };
 
-const INITIAL_MESSAGES: Message[] = [
-    {
-        id: "1",
-        role: "user",
-        text: "Can my employer ask me to clean the entire family's house?",
-    },
-    {
-        id: "2",
-        role: "assistant",
-        text: "Based on Israeli labor laws and your uploaded contract, you are ",
-        highlight: "only required to clean for your specific patient",
-    },
-];
+
 
 // ════════════════════════════════════════════════════════════════════
 type Props = { navigation?: any };
@@ -67,13 +56,22 @@ export default function AssistantScreen({ navigation }: Props) {
     const insets = useSafeAreaInsets();
     const { lang } = useLang();
     const t = T[lang];
-    const [messages, setMessages] = React.useState<Message[]>(INITIAL_MESSAGES);
+    const [messages, setMessages] = React.useState<Message[]>([]);
+
+    React.useEffect(() => {
+        setMessages([
+            { id: "1", role: "user", text: t.initUserMsg },
+            { id: "2", role: "assistant", text: t.initBotText, highlight: t.initBotHighlight },
+        ]);
+    }, [lang]);
     const [inputText, setInputText] = React.useState("");
+    const [isInputFocused, setIsInputFocused] = React.useState(false);
     const [contractUploaded, setContractUploaded] = React.useState(false);
     const scrollRef = React.useRef<ScrollView>(null);
+    const inputRef = React.useRef<TextInput>(null);
 
-    const sendMessage = () => {
-        const trimmed = inputText.trim();
+    const sendMessage = (overrideText?: string) => {
+        const trimmed = (overrideText ?? inputText).trim();
         if (!trimmed) return;
 
         const userMsg: Message = {
@@ -84,7 +82,7 @@ export default function AssistantScreen({ navigation }: Props) {
         const botMsg: Message = {
             id: (Date.now() + 1).toString(),
             role: "assistant",
-            text: "I'm reviewing your question based on Israeli labor laws. Please note that I'm an AI assistant and this is not legal advice. For your specific situation, I recommend consulting a licensed labor attorney.",
+            text: t.botReply,
         };
 
         setMessages((prev) => [...prev, userMsg, botMsg]);
@@ -92,27 +90,51 @@ export default function AssistantScreen({ navigation }: Props) {
         setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
     };
 
+    // Because the input is multiline, the keyboard's return key doesn't
+    // fire onSubmitEditing — it just inserts a line break. We intercept
+    // that here: if a newline shows up in the typed text, treat it as
+    // "send" instead of letting it become part of the message.
+    const handleChangeText = (text: string) => {
+        if (text.includes("\n")) {
+            const withoutNewline = text.replace(/\n/g, "");
+            sendMessage(withoutNewline);
+            return;
+        }
+        setInputText(text);
+    };
+
+    const dismissKeyboard = () => {
+        Keyboard.dismiss();
+        inputRef.current?.blur();
+    };
+
     return (
-        <KeyboardAvoidingView
-            style={{ flex: 1 }}
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            keyboardVerticalOffset={0}
-        >
-            <View style={[s.root, { paddingTop: insets.top }]}>
+        // Outer View holds TopBar + KeyboardAvoidingView + BottomNav
+        <View style={[s.root, { paddingTop: insets.top }]}>
 
-                {/* ── Top bar Real Conectada ── */}
-                <TopBar title={t.navAssistant} navigation={navigation} />
+            {/* TopBar is OUTSIDE KeyboardAvoidingView so it never moves */}
+            <TopBar title={t.navAssistant} navigation={navigation} />
 
+            {/* KeyboardAvoidingView only wraps chat + input */}
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                keyboardVerticalOffset={0}
+            >
                 {/* ── Scrollable chat area ── */}
                 <ScrollView
                     ref={scrollRef}
                     style={s.scroll}
                     contentContainerStyle={s.scrollContent}
                     showsVerticalScrollIndicator={false}
+                    // Lets the user drag the chat down to dismiss the
+                    // keyboard, same gesture as iMessage/WhatsApp —
+                    // the main fix for "hard to exit the keyboard".
+                    keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+                    keyboardShouldPersistTaps="handled"
                 >
-                    {/* Heading */}
-                    <Text style={s.heading}>Legal & Contract Bot</Text>
-                    <Text style={s.subheading}>Ask me anything about your rights.</Text>
+                    <Text style={s.heading}>{t.assistantHeading}</Text>
+                    <Text style={s.subheading}>{t.assistantSub}</Text>
 
                     {/* Upload contract card */}
                     {!contractUploaded && (
@@ -123,18 +145,14 @@ export default function AssistantScreen({ navigation }: Props) {
                             <View style={s.uploadIconCircle}>
                                 <Text style={s.uploadIconEmoji}>📄</Text>
                             </View>
-                            <Text style={s.uploadTitle}>Upload or Scan Your{"\n"}Employment Contract</Text>
-                            <Text style={s.uploadDesc}>
-                                Privately scan your contract to ask the AI about your legal rights, weekly rest
-                                days, and what your employer can or cannot demand. Your data is strictly
-                                confidential.
-                            </Text>
+                            <Text style={s.uploadTitle}>{t.uploadTitle}</Text>
+                            <Text style={s.uploadDesc}>{t.uploadDesc}</Text>
                         </Pressable>
                     )}
 
                     {contractUploaded && (
                         <View style={s.uploadedBadge}>
-                            <Text style={s.uploadedText}>✓ Contract uploaded</Text>
+                            <Text style={s.uploadedText}>{t.contractUploaded}</Text>
                         </View>
                     )}
 
@@ -160,7 +178,7 @@ export default function AssistantScreen({ navigation }: Props) {
                                         <Text style={s.botText}>
                                             {msg.text}
                                             <Text style={s.highlightText}>{msg.highlight}</Text>
-                                            {", not the entire household."}
+                                            {t.initBotSuffix}
                                         </Text>
                                     ) : (
                                         <Text style={msg.role === "user" ? s.userText : s.botText}>
@@ -173,66 +191,67 @@ export default function AssistantScreen({ navigation }: Props) {
                     </View>
                 </ScrollView>
 
-                {/* ── Input bar ── */}
+                {/* ── Keyboard-dismiss tab — only visible while typing ── */}
+                {isInputFocused && (
+                    <Pressable style={s.dismissTab} onPress={dismissKeyboard} hitSlop={8}>
+                        <Text style={s.dismissTabIcon}>⌄</Text>
+                    </Pressable>
+                )}
+
+                {/* ── Input bar — inside KAV so it rises with keyboard ── */}
                 <View style={s.inputBar}>
                     <TextInput
+                        ref={inputRef}
                         style={s.textInput}
-                        placeholder="Type a message..."
+                        placeholder={t.typeMessage}
                         placeholderTextColor={Color.mako}
                         value={inputText}
-                        onChangeText={setInputText}
-                        onSubmitEditing={sendMessage}
+                        onChangeText={handleChangeText}
+                        onFocus={() => setIsInputFocused(true)}
+                        onBlur={() => setIsInputFocused(false)}
+                        onSubmitEditing={() => sendMessage()}
+                        blurOnSubmit={false}
                         returnKeyType="send"
                         multiline
                     />
-                    <Pressable style={s.sendBtn} onPress={sendMessage}>
+                    <Pressable style={s.sendBtn} onPress={() => sendMessage()}>
                         <Text style={s.sendIcon}>▶</Text>
                     </Pressable>
                 </View>
+            </KeyboardAvoidingView>
 
-                {/* ── Bottom navigation Corregida para Huawei ── */}
-                <View style={[s.bottomNav, { paddingBottom: 12 + insets.bottom }]}>
-                    {NAV_ITEMS.map((item) => (
-                        <Pressable
-                            key={item.labelKey}
-                            style={s.navItem}
-                            onPress={() => {
-                                if (!item.active) navigation?.navigate(item.screen);
-                            }}
+            {/* ── Bottom nav — OUTSIDE KAV so it never moves with keyboard ── */}
+            <View style={[s.bottomNav, { paddingBottom: 12 + insets.bottom }]}>
+                {NAV_ITEMS.map((item) => (
+                    <Pressable
+                        key={item.labelKey}
+                        style={s.navItem}
+                        onPress={() => {
+                            if (!item.active) navigation?.navigate(item.screen);
+                        }}
+                    >
+                        <Text style={[s.navEmoji, item.active && s.navEmojiActive]}>
+                            {item.emoji}
+                        </Text>
+                        <Text
+                            style={[s.navLabel, item.active && s.navLabelActive]}
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
+                            minimumFontScale={0.75}
                         >
-                            <Text style={[s.navEmoji, item.active && s.navEmojiActive]}>
-                                {item.emoji}
-                            </Text>
-                            <Text style={[s.navLabel, item.active && s.navLabelActive]}>
-                                {t[item.labelKey]}
-                            </Text>
-                        </Pressable>
-                    ))}
-                </View>
-
+                            {t[item.labelKey]}
+                        </Text>
+                    </Pressable>
+                ))}
             </View>
-        </KeyboardAvoidingView>
+
+        </View>
     );
 }
 
 // ════════════════════════════════════════════════════════════════════
 const s = StyleSheet.create({
     root: { flex: 1, backgroundColor: Color.aliceBlue },
-    topBar: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        backgroundColor: Color.aliceBlue,
-        borderBottomWidth: 1,
-        borderBottomColor: Color.linkWater,
-    },
-    menuBtn: { padding: 4 },
-    menuIcon: { fontSize: 20, color: Color.blackPearl },
-    title: { fontSize: 18, fontWeight: "700", color: Color.endeavour },
-    globeBtn: { padding: 4 },
-    globeIcon: { fontSize: 20 },
     scroll: { flex: 1 },
     scrollContent: {
         paddingHorizontal: 16,
@@ -307,6 +326,18 @@ const s = StyleSheet.create({
     userText: { fontSize: 14, color: Color.blackPearl, lineHeight: 20 },
     botText: { fontSize: 14, color: Color.blackPearl, lineHeight: 20 },
     highlightText: { color: "#c62828", fontWeight: "700" },
+    dismissTab: {
+        alignSelf: "center",
+        backgroundColor: Color.linkWater,
+        width: 44,
+        height: 22,
+        borderTopLeftRadius: 12,
+        borderTopRightRadius: 12,
+        alignItems: "center",
+        justifyContent: "center",
+        marginBottom: -1,
+    },
+    dismissTabIcon: { fontSize: 16, color: Color.mako, lineHeight: 16 },
     inputBar: {
         flexDirection: "row",
         alignItems: "center",
