@@ -23,7 +23,20 @@
       "favicon": "./src/assets/favicon.png"
     },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "CareConnect needs access to your photos to scan and translate text in images.",
+          "cameraPermission": "CareConnect needs camera access to scan and translate text in photos you take."
+        }
+      ],
+      [
+        "expo-av",
+        {
+          "microphonePermission": "CareConnect needs microphone access so you can speak text for translation."
+        }
+      ]
     ]
   }
 }

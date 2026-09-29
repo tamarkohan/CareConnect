@@ -32,6 +32,10 @@ yarn-error.*
 
 # local env files
 .env*.local
+.env
+
+# backend secrets (belt-and-suspenders alongside backend/.gitignore)
+backend/.env
 
 # typescript
 *.tsbuildinfo

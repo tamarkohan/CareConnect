@@ -8,3 +8,9 @@ declare module '*.png' {
     const value: any;
     export default value;
 }
+
+// Packages that ship JS-only bundles in this project setup
+declare module '@react-navigation/native';
+declare module '@react-navigation/native-stack';
+declare module 'react-native-safe-area-context';
+declare module 'expo-blur';

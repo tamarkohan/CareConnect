@@ -1,0 +1,72 @@
+# DigitalOcean App Platform spec for CareConnect
+#
+# One app, two components on the same domain:
+#   https://<your-app>.ondigitalocean.app/          → Expo web build (static site)
+#   https://<your-app>.ondigitalocean.app/api/...   → Express backend (service)
+#   https://<your-app>.ondigitalocean.app/health    → backend health check
+#
+# Deploy:  DigitalOcean → Apps → Create App → GitHub → pick the repo,
+#          then "Edit App Spec" and paste this file (or: doctl apps create --spec .do/app.yaml).
+# After creating, set GEMINI_API_KEY in the backend's environment variables (Encrypt ✔).
+
+name: careconnect
+region: fra            # Frankfurt – closest DigitalOcean region to Israel
+
+services:
+  - name: backend
+    github:
+      repo: tamarkohan/CareConnect   # change if you deploy from a fork
+      branch: main
+      deploy_on_push: true
+    source_dir: backend
+    environment_slug: node-js
+    run_command: npm start
+    http_port: 8080
+    instance_count: 1
+    instance_size_slug: apps-s-1vcpu-0.5gb   # smallest paid size
+    health_check:
+      http_path: /health
+      initial_delay_seconds: 10
+    envs:
+      - key: PORT
+        value: "8080"
+        scope: RUN_TIME
+      - key: GEMINI_MODEL
+        value: gemini-flash-latest
+        scope: RUN_TIME
+      - key: GEMINI_API_KEY
+        scope: RUN_TIME
+        type: SECRET
+        # Leave the value out of git – set it in the DigitalOcean dashboard.
+
+static_sites:
+  - name: web
+    github:
+      repo: tamarkohan/CareConnect
+      branch: main
+      deploy_on_push: true
+    source_dir: /
+    environment_slug: node-js
+    build_command: npm run build:web   # buildpack runs npm install first
+    output_dir: dist
+    catchall_document: index.html
+
+ingress:
+  rules:
+    - match:
+        path:
+          prefix: /api
+      component:
+        name: backend
+        preserve_path_prefix: true
+    - match:
+        path:
+          prefix: /health
+      component:
+        name: backend
+        preserve_path_prefix: true
+    - match:
+        path:
+          prefix: /
+      component:
+        name: web
