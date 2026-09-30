@@ -15,7 +15,7 @@
 
 const express = require("express");
 const router = express.Router();
-const { getModel } = require("../services/geminiService");
+const { generate } = require("../services/geminiService");
 
 // ── In-memory contract store ──────────────────────────────────────────────────
 // Map<userId: string, contractText: string>
@@ -99,12 +99,10 @@ router.post("/ask", async (req, res) => {
       ? `The user's employment contract is:\n\n---\n${contractText}\n---\n\nUser question (answer in ${language}):\n${question}`
       : `The user has NOT uploaded a contract yet.\n\nUser question (answer in ${language}):\n${question}`;
 
-    const model = getModel(undefined, {
-      parts: [{ text: LEGAL_SYSTEM_PROMPT }],
+    const { text: answer } = await generate({
+      system: LEGAL_SYSTEM_PROMPT,
+      contents: userPrompt,
     });
-
-    const result = await model.generateContent(userPrompt);
-    const answer = result.response.text().trim();
 
     return res.json({
       answer,
@@ -112,10 +110,10 @@ router.post("/ask", async (req, res) => {
       language,
     });
   } catch (err) {
-    console.error("[legal/ask] Error:", err);
+    console.error("[legal/ask] Error:", err.cause || err);
     return res
-      .status(500)
-      .json({ error: "Legal query failed.", details: err.message });
+      .status(err.status === 503 ? 503 : 500)
+      .json({ error: err.status === 503 ? err.message : "Legal query failed.", details: err.message });
   }
 });
 

@@ -8,6 +8,7 @@
  *     text?:         string   – plain text to translate
  *     imageBase64?:  string   – base64-encoded image; Gemini Vision extracts
  *                               the text from it first, then translates
+ *     imageMimeType?: string  – e.g. "image/jpeg" (default) or "image/png"
  *     audioBase64?:  string   – base64-encoded audio; Gemini transcribes
  *                               then translates the spoken content
  *     audioMimeType?: string  – MIME type of the audio (e.g. "audio/m4a")
@@ -21,7 +22,7 @@
 
 const express = require("express");
 const router = express.Router();
-const { getModel } = require("../services/geminiService");
+const { generate } = require("../services/geminiService");
 
 // ── System prompt ─────────────────────────────────────────────────────────────
 const TRANSLATOR_SYSTEM_PROMPT = `You are a professional translator with deep expertise in the following languages: Hebrew, English, Tagalog, Malayalam, and Russian.
@@ -40,7 +41,14 @@ Instructions:
 // ── Route ─────────────────────────────────────────────────────────────────────
 router.post("/", async (req, res) => {
   try {
-    const { text, imageBase64, audioBase64, audioMimeType, targetLanguage } = req.body;
+    const {
+      text,
+      imageBase64,
+      imageMimeType,
+      audioBase64,
+      audioMimeType,
+      targetLanguage,
+    } = req.body;
 
     // ── Validation ────────────────────────────────────────────────────────────
     if (!targetLanguage || typeof targetLanguage !== "string") {
@@ -55,59 +63,47 @@ router.post("/", async (req, res) => {
         .json({ error: "Provide either text, imageBase64, or audioBase64." });
     }
 
-    const model = getModel(undefined, {
-      parts: [{ text: TRANSLATOR_SYSTEM_PROMPT }],
-    });
-
-    let prompt;
+    let contents;
 
     if (imageBase64) {
       // ── Vision path: extract text from image then translate ──────────────────
-      const imagePart = {
-        inlineData: {
-          data: imageBase64,
-          mimeType: "image/jpeg", // callers can send PNG/JPEG; Gemini handles both
+      contents = [
+        `First, extract ALL readable text from this image (it may be a Hebrew medical letter, a pill box or a form).
+Then translate that extracted text into ${targetLanguage}.`,
+        {
+          inlineData: {
+            data: stripDataUrl(imageBase64),
+            mimeType: imageMimeType || "image/jpeg",
+          },
         },
-      };
-
-      const extractionPrompt = `First, extract ALL readable text from this image.
-Then translate that extracted text into ${targetLanguage}.
-${TRANSLATOR_SYSTEM_PROMPT}`;
-
-      const result = await model.generateContent([extractionPrompt, imagePart]);
-      const raw = result.response.text().trim();
-      return res.json(safeParseJSON(raw));
-    }
-
-    if (audioBase64) {
+      ];
+    } else if (audioBase64) {
       // ── Audio / voice path: transcribe speech then translate ─────────────────
-      const mimeType = audioMimeType || "audio/m4a";
-      const audioPart = {
-        inlineData: {
-          data: audioBase64,
-          mimeType,
+      contents = [
+        `Listen to this audio recording. Transcribe all spoken words, then translate that transcription into ${targetLanguage}.`,
+        {
+          inlineData: {
+            data: stripDataUrl(audioBase64),
+            mimeType: normaliseAudioMime(audioMimeType),
+          },
         },
-      };
-
-      const audioPrompt = `Listen to this audio recording. Transcribe all spoken words, then translate that transcription into ${targetLanguage}.
-${TRANSLATOR_SYSTEM_PROMPT}`;
-
-      const result = await model.generateContent([audioPrompt, audioPart]);
-      const raw = result.response.text().trim();
-      return res.json(safeParseJSON(raw));
+      ];
+    } else {
+      // ── Plain-text path ──────────────────────────────────────────────────────
+      contents = `Translate the following text into ${targetLanguage}:\n\n${text}`;
     }
 
-    // ── Plain-text path ────────────────────────────────────────────────────────
-    prompt = `Translate the following text into ${targetLanguage}:\n\n${text}`;
-
-    const result = await model.generateContent(prompt);
-    const raw = result.response.text().trim();
+    const { text: raw } = await generate({
+      system: TRANSLATOR_SYSTEM_PROMPT,
+      contents,
+      json: true,
+    });
     return res.json(safeParseJSON(raw));
   } catch (err) {
-    console.error("[translate] Error:", err);
+    console.error("[translate] Error:", err.cause || err);
     return res
-      .status(500)
-      .json({ error: "Translation failed.", details: err.message });
+      .status(err.status === 503 ? 503 : 500)
+      .json({ error: err.status === 503 ? err.message : "Translation failed.", details: err.message });
   }
 });
 
@@ -129,6 +125,19 @@ function safeParseJSON(raw) {
     // If we can't parse JSON, return the raw text as the translation
     return { translatedText: raw, detectedLanguage: "unknown" };
   }
+}
+
+/** Accepts plain base64 or a data: URL and returns plain base64. */
+function stripDataUrl(b64) {
+  const i = typeof b64 === "string" ? b64.indexOf("base64,") : -1;
+  return i >= 0 ? b64.slice(i + 7) : b64;
+}
+
+/** Maps recorder MIME types to ones Gemini accepts. */
+function normaliseAudioMime(mime) {
+  const m = (mime || "audio/m4a").split(";")[0].trim().toLowerCase();
+  if (m === "audio/m4a" || m === "audio/x-m4a") return "audio/mp4";
+  return m;
 }
 
 module.exports = router;

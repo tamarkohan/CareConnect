@@ -58,6 +58,8 @@ async function apiFetch<T>(
 export type TranslateRequest = {
     text?: string;
     imageBase64?: string;
+    /** MIME type of the image (e.g. "image/png"). Defaults to "image/jpeg" on the server. */
+    imageMimeType?: string;
     /** Base64-encoded audio clip recorded by the user. */
     audioBase64?: string;
     /** MIME type of the audio (e.g. "audio/m4a"). Defaults to "audio/m4a" on the server. */

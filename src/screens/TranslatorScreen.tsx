@@ -12,12 +12,11 @@ import {
     Platform,
     TouchableWithoutFeedback,
     Keyboard,
-    Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { Audio } from "expo-av";
-import * as FileSystem from "expo-file-system";
+import { showAlert, uriToBase64, mimeFromDataUri } from "../api/platform";
 import TopBar from "../components/TopBar";
 import { useLang } from "../AppContext";
 import { T, LangCode, formatRelativeTime } from "../translations";
@@ -272,7 +271,7 @@ export default function TranslatorScreen({ navigation }: Props) {
         try {
             const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
             if (status !== "granted") {
-                Alert.alert(
+                showAlert(
                     "Permission Required",
                     "Please allow photo library access in Settings so CareConnect can scan images for translation."
                 );
@@ -293,13 +292,11 @@ export default function TranslatorScreen({ navigation }: Props) {
 
             // Fall back to reading from URI if base64 not provided inline
             if (!base64 && asset.uri) {
-                base64 = await FileSystem.readAsStringAsync(asset.uri, {
-                    encoding: 'base64',
-                });
+                base64 = await uriToBase64(asset.uri);
             }
 
             if (!base64) {
-                Alert.alert("Error", "Could not read the selected image. Please try another.");
+                showAlert("Error", "Could not read the selected image. Please try another.");
                 return;
             }
 
@@ -307,6 +304,7 @@ export default function TranslatorScreen({ navigation }: Props) {
 
             const translated = await translateText({
                 imageBase64: base64,
+                imageMimeType: asset.mimeType ?? mimeFromDataUri(asset.uri) ?? "image/jpeg",
                 targetLanguage: targetLang,
             });
 
@@ -322,7 +320,7 @@ export default function TranslatorScreen({ navigation }: Props) {
 
             setRecentTranslations((prev) => [newItem, ...prev]);
         } catch (err: any) {
-            Alert.alert("Scan Failed", err?.message ?? "Could not process the image. Is the backend running?");
+            showAlert("Scan Failed", err?.message ?? "Could not process the image. Is the backend running?");
         } finally {
             setScanLoading(false);
         }
@@ -333,7 +331,7 @@ export default function TranslatorScreen({ navigation }: Props) {
         try {
             const { status } = await Audio.requestPermissionsAsync();
             if (status !== "granted") {
-                Alert.alert(
+                showAlert(
                     "Microphone Required",
                     "Please allow microphone access in Settings so CareConnect can record your voice for translation."
                 );
@@ -354,7 +352,7 @@ export default function TranslatorScreen({ navigation }: Props) {
                 setRecordingSeconds((s) => s + 1);
             }, 1000);
         } catch (err: any) {
-            Alert.alert("Recording Error", err?.message ?? "Could not start microphone. Please try again.");
+            showAlert("Recording Error", err?.message ?? "Could not start microphone. Please try again.");
         }
     };
 
@@ -376,9 +374,7 @@ export default function TranslatorScreen({ navigation }: Props) {
 
             if (!uri) throw new Error("No recording URI returned.");
 
-            const base64 = await FileSystem.readAsStringAsync(uri, {
-                encoding: 'base64',
-            });
+            const base64 = await uriToBase64(uri);
 
             const mimeType = Platform.OS === "web" ? "audio/webm" : "audio/m4a";
 
@@ -400,7 +396,7 @@ export default function TranslatorScreen({ navigation }: Props) {
 
             setRecentTranslations((prev) => [newItem, ...prev]);
         } catch (err: any) {
-            Alert.alert("Translation Failed", err?.message ?? "Could not translate the recording. Is the backend running?");
+            showAlert("Translation Failed", err?.message ?? "Could not translate the recording. Is the backend running?");
         } finally {
             await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
             setRecordingLoading(false);

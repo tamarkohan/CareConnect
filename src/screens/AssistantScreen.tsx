@@ -12,11 +12,10 @@ import {
     ActivityIndicator,
     TouchableWithoutFeedback,
     Keyboard,
-    Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Audio } from "expo-av";
-import * as FileSystem from "expo-file-system";
+import { showAlert, uriToBase64 } from "../api/platform";
 import TopBar from "../components/TopBar";
 import { useLang } from "../AppContext";
 import { T } from "../translations";
@@ -176,7 +175,7 @@ export default function AssistantScreen({ navigation }: Props) {
             const errMsg: Message = {
                 id: (Date.now() + 1).toString(),
                 role: "assistant",
-                text: "⚠ Could not reach the server. Please check your connection and try again.",
+                text: `⚠ ${err?.message ?? "Could not reach the server. Please check your connection and try again."}`,
                 isError: true,
             };
             setMessages((prev) => [...prev, errMsg]);
@@ -214,7 +213,7 @@ export default function AssistantScreen({ navigation }: Props) {
         try {
             const { status } = await Audio.requestPermissionsAsync();
             if (status !== "granted") {
-                Alert.alert(
+                showAlert(
                     "Microphone Required",
                     "Please allow microphone access in Settings so CareConnect can record your voice."
                 );
@@ -228,7 +227,7 @@ export default function AssistantScreen({ navigation }: Props) {
             recordingRef.current = recording;
             setIsRecording(true);
         } catch (err: any) {
-            Alert.alert("Recording Error", err?.message ?? "Could not start microphone.");
+            showAlert("Recording Error", err?.message ?? "Could not start microphone.");
         }
     };
 
@@ -242,9 +241,7 @@ export default function AssistantScreen({ navigation }: Props) {
             recordingRef.current = null;
             if (!uri) throw new Error("No recording URI returned.");
 
-            const base64 = await FileSystem.readAsStringAsync(uri, {
-                encoding: 'base64',
-            });
+            const base64 = await uriToBase64(uri);
             const mimeType = Platform.OS === "web" ? "audio/webm" : "audio/m4a";
 
             // Transcribe audio via translation endpoint (returns transcribed text)
@@ -259,7 +256,7 @@ export default function AssistantScreen({ navigation }: Props) {
                 await sendMessage(transcribed.translatedText);
             }
         } catch (err: any) {
-            Alert.alert("Voice Error", err?.message ?? "Could not process the recording.");
+            showAlert("Voice Error", err?.message ?? "Could not process the recording.");
         } finally {
             await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
             setRecordingLoading(false);
