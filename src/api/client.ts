@@ -17,7 +17,7 @@
 //    (App Platform routes /api/* to the backend service — see .do/app.yaml).
 // 3. Otherwise the fallback below (used by Expo Go / local dev).
 //    After moving to DigitalOcean, replace it with your DO app URL.
-const FALLBACK_API_URL = "https://careconnect-pw7n.onrender.com";
+const FALLBACK_API_URL = "https://careconnect-il-app-id9mu.ondigitalocean.app";
 
 function resolveApiBaseUrl(): string {
     const fromEnv = process.env.EXPO_PUBLIC_API_URL;
