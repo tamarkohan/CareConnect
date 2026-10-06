@@ -12,6 +12,7 @@ import {
     ActivityIndicator,
     TouchableWithoutFeedback,
     Keyboard,
+    Linking,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Audio } from "expo-av";
@@ -19,7 +20,15 @@ import { showAlert, uriToBase64 } from "../api/platform";
 import TopBar from "../components/TopBar";
 import { useLang } from "../AppContext";
 import { T } from "../translations";
-import { uploadContract, legalAsk, translateText, LegalAskResponse } from "../api/client";
+import {
+    uploadContract,
+    legalAsk,
+    deleteContract,
+    translateText,
+    LegalAskResponse,
+    LegalSource,
+} from "../api/client";
+import { loadContractToken, saveContractToken, clearContractToken } from "../api/contractToken";
 
 // ── Tokens ───────────────────────────────────────────────────────────
 const Color = {
@@ -38,9 +47,6 @@ const Color = {
     errorText: "#c62828",
 };
 
-// A stable userId per session (replace with real auth later)
-const SESSION_USER_ID = "user_" + Math.random().toString(36).slice(2, 9);
-
 // ── Nav items ────────────────────────────────────────────────────────
 const NAV_ITEMS = [
     { labelKey: "navHome" as const, emoji: "🏠", screen: "Home" },
@@ -58,6 +64,7 @@ type Message = {
     text: string;
     highlight?: string;
     isError?: boolean;
+    sources?: LegalSource[];
 };
 
 // ════════════════════════════════════════════════════════════════════
@@ -79,7 +86,9 @@ export default function AssistantScreen({ navigation }: Props) {
 
     const [inputText, setInputText] = React.useState("");
     const [isInputFocused, setIsInputFocused] = React.useState(false);
-    const [contractUploaded, setContractUploaded] = React.useState(false);
+    // Secret key to the user's encrypted contract on the server (null = none).
+    const [contractToken, setContractToken] = React.useState<string | null>(null);
+    const contractUploaded = contractToken !== null;
     const [isSending, setIsSending] = React.useState(false);
     const scrollRef = React.useRef<ScrollView>(null);
     const inputRef = React.useRef<TextInput>(null);
@@ -95,6 +104,13 @@ export default function AssistantScreen({ navigation }: Props) {
     const [recordingLoading, setRecordingLoading] = React.useState(false);
     const recordingRef = React.useRef<Audio.Recording | null>(null);
     const timerRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+
+    // Restore a contract uploaded in an earlier session.
+    React.useEffect(() => {
+        loadContractToken().then((token) => {
+            if (token) setContractToken(token);
+        });
+    }, []);
 
     React.useEffect(() => {
         return () => {
@@ -121,8 +137,12 @@ export default function AssistantScreen({ navigation }: Props) {
         setUploadError(null);
 
         try {
-            await uploadContract({ userId: SESSION_USER_ID, contractText: trimmed });
-            setContractUploaded(true);
+            const res = await uploadContract({
+                contractText: trimmed,
+                contractToken: contractToken ?? undefined,
+            });
+            await saveContractToken(res.contractToken);
+            setContractToken(res.contractToken);
             setUploadModalVisible(false);
             setContractText("");
 
@@ -138,6 +158,27 @@ export default function AssistantScreen({ navigation }: Props) {
         } finally {
             setIsUploading(false);
         }
+    };
+
+    // ── Remove contract ───────────────────────────────────────────────
+    const handleRemoveContract = async () => {
+        if (!contractToken) return;
+        try {
+            await deleteContract(contractToken);
+        } catch (err: any) {
+            showAlert("Error", err?.message ?? "Could not remove the contract. Please try again.");
+            return;
+        }
+        await clearContractToken();
+        setContractToken(null);
+        setMessages((prev) => [
+            ...prev,
+            {
+                id: Date.now().toString(),
+                role: "assistant",
+                text: "🗑 Your contract was deleted from our server.",
+            },
+        ]);
     };
 
     // ── Send question ─────────────────────────────────────────────────
@@ -160,15 +201,22 @@ export default function AssistantScreen({ navigation }: Props) {
 
         try {
             const res: LegalAskResponse = await legalAsk({
-                userId: SESSION_USER_ID,
                 question: trimmed,
                 language: responseLang,
+                contractToken: contractToken ?? undefined,
             });
+
+            // The server no longer has the contract (expired or deleted).
+            if (contractToken && !res.contractAvailable) {
+                await clearContractToken();
+                setContractToken(null);
+            }
 
             const botMsg: Message = {
                 id: (Date.now() + 1).toString(),
                 role: "assistant",
                 text: res.answer,
+                sources: res.sources,
             };
             setMessages((prev) => [...prev, botMsg]);
         } catch (err: any) {
@@ -345,9 +393,10 @@ export default function AssistantScreen({ navigation }: Props) {
                                 <Text style={s.uploadedText}>{t.contractUploaded}</Text>
                             </View>
                             <View style={s.contractWarning}>
-                                <Text style={s.contractWarningText}>
-                                    ⚠ Contract is stored in memory. If the server restarts, re-upload it so the bot can still reference it.
-                                </Text>
+                                <Text style={s.contractWarningText}>{t.contractStoredNote}</Text>
+                                <Pressable onPress={handleRemoveContract} hitSlop={8}>
+                                    <Text style={s.removeContractText}>{t.removeContract}</Text>
+                                </Pressable>
                             </View>
                         </View>
                     )}
@@ -397,6 +446,20 @@ export default function AssistantScreen({ navigation }: Props) {
                                         <Text style={msg.role === "user" ? s.userText : s.botText}>
                                             {msg.text}
                                         </Text>
+                                    )}
+                                    {!!msg.sources?.length && (
+                                        <View style={s.sourcesBox}>
+                                            <Text style={s.sourcesLabel}>{t.sourcesLabel}</Text>
+                                            {msg.sources.map((src) => (
+                                                <Text
+                                                    key={src.id}
+                                                    style={s.sourceLink}
+                                                    onPress={() => Linking.openURL(src.url)}
+                                                >
+                                                    [{src.id}] {src.title}
+                                                </Text>
+                                            ))}
+                                        </View>
                                     )}
                                 </View>
                             </View>
@@ -664,6 +727,22 @@ const s = StyleSheet.create({
     userText: { fontSize: 14, color: Color.blackPearl, lineHeight: 20 },
     botText: { fontSize: 14, color: Color.blackPearl, lineHeight: 20 },
     highlightText: { color: "#c62828", fontWeight: "700" },
+    sourcesBox: {
+        marginTop: 10,
+        paddingTop: 8,
+        borderTopWidth: 1,
+        borderTopColor: Color.silver,
+        gap: 4,
+    },
+    sourcesLabel: { fontSize: 12, fontWeight: "700", color: Color.mako },
+    sourceLink: { fontSize: 12, color: Color.endeavour, textDecorationLine: "underline" },
+    removeContractText: {
+        marginTop: 6,
+        fontSize: 12,
+        fontWeight: "700",
+        color: Color.errorText,
+        textDecorationLine: "underline",
+    },
     dismissTab: {
         alignSelf: "center",
         backgroundColor: Color.linkWater,

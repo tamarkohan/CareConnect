@@ -181,6 +181,9 @@ export const T: Record<LangCode, {
     uploadTitle: string;
     uploadDesc: string;
     contractUploaded: string;
+    contractStoredNote: string;
+    removeContract: string;
+    sourcesLabel: string;
     typeMessage: string;
     initUserMsg: string;
     initBotText: string;
@@ -303,6 +306,9 @@ export const T: Record<LangCode, {
         uploadTitle: "Upload or Scan Your\nEmployment Contract",
         uploadDesc: "Privately scan your contract to ask the AI about your legal rights, weekly rest days, and what your employer can or cannot demand. Your data is strictly confidential.",
         contractUploaded: "✓ Contract uploaded",
+        contractStoredNote: "🔒 Your contract is stored encrypted and deleted automatically after 90 days.",
+        removeContract: "Remove my contract",
+        sourcesLabel: "Sources",
         typeMessage: "Type a message...",
         communityHeading: "Connect with others and explore essential locations.",
         communitySearch: "Find places (Religious sites, transit)...",
@@ -420,6 +426,9 @@ export const T: Record<LangCode, {
         uploadTitle: "I-upload o I-scan ang Iyong\nKasunduan sa Trabaho",
         uploadDesc: "Pribadong i-scan ang iyong kontrata upang tanungin ang AI tungkol sa iyong mga legal na karapatan, lingguhang pahinga, at kung ano ang maaari o hindi maaaring hilingin ng iyong employer. Ang iyong data ay mahigpit na kumpidensyal.",
         contractUploaded: "✓ Na-upload ang kontrata",
+        contractStoredNote: "🔒 Naka-encrypt ang iyong kontrata at awtomatikong buburahin pagkalipas ng 90 araw.",
+        removeContract: "Burahin ang aking kontrata",
+        sourcesLabel: "Mga pinagkunan",
         typeMessage: "Mag-type ng mensahe...",
         communityHeading: "Kumonekta sa iba at tuklasin ang mahahalagang lugar.",
         communitySearch: "Maghanap ng lugar (Relihiyosong lugar, transit)...",
@@ -537,6 +546,9 @@ export const T: Record<LangCode, {
         uploadTitle: "നിങ്ങളുടെ തൊഴിൽ കരാർ\nഅപ്ലോഡ് ചെയ്യുക അല്ലെങ്കിൽ സ്കാൻ ചെയ്യുക",
         uploadDesc: "AI-നോട് നിങ്ങളുടെ നിയമപരമായ അവകാശങ്ങൾ, ആഴ്ചയിലെ വിശ്രമ ദിവസങ്ങൾ, തൊഴിലുടമ ആവശ്യപ്പെടാൻ കഴിയുന്നതും ഇല്ലാത്തതും ചോദിക്കാൻ നിങ്ങളുടെ കരാർ സ്വകാര്യമായി സ്കാൻ ചെയ്യുക. നിങ്ങളുടെ ഡേറ്റ കർശനമായി രഹസ്യമാണ്.",
         contractUploaded: "✓ കരാർ അപ്ലോഡ് ചെയ്തു",
+        contractStoredNote: "🔒 നിങ്ങളുടെ കരാർ എൻക്രിപ്റ്റ് ചെയ്ത് സൂക്ഷിക്കുന്നു, 90 ദിവസത്തിന് ശേഷം സ്വയം ഇല്ലാതാക്കും.",
+        removeContract: "എന്റെ കരാർ നീക്കം ചെയ്യുക",
+        sourcesLabel: "ഉറവിടങ്ങൾ",
         typeMessage: "ഒരു സന്ദേശം ടൈപ്പ് ചെയ്യുക...",
         communityHeading: "മറ്റുള്ളവരുമായി ബന്ധപ്പെടുകയും അത്യാവശ്യ സ്ഥലങ്ങൾ കണ്ടുപിടിക്കുകയും ചെയ്യുക.",
         communitySearch: "സ്ഥലങ്ങൾ കണ്ടെത്തുക (മതപരമായ സ്ഥലങ്ങൾ, ഗതാഗതം)...",
@@ -654,6 +666,9 @@ export const T: Record<LangCode, {
         uploadTitle: "Загрузить или отсканировать\nваш трудовой договор",
         uploadDesc: "Приватно отсканируйте ваш контракт, чтобы спросить ИИ о ваших правах, выходных днях и требованиях работодателя. Ваши данные строго конфиденциальны.",
         contractUploaded: "✓ Контракт загружен",
+        contractStoredNote: "🔒 Ваш договор хранится в зашифрованном виде и автоматически удаляется через 90 дней.",
+        removeContract: "Удалить мой договор",
+        sourcesLabel: "Источники",
         typeMessage: "Написать сообщение...",
         communityHeading: "Общайтесь с другими и исследуйте важные места.",
         communitySearch: "Найти места (религиозные сайты, транспорт)...",

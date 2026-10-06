@@ -78,14 +78,16 @@ export function translateText(req: TranslateRequest): Promise<TranslateResponse>
 
 // ── Legal: upload contract ────────────────────────────────────────────────────
 export type UploadContractRequest = {
-    userId: string;
     contractText: string;
+    /** Send the existing token to replace that contract instead of creating a new one. */
+    contractToken?: string;
 };
 
 export type UploadContractResponse = {
     success: boolean;
     message: string;
-    userId: string;
+    /** Secret key to this contract. Keep it on the device (see contractToken.ts). */
+    contractToken: string;
     characterCount: number;
 };
 
@@ -95,17 +97,35 @@ export function uploadContract(req: UploadContractRequest): Promise<UploadContra
 
 // ── Legal: ask ────────────────────────────────────────────────────────────────
 export type LegalAskRequest = {
-    userId: string;
     question: string;
     language: string;
+    contractToken?: string;
+};
+
+export type LegalSource = {
+    /** Matches the [n] citations in the answer. */
+    id: number;
+    title: string;
+    url: string;
 };
 
 export type LegalAskResponse = {
     answer: string;
+    sources: LegalSource[];
     contractAvailable: boolean;
     language: string;
 };
 
 export function legalAsk(req: LegalAskRequest): Promise<LegalAskResponse> {
     return apiFetch<LegalAskResponse>("/api/legal/ask", req);
+}
+
+// ── Legal: delete contract ────────────────────────────────────────────────────
+export type DeleteContractResponse = {
+    success: boolean;
+    deleted: boolean;
+};
+
+export function deleteContract(contractToken: string): Promise<DeleteContractResponse> {
+    return apiFetch<DeleteContractResponse>("/api/legal/delete-contract", { contractToken });
 }
