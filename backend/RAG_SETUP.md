@@ -57,12 +57,16 @@ add `DATABASE_URL` and `GEMINI_API_KEY`.
 ## 4. Choose the websites
 
 Edit [`rag/sources.js`](rag/sources.js). Each entry is one website (or one part of
-it): where to start, which URL prefixes belong to it, what to skip and a page limit.
-The file ships with example sources — replace them with your team's list.
+it): where to start, which URL prefixes belong to it, how many links deep to go,
+what to skip and a page limit. HTML pages **and PDFs** are read.
 
-Note: the crawler reads plain HTML. Sites that build their page with JavaScript
-(much of gov.il) or block bots return nothing; for those, look for a
-text/HTML version of the page or a PDF and add it another way.
+It is set up for the gov.il topic
+[Employment of foreign workers](https://www.gov.il/en/departments/topics/foreign_workers_employment)
+plus the Population and Immigration Authority's Foreign Workers' Rights booklet (PDF).
+
+If a site blocks bots, or builds its pages with JavaScript, the sync log shows
+`HTTP 403` or `almost no text` for those pages. For such pages, add the direct
+link to the PDF/document version to `startUrls` instead.
 
 ## 5. Fill the knowledge base
 

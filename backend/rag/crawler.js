@@ -2,16 +2,19 @@
  * rag/crawler.js
  *
  * A small, polite website crawler: follows links inside a source's `include`
- * prefixes, obeys robots.txt, and turns each HTML page into clean text.
+ * prefixes, obeys robots.txt, and turns each HTML page or PDF into clean text.
  */
 
 const cheerio = require("cheerio");
+const { extractText, getDocumentProxy } = require("unpdf");
 
 const USER_AGENT =
   "CareConnectBot/1.0 (university project; legal-rights knowledge base)";
-const FETCH_TIMEOUT_MS = 20_000;
+const FETCH_TIMEOUT_MS = 30_000;
+const MAX_PDF_BYTES = 25 * 1024 * 1024;
+const MIN_TEXT_CHARS = 200;
 const SKIP_EXTENSIONS =
-  /\.(pdf|jpe?g|png|gif|svg|webp|ico|css|js|json|xml|zip|rar|docx?|xlsx?|pptx?|mp3|mp4|avi|mov)$/i;
+  /\.(jpe?g|png|gif|svg|webp|ico|css|js|json|xml|zip|rar|docx?|xlsx?|pptx?|mp3|mp4|avi|mov)$/i;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -71,7 +74,11 @@ function inScope(url, source) {
 
 // ── HTML → text ──────────────────────────────────────────────────────────────
 
-/** Extracts the title, the readable main text and the links of a page. */
+/**
+ * Extracts the title, the readable main text and the links of a page.
+ * `links` = every link; `contentLinks` = only links inside the main content
+ * (no menus, header or footer).
+ */
 function extractPage(html, url) {
   const $ = cheerio.load(html);
 
@@ -96,6 +103,12 @@ function extractPage(html, url) {
     $(el).append("\n");
   });
 
+  const contentLinks = [];
+  root.find("a[href]").each((_, a) => {
+    const abs = normalizeUrl($(a).attr("href"), url);
+    if (abs) contentLinks.push(abs);
+  });
+
   const text = root
     .text()
     .split("\n")
@@ -103,13 +116,41 @@ function extractPage(html, url) {
     .filter(Boolean)
     .join("\n");
 
-  return { title, text, links };
+  return { title, text, links, contentLinks };
+}
+
+// ── PDF → text ───────────────────────────────────────────────────────────────
+
+/** Extracts the title and text of a PDF (one line per text line). */
+async function extractPdf(buffer, url) {
+  const pdf = await getDocumentProxy(new Uint8Array(buffer));
+  const [{ text: pages }, meta] = await Promise.all([
+    extractText(pdf, { mergePages: false }),
+    pdf.getMetadata().catch(() => null),
+  ]);
+  const fileName = decodeURIComponent(new URL(url).pathname.split("/").pop() || url)
+    .replace(/\.pdf$/i, "")
+    .replace(/[_-]+/g, " ");
+  const title = (meta?.info?.Title || "").trim() || fileName;
+  const text = pages
+    .join("\n")
+    .split("\n")
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .filter(Boolean)
+    .join("\n");
+  return { title, text };
+}
+
+function isPdf(res, url) {
+  const type = res.headers.get("content-type") || "";
+  return type.includes("application/pdf") || /\.pdf$/i.test(new URL(url).pathname);
 }
 
 // ── Crawl ─────────────────────────────────────────────────────────────────────
 
 /**
- * Crawls one source, calling `onPage({ url, title, text })` for every HTML page.
+ * Crawls one source, calling `onPage({ url, title, text })` for every HTML page
+ * and PDF. Links are followed up to `source.maxDepth` clicks from a start URL.
  * Resolves with crawl statistics.
  *
  *   gone       URLs that answered 404/410 (really removed).
@@ -119,10 +160,14 @@ function extractPage(html, url) {
 async function crawlSource(source, onPage) {
   const maxPages = source.maxPages || 200;
   const delayMs = source.delayMs ?? 1000;
+  const maxDepth = source.maxDepth ?? Infinity;
 
   const robotsByOrigin = new Map();
-  const queue = source.startUrls.map((u) => normalizeUrl(u)).filter(Boolean);
-  const seen = new Set(queue);
+  const queue = source.startUrls
+    .map((u) => normalizeUrl(u))
+    .filter(Boolean)
+    .map((url) => ({ url, depth: 0 }));
+  const seen = new Set(queue.map((item) => item.url));
   const stats = { fetched: 0, gone: [], failed: [], hitLimit: false };
 
   while (queue.length) {
@@ -130,7 +175,7 @@ async function crawlSource(source, onPage) {
       stats.hitLimit = true;
       break;
     }
-    const url = queue.shift();
+    const { url, depth } = queue.shift();
     const { origin } = new URL(url);
 
     if (!robotsByOrigin.has(origin)) robotsByOrigin.set(origin, await loadRobots(origin));
@@ -139,7 +184,7 @@ async function crawlSource(source, onPage) {
     let res;
     try {
       res = await fetch(url, {
-        headers: { "User-Agent": USER_AGENT, Accept: "text/html" },
+        headers: { "User-Agent": USER_AGENT, Accept: "text/html,application/pdf" },
         redirect: "follow",
         signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       });
@@ -156,18 +201,40 @@ async function crawlSource(source, onPage) {
     } else if (!res.ok) {
       stats.failed.push(url);
       console.warn(`  ! ${url} – HTTP ${res.status}`);
-    } else if ((res.headers.get("content-type") || "").includes("text/html")) {
+    } else {
       // A redirect may land outside the source; ignore those pages.
       const finalUrl = normalizeUrl(res.url) || url;
-      if (finalUrl === url || inScope(finalUrl, source)) {
-        const page = extractPage(await res.text(), finalUrl);
-        if (page.text.length >= 200) {
-          await onPage({ url: finalUrl, title: page.title, text: page.text });
+      const inSource = finalUrl === url || inScope(finalUrl, source);
+      const isHtml = (res.headers.get("content-type") || "").includes("text/html");
+
+      if (inSource && isPdf(res, finalUrl)) {
+        const size = Number(res.headers.get("content-length")) || 0;
+        if (size > MAX_PDF_BYTES) {
+          console.warn(`  ! ${finalUrl} – PDF too large (${Math.round(size / 1e6)} MB), skipped`);
+        } else {
+          try {
+            const page = await extractPdf(await res.arrayBuffer(), finalUrl);
+            if (page.text.length >= MIN_TEXT_CHARS) await onPage({ url: finalUrl, ...page });
+            else console.warn(`  ! ${finalUrl} – no text in PDF (scanned image?), skipped`);
+          } catch (err) {
+            stats.failed.push(url);
+            console.warn(`  ! ${finalUrl} – could not read PDF: ${err.message}`);
+          }
         }
-        for (const link of page.links) {
-          if (!seen.has(link) && inScope(link, source)) {
-            seen.add(link);
-            queue.push(link);
+      } else if (inSource && isHtml) {
+        const page = extractPage(await res.text(), finalUrl);
+        if (page.text.length >= MIN_TEXT_CHARS) {
+          await onPage({ url: finalUrl, title: page.title, text: page.text });
+        } else {
+          console.warn(`  ! ${finalUrl} – almost no text (page may need JavaScript), skipped`);
+        }
+        if (depth < maxDepth) {
+          const links = source.followLinks === "content" ? page.contentLinks : page.links;
+          for (const link of links) {
+            if (!seen.has(link) && inScope(link, source)) {
+              seen.add(link);
+              queue.push({ url: link, depth: depth + 1 });
+            }
           }
         }
       }
