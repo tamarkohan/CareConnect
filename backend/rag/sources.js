@@ -26,20 +26,25 @@
 
 module.exports = [
   {
+    // gov.il blocks crawlers on its web pages (HTTP 403) but serves its
+    // documents, so we list the official PDFs directly.
+    // To add one: open the document on gov.il, copy its PDF link
+    // (https://www.gov.il/BlobFolder/...) and add it below.
     id: "govil-foreign-workers",
     name: "Gov.il – Employment of foreign workers",
     startUrls: [
-      "https://www.gov.il/en/departments/topics/foreign_workers_employment",
       // Population and Immigration Authority – Foreign Workers' Rights booklet (2026).
       "https://www.gov.il/BlobFolder/policy/bileteral-forms-foreign-workers/he/foreign_workers_rights_booklets_en2026.pdf",
+      // Special limitations for foreign caregivers who want to change employer.
+      "https://www.gov.il/BlobFolder/policy/special_restrictions_for_nursing_workers_wishing_to_replace_their_employer/he/special_limitations_siud_en_1118_short.pdf",
+      // Standard Employment Contract for live-in caregivers – version A (employer is the person with disability), 2026.
+      "https://www.gov.il/BlobFolder/policy/bileteral-forms-nursing/he/SEC_version_A_English2026.pdf",
+      // Standard Employment Contract for live-in caregivers – version B, 2026.
+      "https://www.gov.il/BlobFolder/policy/bileteral-forms-nursing/he/sec-b-ph-nursing2026.pdf",
     ],
-    // gov.il is huge: stay in English pages and gov.il documents (PDFs), and
-    // only follow links in the page content, at most two links deep.
-    include: ["https://www.gov.il/en/", "https://www.gov.il/BlobFolder/"],
-    exclude: [/\/en\/(search|Search)/, /[?&](skip|limit|page)=/],
-    followLinks: "content",
-    maxDepth: 2,
-    maxPages: 300,
+    include: ["https://www.gov.il/BlobFolder/"],
+    maxDepth: 0,
+    maxPages: 50,
     delayMs: 1500,
   },
 ];

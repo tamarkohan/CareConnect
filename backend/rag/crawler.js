@@ -123,7 +123,8 @@ function extractPage(html, url) {
 
 /** Extracts the title and text of a PDF (one line per text line). */
 async function extractPdf(buffer, url) {
-  const pdf = await getDocumentProxy(new Uint8Array(buffer));
+  // verbosity 0 hides harmless font warnings ("TT: undefined function").
+  const pdf = await getDocumentProxy(new Uint8Array(buffer), { verbosity: 0 });
   const [{ text: pages }, meta] = await Promise.all([
     extractText(pdf, { mergePages: false }),
     pdf.getMetadata().catch(() => null),
