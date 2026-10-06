@@ -7,7 +7,8 @@
 #
 # Deploy:  DigitalOcean → Apps → Create App → GitHub → pick the repo,
 #          then "Edit App Spec" and paste this file (or: doctl apps create --spec .do/app.yaml).
-# After creating, set GEMINI_API_KEY in the backend's environment variables (Encrypt ✔).
+# After creating, set GEMINI_API_KEY, DATABASE_URL and CONTRACT_ENCRYPTION_KEY in the
+# backend's environment variables (Encrypt ✔). See backend/RAG_SETUP.md.
 
 name: careconnect
 region: fra            # Frankfurt – closest DigitalOcean region to Israel
@@ -38,6 +39,15 @@ services:
         scope: RUN_TIME
         type: SECRET
         # Leave the value out of git – set it in the DigitalOcean dashboard.
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        type: SECRET
+        # Supabase "Session pooler" connection string.
+      - key: CONTRACT_ENCRYPTION_KEY
+        scope: RUN_TIME
+        type: SECRET
+        # 32 random bytes, base64. Keep a copy somewhere safe – without it
+        # stored contracts can't be decrypted.
 
 static_sites:
   - name: web

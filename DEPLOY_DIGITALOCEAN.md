@@ -47,6 +47,8 @@ In **backend → Settings → Environment Variables**:
 | Key | Value | Encrypt |
 |---|---|---|
 | `GEMINI_API_KEY` | your key from https://aistudio.google.com/app/apikey | ✔ |
+| `DATABASE_URL` | Supabase "Session pooler" connection string (see `backend/RAG_SETUP.md`) | ✔ |
+| `CONTRACT_ENCRYPTION_KEY` | 32 random bytes, base64 (see `backend/RAG_SETUP.md`) | ✔ |
 
 `PORT=8080` and `GEMINI_MODEL=gemini-flash-latest` are already set in the spec. Without the key, the backend exits on startup and the deploy fails its health check.
 
@@ -83,7 +85,8 @@ Once everything works on DigitalOcean, you can shut down the Render service.
 | Backend deploy fails its health check | `GEMINI_API_KEY` is missing. Check the runtime logs for `GEMINI_API_KEY is not set`. |
 | `/api/translate` returns 404 or "model not found" | Set `GEMINI_MODEL` to a current model from https://ai.google.dev/gemini-api/docs/models |
 | Web build fails with a Node version error | Both `package.json` files require Node ≥ 20. Check the build logs for the Node version DigitalOcean picked. |
-| Contracts uploaded to the legal assistant disappear | This is expected. They are stored in memory (`contractStore` in `routes/legal.js`) and are lost on every redeploy or restart. Use a database (DigitalOcean Managed DB or Firebase) to keep them. |
+| Backend crashes on start with `DATABASE_URL is not set` or `CONTRACT_ENCRYPTION_KEY must be 32 bytes` | Add the missing variable (see `backend/RAG_SETUP.md`). |
+| Legal answers come without sources | The knowledge base is empty. Run the **Sync legal knowledge base** GitHub Action (or `npm run sync` in `backend/`). |
 | You want your own domain | Go to **Settings → Domains → Add Domain** in the app. |
 
 ## What was changed in the code for this

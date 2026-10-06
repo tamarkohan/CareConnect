@@ -65,5 +65,6 @@ app.listen(PORT, () => {
   console.log(`   Health:     GET  http://localhost:${PORT}/health`);
   console.log(`   Translate:  POST http://localhost:${PORT}/api/translate`);
   console.log(`   Contract:   POST http://localhost:${PORT}/api/legal/upload-contract`);
-  console.log(`   Legal Q&A:  POST http://localhost:${PORT}/api/legal/ask\n`);
+  console.log(`   Legal Q&A:  POST http://localhost:${PORT}/api/legal/ask`);
+  console.log(`   Delete:     POST http://localhost:${PORT}/api/legal/delete-contract\n`);
 });
