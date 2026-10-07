@@ -10,17 +10,23 @@ import {
     ActivityIndicator,
     KeyboardAvoidingView,
     Platform,
-    TouchableWithoutFeedback,
     Keyboard,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { Audio } from "expo-av";
-import { showAlert, uriToBase64, mimeFromDataUri } from "../api/platform";
+import { showAlert, uriToBase64, mimeFromDataUri, confirmAction } from "../api/platform";
 import TopBar from "../components/TopBar";
-import { useLang } from "../AppContext";
+import { useApp } from "../AppContext";
 import { T, LangCode, formatRelativeTime } from "../translations";
-import { translateText, TranslateResponse } from "../api/client";
+import { BOT_T } from "../botStrings";
+import {
+    translateText,
+    TranslateResponse,
+    SavedTranslation,
+    getTranslationHistory,
+    clearTranslationHistory,
+} from "../api/client";
 
 // ── Tokens ───────────────────────────────────────────────────────────
 const Color = {
@@ -90,6 +96,8 @@ type TranslationEntry = {
     phonetic?: Record<LangCode, string> | string;
     translated: Record<LangCode, string> | string;
     note?: Partial<Record<LangCode, string>> | string;
+    /** Other likely meanings when the text was ambiguous. */
+    alternatives?: { language: string; meaning: string }[];
 };
 
 const SEED_TRANSLATIONS: TranslationEntry[] = [
@@ -158,6 +166,24 @@ const SEED_TRANSLATIONS: TranslationEntry[] = [
 // ── Language options (must match what backend supports) ──────────────
 const TARGET_LANGS = ["Hebrew", "English", "Tagalog", "Malayalam", "Russian"];
 
+
+/** A translation from the server (or just made) → a card in the list. */
+function toEntry(r: TranslateResponse, fallbackSource: string, inputType = "text", targetLanguage = ""): TranslationEntry {
+    const category = r.category !== "general" ? r.category : undefined;
+    const prefix = inputType === "image" ? "📷 " : inputType === "audio" ? "🎤 " : "";
+    return {
+        id: r.id ?? Date.now().toString(),
+        category,
+        tag: category ? undefined : `${prefix}${r.detectedLanguage} → ${targetLanguage}`,
+        timestamp: r.createdAt ? new Date(r.createdAt).getTime() : Date.now(),
+        hebrewText: r.sourceText || fallbackSource,
+        phonetic: r.phonetic || undefined,
+        translated: r.translatedText,
+        note: r.note || undefined,
+        alternatives: r.alternatives?.length ? r.alternatives : undefined,
+    };
+}
+
 // ── Recording config ─────────────────────────────────────────────────
 const RECORDING_OPTIONS: Audio.RecordingOptions = {
     android: {
@@ -190,10 +216,48 @@ type Props = { navigation?: any };
 
 export default function TranslatorScreen({ navigation }: Props) {
     const insets = useSafeAreaInsets();
-    const { lang } = useLang();
+    const { lang, user } = useApp();
     const t = T[lang];
+    const b = BOT_T[lang];
 
-    const [recentTranslations, setRecentTranslations] = React.useState<TranslationEntry[]>(SEED_TRANSLATIONS);
+    // Guests see examples; signed-in users their own last 10 (kept on the server).
+    const [recentTranslations, setRecentTranslations] = React.useState<TranslationEntry[]>(
+        user ? [] : SEED_TRANSLATIONS
+    );
+    const HISTORY_SIZE = 10;
+
+    React.useEffect(() => {
+        if (!user) {
+            setRecentTranslations(SEED_TRANSLATIONS);
+            return;
+        }
+        let cancelled = false;
+        getTranslationHistory()
+            .then(({ translations }) => {
+                if (cancelled) return;
+                setRecentTranslations(
+                    translations.map((x: SavedTranslation) => toEntry(x, "", x.inputType, x.targetLanguage))
+                );
+            })
+            .catch(() => {});
+        return () => {
+            cancelled = true;
+        };
+    }, [user?.id]);
+
+    /** Adds a new translation at the top, keeping only as many as the user wants. */
+    const addEntry = (entry: TranslationEntry) =>
+        setRecentTranslations((prev) => [entry, ...prev].slice(0, user ? HISTORY_SIZE : prev.length + 1));
+
+    const handleClearHistory = async () => {
+        if (!(await confirmAction(b.clearHistoryConfirm, b.clearHistory, b.cancel))) return;
+        try {
+            await clearTranslationHistory();
+            setRecentTranslations([]);
+        } catch (err: any) {
+            showAlert("Error", err?.message);
+        }
+    };
 
     // ── Translate modal state ─────────────────────────────────────────
     const [modalVisible, setModalVisible] = React.useState(false);
@@ -243,19 +307,10 @@ export default function TranslatorScreen({ navigation }: Props) {
             const result: TranslateResponse = await translateText({
                 text: trimmed,
                 targetLanguage: targetLang,
+                readerLanguage: lang,
             });
 
-            const newItem: TranslationEntry = {
-                id: Date.now().toString(),
-                tag: `${result.detectedLanguage} → ${targetLang}`,
-                tagBg: Color.transitBg,
-                tagText: Color.transitText,
-                timestamp: Date.now(),
-                hebrewText: trimmed,
-                translated: result.translatedText,
-            };
-
-            setRecentTranslations((prev) => [newItem, ...prev]);
+            addEntry(toEntry(result, trimmed, "text", targetLang));
             closeModal();
         } catch (err: any) {
             setError(err?.message ?? "Translation failed. Is the backend running?");
@@ -306,19 +361,10 @@ export default function TranslatorScreen({ navigation }: Props) {
                 imageBase64: base64,
                 imageMimeType: asset.mimeType ?? mimeFromDataUri(asset.uri) ?? "image/jpeg",
                 targetLanguage: targetLang,
+                readerLanguage: lang,
             });
 
-            const newItem: TranslationEntry = {
-                id: Date.now().toString(),
-                tag: `📷 Photo (${translated.detectedLanguage}) → ${targetLang}`,
-                tagBg: Color.medicalBg,
-                tagText: Color.medicalText,
-                timestamp: Date.now(),
-                hebrewText: "(scanned from photo)",
-                translated: translated.translatedText,
-            };
-
-            setRecentTranslations((prev) => [newItem, ...prev]);
+            addEntry(toEntry(translated, b.fromPhoto, "image", targetLang));
         } catch (err: any) {
             showAlert("Scan Failed", err?.message ?? "Could not process the image. Is the backend running?");
         } finally {
@@ -382,19 +428,10 @@ export default function TranslatorScreen({ navigation }: Props) {
                 audioBase64: base64,
                 audioMimeType: mimeType,
                 targetLanguage: targetLang,
+                readerLanguage: lang,
             });
 
-            const newItem: TranslationEntry = {
-                id: Date.now().toString(),
-                tag: `🎤 Voice (${result.detectedLanguage}) → ${targetLang}`,
-                tagBg: Color.slanBg,
-                tagText: Color.slanText,
-                timestamp: Date.now(),
-                hebrewText: "(spoken via microphone)",
-                translated: result.translatedText,
-            };
-
-            setRecentTranslations((prev) => [newItem, ...prev]);
+            addEntry(toEntry(result, b.fromVoice, "audio", targetLang));
         } catch (err: any) {
             showAlert("Translation Failed", err?.message ?? "Could not translate the recording. Is the backend running?");
         } finally {
@@ -511,7 +548,7 @@ export default function TranslatorScreen({ navigation }: Props) {
 
                 {/* Target language selector (always visible for scan & voice) */}
                 <View>
-                    <Text style={s.langRowLabel}>Translate into:</Text>
+                    <Text style={s.langRowLabel}>{b.translateInto}</Text>
                     <ScrollView
                         horizontal
                         showsHorizontalScrollIndicator={false}
@@ -531,6 +568,7 @@ export default function TranslatorScreen({ navigation }: Props) {
                     </ScrollView>
                 </View>
 
+
                 {/* Recording active banner */}
                 {isRecording && (
                     <View style={s.recordingBanner}>
@@ -542,9 +580,16 @@ export default function TranslatorScreen({ navigation }: Props) {
                 )}
 
                 {/* Recent translations / history */}
+                {user && recentTranslations.length > 0 && (
+                    <Pressable onPress={handleClearHistory} hitSlop={8} style={s.clearBtn}>
+                        <Text style={s.clearText}>🗑 {b.clearHistory}</Text>
+                    </Pressable>
+                )}
+
                 {recentTranslations.length > 0 && (
                     <>
                         <Text style={s.recentTitle}>{t.recentTranslations}</Text>
+                        {!user && <Text style={s.exampleNote}>{b.exampleNote}</Text>}
                         <View style={s.recentList}>
                             {recentTranslations.map((item) => {
                                 let tagBg = Color.transitBg;
@@ -592,9 +637,7 @@ export default function TranslatorScreen({ navigation }: Props) {
                                                 {tagLabel}
                                             </Text>
                                             <Text style={s.tagTime}>
-                                                {item.category
-                                                    ? formatRelativeTime(new Date(item.timestamp), lang)
-                                                    : "Just now"}
+                                                {formatRelativeTime(new Date(item.timestamp), lang)}
                                             </Text>
                                         </View>
 
@@ -610,6 +653,17 @@ export default function TranslatorScreen({ navigation }: Props) {
                                                 <Text style={s.translatedText}>{translated}</Text>
                                                 {note ? (
                                                     <Text style={s.translatedNote}>{note}</Text>
+                                                ) : null}
+                                                {item.alternatives?.length ? (
+                                                    <View style={s.altBox}>
+                                                        <Text style={s.altTitle}>{b.alsoMeans}</Text>
+                                                        {item.alternatives.map((a, i) => (
+                                                            <Text key={i} style={s.altText}>
+                                                                • {a.meaning}
+                                                                {a.language ? <Text style={s.altLang}> ({a.language})</Text> : null}
+                                                            </Text>
+                                                        ))}
+                                                    </View>
                                                 ) : null}
                                             </View>
                                         </View>
@@ -662,19 +716,23 @@ export default function TranslatorScreen({ navigation }: Props) {
                 animationType="slide"
                 onRequestClose={closeModal}
             >
-                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                    <View style={s.modalOverlay}>
+                {/* No full-screen touch handler: on the web it stole the focus from the text box. */}
+                <View style={s.modalOverlay}>
+                        <Pressable
+                            style={StyleSheet.absoluteFill}
+                            onPress={Platform.OS === "web" ? undefined : Keyboard.dismiss}
+                        />
                         <KeyboardAvoidingView
                             behavior={Platform.OS === "ios" ? "padding" : "height"}
                             style={s.modalSheet}
                         >
                             <View style={s.handleBar} />
 
-                            <Text style={s.modalTitle}>Translate Text</Text>
+                            <Text style={s.modalTitle}>{b.translateTitle}</Text>
 
                             <TextInput
                                 style={s.modalInput}
-                                placeholder="Type or paste text in any language…"
+                                placeholder={b.translatePh}
                                 placeholderTextColor={Color.silver}
                                 value={inputText}
                                 onChangeText={setInputText}
@@ -683,7 +741,7 @@ export default function TranslatorScreen({ navigation }: Props) {
                                 textAlignVertical="top"
                             />
 
-                            <Text style={s.modalLabel}>Translate into:</Text>
+                            <Text style={s.modalLabel}>{b.translateInto}</Text>
                             <ScrollView
                                 horizontal
                                 showsHorizontalScrollIndicator={false}
@@ -702,6 +760,7 @@ export default function TranslatorScreen({ navigation }: Props) {
                                 ))}
                             </ScrollView>
 
+
                             {error && (
                                 <View style={s.errorBox}>
                                     <Text style={s.errorText}>⚠ {error}</Text>
@@ -710,7 +769,7 @@ export default function TranslatorScreen({ navigation }: Props) {
 
                             <View style={s.modalButtons}>
                                 <Pressable style={s.cancelBtn} onPress={closeModal}>
-                                    <Text style={s.cancelText}>Cancel</Text>
+                                    <Text style={s.cancelText}>{b.cancel}</Text>
                                 </Pressable>
                                 <Pressable
                                     style={[
@@ -723,13 +782,12 @@ export default function TranslatorScreen({ navigation }: Props) {
                                     {loading ? (
                                         <ActivityIndicator color={Color.white} size="small" />
                                     ) : (
-                                        <Text style={s.translateBtnText}>Translate →</Text>
+                                        <Text style={s.translateBtnText}>{b.translateBtn}</Text>
                                     )}
                                 </Pressable>
                             </View>
                         </KeyboardAvoidingView>
-                    </View>
-                </TouchableWithoutFeedback>
+                </View>
             </Modal>
         </View>
     );
@@ -821,6 +879,13 @@ const s = StyleSheet.create({
         backgroundColor: Color.recordingPulse,
     },
     recordingBannerText: { fontSize: 13, color: Color.recordingText, fontWeight: "500" },
+    clearBtn: { alignSelf: "flex-end", marginBottom: -8 },
+    altBox: { marginTop: 6, gap: 2 },
+    altTitle: { fontSize: 12, fontWeight: "700", color: Color.mako },
+    altText: { fontSize: 13, color: Color.blackPearl },
+    altLang: { fontSize: 12, color: Color.mako },
+    clearText: { fontSize: 12, color: Color.mako, fontWeight: "600" },
+    exampleNote: { fontSize: 12, color: Color.mako, fontStyle: "italic", marginTop: -10 },
     recentTitle: { fontSize: 16, fontWeight: "700", color: Color.blackPearl, marginTop: 8 },
     recentList: { gap: 12 },
     recentItem: {

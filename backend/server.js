@@ -14,6 +14,7 @@ const cors = require("cors");
 // Routes
 const translateRouter = require("./routes/translate");
 const legalRouter = require("./routes/legal");
+const authRouter = require("./routes/auth");
 
 // ── App setup ─────────────────────────────────────────────────────────────────
 const app = express();
@@ -31,8 +32,9 @@ app.use(
   })
 );
 
-// Parse JSON bodies (increase limit to handle base64 images)
-app.use(express.json({ limit: "10mb" }));
+// Parse JSON bodies. Big enough for a contract upload (up to 5 compressed
+// photos or a 7 MB PDF, sent as base64 which adds about a third).
+app.use(express.json({ limit: "12mb" }));
 
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get("/health", (_req, res) => {
@@ -46,6 +48,7 @@ app.get("/health", (_req, res) => {
 // ── API Routes ────────────────────────────────────────────────────────────────
 app.use("/api/translate", translateRouter);
 app.use("/api/legal", legalRouter);
+app.use("/api/auth", authRouter);
 
 // ── 404 handler ───────────────────────────────────────────────────────────────
 app.use((_req, res) => {
@@ -55,8 +58,12 @@ app.use((_req, res) => {
 // ── Global error handler ──────────────────────────────────────────────────────
 // eslint-disable-next-line no-unused-vars
 app.use((err, _req, res, _next) => {
+  if (err.type === "entity.too.large") {
+    return res.status(413).json({ error: "The file is too large. Please use a smaller file or fewer photos.", code: "tooLarge" });
+  }
+  if (err.expose) return res.status(err.status || 400).json({ error: err.message });
   console.error("[server] Unhandled error:", err);
-  res.status(500).json({ error: "Internal server error.", details: err.message });
+  res.status(500).json({ error: "Internal server error." });
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────

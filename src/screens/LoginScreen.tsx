@@ -1,6 +1,8 @@
 import * as React from "react";
-import { useLang } from "../AppContext";
+import { useApp } from "../AppContext";
 import { LangCode } from "../translations";
+import { BOT_T } from "../botStrings";
+import { requestCode, verifyCode, getAuthOptions, Identifier, SignInResponse } from "../api/client";
 
 import {
     View,
@@ -12,6 +14,7 @@ import {
     ScrollView,
     KeyboardAvoidingView,
     Platform,
+    ActivityIndicator,
 } from "react-native";
 
 // ── Tokens ───────────────────────────────────────────────────────────
@@ -107,19 +110,80 @@ const T: Record<string, Record<string, string>> = {
 type Props = { navigation?: any };
 
 export default function LoginScreen({ navigation }: Props) {
-    const [lang, setLang] = React.useState("en");
+    const { lang: globalLang, setLang: setGlobalLang, signIn } = useApp();
+    const [lang, setLang] = React.useState<string>(globalLang);
     const [tab, setTab] = React.useState<"phone" | "email">("phone");
     const [value, setValue] = React.useState("");
     const [showLangs, setShowLangs] = React.useState(false);
-    const { setLang: setGlobalLang } = useLang();
+    // "id" = enter phone/email, "code" = enter the code we sent
+    const [step, setStep] = React.useState<"id" | "code">("id");
+    const [code, setCode] = React.useState("");
+    const [busy, setBusy] = React.useState(false);
+    const [error, setError] = React.useState<string | null>(null);
+    const [unavailable, setUnavailable] = React.useState(false);
+    // Set when the server runs in test mode (same code for everyone).
+    const [testCode, setTestCode] = React.useState<string | null>(null);
+
+    React.useEffect(() => {
+        getAuthOptions().then((o) => setTestCode(o.testCode)).catch(() => {});
+    }, []);
     const t = T[lang];
+    const b = BOT_T[lang as LangCode];
     const currentLang = LANGUAGES.find(l => l.code === lang)!;
 
-    const handleContinue = () => {
-        if (!value.trim()) return;
-        setGlobalLang(lang as LangCode);
-        navigation?.navigate("Home");
+    const identifier = (): Identifier =>
+        tab === "phone" ? { phone: value.trim() } : { email: value.trim() };
+
+    const goHome = () => navigation?.reset({ index: 0, routes: [{ name: "Home" }] });
+
+    const errorText = (err: any) => {
+        const byCode: Record<string, string> = {
+            invalid: step === "code" ? b.errInvalidCode : b.errInvalidId,
+            expired: b.errExpired,
+            locked: b.errLocked,
+            wait: b.errWait,
+            unavailable: b.errUnavailable,
+        };
+        return byCode[err?.code] ?? (err?.status ? err.message : b.errNetwork);
     };
+
+    const finish = async (res: SignInResponse) => {
+        await signIn(res.token, res.user);
+        goHome();
+    };
+
+    const handleContinue = async () => {
+        if (!value.trim() || busy) return;
+        setBusy(true);
+        setError(null);
+        setUnavailable(false);
+        try {
+            const res = await requestCode(identifier());
+            if ("token" in res) return await finish(res);   // demo number: no code needed
+            setCode("");
+            setStep("code");
+        } catch (err: any) {
+            setError(errorText(err));
+            if (err?.code === "unavailable") setUnavailable(true);
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const handleVerify = async () => {
+        if (code.trim().length < 6 || busy) return;
+        setBusy(true);
+        setError(null);
+        try {
+            await finish(await verifyCode(identifier(), code.trim()));
+        } catch (err: any) {
+            setError(errorText(err));
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const sentTo = tab === "phone" ? `+972 ${value.trim().replace(/^0/, "")}` : value.trim();
 
     return (
         <KeyboardAvoidingView
@@ -144,7 +208,11 @@ export default function LoginScreen({ navigation }: Props) {
                             <Pressable
                                 key={l.code}
                                 style={[s.langOption, l.code === lang && s.langOptionActive]}
-                                onPress={() => { setLang(l.code); setShowLangs(false); setValue(""); }}
+                                onPress={() => {
+                                    setLang(l.code);
+                                    setGlobalLang(l.code as LangCode);
+                                    setShowLangs(false);
+                                }}
                             >
                                 <Text style={[s.langOptionText, l.code === lang && s.langOptionTextActive]}>
                                     {l.nativeLabel}
@@ -165,62 +233,129 @@ export default function LoginScreen({ navigation }: Props) {
                 <Text style={s.appName}>{t.appName}</Text>
                 <Text style={s.tagline}>{t.tagline}</Text>
 
-                {/* Phone / Email tab */}
-                <View style={s.tabs}>
-                    <Pressable
-                        style={[s.tab, tab === "phone" && s.tabActive]}
-                        onPress={() => { setTab("phone"); setValue(""); }}
-                    >
-                        <Text style={[s.tabText, tab === "phone" && s.tabTextActive]}>
-                            {t.phone}
-                        </Text>
-                    </Pressable>
-                    <Pressable
-                        style={[s.tab, tab === "email" && s.tabActive]}
-                        onPress={() => { setTab("email"); setValue(""); }}
-                    >
-                        <Text style={[s.tabText, tab === "email" && s.tabTextActive]}>
-                            {t.email}
-                        </Text>
-                    </Pressable>
-                </View>
-
-                {/* Input label */}
-                <Text style={s.inputLabel}>
-                    {tab === "phone" ? t.phoneLabel : t.emailLabel}
-                </Text>
-
-                {/* Input row */}
-                <View style={s.inputRow}>
-                    {tab === "phone" && (
-                        <View style={s.countryCode}>
-                            <Text style={s.countryCodeText}>+972</Text>
+                {step === "id" ? (
+                    <>
+                        {/* Phone / Email tab */}
+                        <View style={s.tabs}>
+                            <Pressable
+                                style={[s.tab, tab === "phone" && s.tabActive]}
+                                onPress={() => { setTab("phone"); setValue(""); setError(null); }}
+                            >
+                                <Text style={[s.tabText, tab === "phone" && s.tabTextActive]}>
+                                    {t.phone}
+                                </Text>
+                            </Pressable>
+                            <Pressable
+                                style={[s.tab, tab === "email" && s.tabActive]}
+                                onPress={() => { setTab("email"); setValue(""); setError(null); }}
+                            >
+                                <Text style={[s.tabText, tab === "email" && s.tabTextActive]}>
+                                    {t.email}
+                                </Text>
+                            </Pressable>
                         </View>
-                    )}
-                    <TextInput
-                        style={[s.input, tab === "phone" && s.inputWithCode]}
-                        placeholder={tab === "phone" ? t.phonePh : t.emailPh}
-                        placeholderTextColor={Color.silver}
-                        keyboardType={tab === "phone" ? "phone-pad" : "email-address"}
-                        autoCapitalize="none"
-                        value={value}
-                        onChangeText={setValue}
-                    />
+
+                        {/* Input label */}
+                        <Text style={s.inputLabel}>
+                            {tab === "phone" ? t.phoneLabel : t.emailLabel}
+                        </Text>
+
+                        {/* Input row */}
+                        <View style={s.inputRow}>
+                            {tab === "phone" && (
+                                <View style={s.countryCode}>
+                                    <Text style={s.countryCodeText}>+972</Text>
+                                </View>
+                            )}
+                            <TextInput
+                                style={[s.input, tab === "phone" && s.inputWithCode]}
+                                placeholder={tab === "phone" ? t.phonePh : t.emailPh}
+                                placeholderTextColor={Color.silver}
+                                keyboardType={tab === "phone" ? "phone-pad" : "email-address"}
+                                autoCapitalize="none"
+                                autoComplete={tab === "phone" ? "tel" : "email"}
+                                value={value}
+                                onChangeText={(v) => { setValue(v); setError(null); }}
+                                onSubmitEditing={handleContinue}
+                            />
+                        </View>
+
+                        {/* Hint */}
+                        <View style={s.hintRow}>
+                            <Text style={s.hintIcon}>ℹ</Text>
+                            <Text style={s.hintText}>{t.hint}</Text>
+                        </View>
+                    </>
+                ) : (
+                    <>
+                        <View style={s.sentRow}>
+                            <Text style={s.hintText}>{b.codeSent.replace("{to}", sentTo)}</Text>
+                            <Pressable onPress={() => { setStep("id"); setError(null); }} hitSlop={8}>
+                                <Text style={s.linkText}>{b.change}</Text>
+                            </Pressable>
+                        </View>
+                        <Text style={s.inputLabel}>{b.codeLabel}</Text>
+                        <TextInput
+                            style={[s.input, s.codeInput]}
+                            placeholder="••••••"
+                            placeholderTextColor={Color.silver}
+                            keyboardType="number-pad"
+                            autoComplete="one-time-code"
+                            textContentType="oneTimeCode"
+                            maxLength={6}
+                            value={code}
+                            onChangeText={(v) => { setCode(v.replace(/\D/g, "")); setError(null); }}
+                            onSubmitEditing={handleVerify}
+                            autoFocus
+                        />
+                        {testCode && (
+                            <View style={s.testBox}>
+                                <Text style={s.testText}>🧪 {b.testModeHint.replace("{code}", testCode)}</Text>
+                            </View>
+                        )}
+                        <Pressable onPress={handleContinue} hitSlop={8} disabled={busy}>
+                            <Text style={[s.linkText, { textAlign: "center" }]}>{b.resend}</Text>
+                        </Pressable>
+                    </>
+                )}
+
+                {/* Data is tied to the phone/email used */}
+                <View style={s.noteBox}>
+                    <Text style={s.noteText}>🔑 {b.sameMethodNote}</Text>
                 </View>
 
-                {/* Hint */}
-                <View style={s.hintRow}>
-                    <Text style={s.hintIcon}>ℹ</Text>
-                    <Text style={s.hintText}>{t.hint}</Text>
-                </View>
+                {error && (
+                    <View style={s.errorBox}>
+                        <Text style={s.errorText}>⚠ {error}</Text>
+                    </View>
+                )}
 
                 {/* CTA button */}
-                <Pressable
-                    style={[s.ctaBtn, !value.trim() && s.ctaBtnDisabled]}
-                    onPress={handleContinue}
-                >
-                    <Text style={s.ctaText}>{t.cta}</Text>
-                </Pressable>
+                {step === "id" ? (
+                    <Pressable
+                        style={[s.ctaBtn, (!value.trim() || busy) && s.ctaBtnDisabled]}
+                        onPress={handleContinue}
+                        disabled={!value.trim() || busy}
+                    >
+                        {busy ? <ActivityIndicator color={Color.white} /> : <Text style={s.ctaText}>{t.cta}</Text>}
+                    </Pressable>
+                ) : (
+                    <Pressable
+                        style={[s.ctaBtn, (code.length < 6 || busy) && s.ctaBtnDisabled]}
+                        onPress={handleVerify}
+                        disabled={code.length < 6 || busy}
+                    >
+                        {busy ? <ActivityIndicator color={Color.white} /> : <Text style={s.ctaText}>{b.signIn}</Text>}
+                    </Pressable>
+                )}
+
+                {/* Sign-in by SMS/email not set up on this server yet: let people still use the app */}
+                {unavailable && (
+                    <Pressable style={s.guestBtn} onPress={goHome}>
+                        <Text style={s.guestText}>{b.guest}</Text>
+                        <Text style={s.guestSub}>{b.guestNote}</Text>
+                    </Pressable>
+                )}
 
                 {/* Terms */}
                 <Text style={s.terms}>
@@ -380,6 +515,29 @@ const s = StyleSheet.create({
     },
     ctaBtnDisabled: { opacity: 0.5 },
     ctaText: { fontSize: 16, fontWeight: "700", color: Color.white },
+
+    // Code step
+    sentRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
+    linkText: { fontSize: 13, color: Color.endeavour, fontWeight: "600" },
+    codeInput: { flex: 0, fontSize: 22, letterSpacing: 8, textAlign: "center" },
+
+    testBox: { backgroundColor: "#fff8e1", borderRadius: 8, padding: 10 },
+    testText: { fontSize: 13, color: "#8d6e00", fontWeight: "600", textAlign: "center" },
+
+    // Notes & errors
+    noteBox: { backgroundColor: Color.aliceBlue, borderRadius: 8, padding: 12 },
+    noteText: { fontSize: 12, color: Color.blackPearl, lineHeight: 18 },
+    errorBox: { backgroundColor: "#ffebee", borderRadius: 8, padding: 12 },
+    errorText: { fontSize: 13, color: Color.error },
+    guestBtn: {
+        borderWidth: 1,
+        borderColor: Color.endeavour,
+        borderRadius: 8,
+        paddingVertical: 12,
+        alignItems: "center",
+    },
+    guestText: { fontSize: 15, fontWeight: "600", color: Color.endeavour },
+    guestSub: { fontSize: 12, color: Color.mako, marginTop: 2 },
 
     // Terms
     terms: {
