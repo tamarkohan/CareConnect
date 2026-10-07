@@ -18,6 +18,7 @@ function Screens() {
   const { ready, user } = useApp();
 
   // Wait for the saved session so a signed-in user goes straight to Home.
+  // Without an account only the login screen exists: there is no guest mode.
   if (!ready) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#f3faff" }}>
@@ -28,14 +29,19 @@ function Screens() {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={user ? "Home" : "Login"}>
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="Home" component={HomeDashboard} />
-        <Stack.Screen name="Translator" component={TranslatorScreen} />
-        <Stack.Screen name="Assistant" component={AssistantScreen} />
-        <Stack.Screen name="Community" component={CommunityScreen} />
-        <Stack.Screen name="Tasks" component={TasksScreen} />
-        <Stack.Screen name="Journal" component={JournalScreen} />
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {user ? (
+          <>
+            <Stack.Screen name="Home" component={HomeDashboard} />
+            <Stack.Screen name="Translator" component={TranslatorScreen} />
+            <Stack.Screen name="Assistant" component={AssistantScreen} />
+            <Stack.Screen name="Community" component={CommunityScreen} />
+            <Stack.Screen name="Tasks" component={TasksScreen} />
+            <Stack.Screen name="Journal" component={JournalScreen} />
+          </>
+        ) : (
+          <Stack.Screen name="Login" component={LoginScreen} />
+        )}
       </Stack.Navigator>
     </NavigationContainer>
   );

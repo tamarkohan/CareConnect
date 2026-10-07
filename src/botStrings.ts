@@ -19,8 +19,6 @@ type Strings = {
     errWait: string;
     errUnavailable: string;
     errNetwork: string;
-    guest: string;
-    guestNote: string;
     testModeHint: string;      // {code}
     signedInAs: string;
     demoAccount: string;
@@ -110,8 +108,6 @@ export const BOT_T: Record<LangCode, Strings> = {
         errWait: "Please wait 30 seconds before asking for a new code.",
         errUnavailable: "Signing in this way isn't available yet.",
         errNetwork: "Could not reach the server. Please check your connection.",
-        guest: "Continue without an account",
-        guestNote: "Nothing will be saved.",
         testModeHint: "Test mode: the code is {code}",
         signedInAs: "Signed in as",
         demoAccount: "Demo account",
@@ -211,8 +207,6 @@ export const BOT_T: Record<LangCode, Strings> = {
         errWait: "Maghintay ng 30 segundo bago humingi ng bagong code.",
         errUnavailable: "Hindi pa available ang ganitong pag-sign in.",
         errNetwork: "Hindi maabot ang server. Pakisuri ang iyong koneksyon.",
-        guest: "Magpatuloy nang walang account",
-        guestNote: "Walang mase-save.",
         testModeHint: "Test mode: ang code ay {code}",
         signedInAs: "Naka-sign in bilang",
         demoAccount: "Demo account",
@@ -312,8 +306,6 @@ export const BOT_T: Record<LangCode, Strings> = {
         errWait: "പുതിയ കോഡ് ചോദിക്കുന്നതിന് മുമ്പ് 30 സെക്കൻഡ് കാത്തിരിക്കുക.",
         errUnavailable: "ഈ രീതിയിലുള്ള സൈൻ ഇൻ ഇപ്പോൾ ലഭ്യമല്ല.",
         errNetwork: "സെർവറിൽ എത്താനായില്ല. നിങ്ങളുടെ കണക്ഷൻ പരിശോധിക്കുക.",
-        guest: "അക്കൗണ്ട് ഇല്ലാതെ തുടരുക",
-        guestNote: "ഒന്നും സേവ് ചെയ്യില്ല.",
         testModeHint: "ടെസ്റ്റ് മോഡ്: കോഡ് {code} ആണ്",
         signedInAs: "സൈൻ ഇൻ ചെയ്തത്",
         demoAccount: "ഡെമോ അക്കൗണ്ട്",
@@ -413,8 +405,6 @@ export const BOT_T: Record<LangCode, Strings> = {
         errWait: "Подождите 30 секунд, прежде чем запросить новый код.",
         errUnavailable: "Вход этим способом пока недоступен.",
         errNetwork: "Нет связи с сервером. Проверьте подключение.",
-        guest: "Продолжить без аккаунта",
-        guestNote: "Ничего не будет сохранено.",
         testModeHint: "Тестовый режим: код {code}",
         signedInAs: "Вы вошли как",
         demoAccount: "Демо-аккаунт",
