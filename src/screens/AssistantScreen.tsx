@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Audio } from "expo-av";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
+import * as Clipboard from "expo-clipboard";
 import { showAlert, uriToBase64, confirmAction } from "../api/platform";
 import TopBar from "../components/TopBar";
 import MarkdownText from "../components/MarkdownText";
@@ -98,10 +99,14 @@ type Message = {
     noticeKey?: "contractReady" | "contractDeleted";
 };
 
-/** Chat text for WhatsApp: *bold*, • bullets, sources as links. */
-function toPlainText(text: string) {
+/**
+ * Chat text for sending. WhatsApp shows *one star* as bold; anywhere else
+ * (copy, other apps) the stars are removed.
+ */
+function toPlainText(text: string, whatsapp: boolean) {
     return text
-        .replace(/\*\*(.+?)\*\*/g, "*$1*")
+        .replace(/\*\*(.+?)\*\*/g, whatsapp ? "*$1*" : "$1")
+        .replace(/__(.+?)__/g, whatsapp ? "*$1*" : "$1")
         .replace(/^\s*[-*•]\s+/gm, "• ")
         .replace(/^#{1,6}\s+/gm, "")
         .replace(/^([-*_]\s*){3,}$/gm, "")
@@ -115,6 +120,12 @@ const LANG_NAMES: Record<string, string> = {
     ml: "Malayalam",
     ru: "Russian",
 };
+
+// Chat messages already sent for translation, `${id}|${language}`. Kept outside
+// the component so a re-mount (or React's development double-run) never asks twice.
+const requestedTranslations = new Set<string>();
+// Finished translations, so leaving and re-opening the screen doesn't ask again.
+const translationCache: Record<string, string> = {};
 
 const approxBytes = (base64: string) => Math.floor((base64.length * 3) / 4);
 
@@ -162,14 +173,15 @@ export default function AssistantScreen({ navigation }: Props) {
 
     // ── Earlier messages shown in the current app language ────────────
     // key `${id}|${language}` → translated text. Kept in memory only.
-    const [translations, setTranslations] = React.useState<Record<string, string>>({});
+    const [translations, setTranslations] = React.useState<Record<string, string>>(() => ({ ...translationCache }));
     const [showOriginal, setShowOriginal] = React.useState<Set<string>>(new Set());
     const [translatingChat, setTranslatingChat] = React.useState(false);
-    const requestedRef = React.useRef<Set<string>>(new Set());
 
     // ── Export / share ────────────────────────────────────────────────
-    const [exportText, setExportText] = React.useState<string | null>(null);
+    // The messages being exported (whole chat, or one question + answer).
+    const [exportList, setExportList] = React.useState<Message[] | null>(null);
     const [copied, setCopied] = React.useState(false);
+    const [copiedId, setCopiedId] = React.useState<string | null>(null);
 
     const scrollToEnd = (delay = 80) =>
         setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), delay);
@@ -218,39 +230,60 @@ export default function AssistantScreen({ navigation }: Props) {
     }, [user?.id]);
 
     // When the app language changes (or the chat loads), translate earlier
-    // messages written in another language — in one call, newest 30 first.
+    // messages written in another language. Small batches, newest first, so the
+    // messages on screen change quickly and long chats never hit size limits.
+    const mountedRef = React.useRef(true);
     React.useEffect(() => {
-        const todo = messages
-            .filter((m) => !m.noticeKey && !m.isError && m.text && m.lang !== responseLang)
-            .filter((m) => {
-                const key = `${m.id}|${responseLang}`;
-                return translations[key] === undefined && !requestedRef.current.has(key);
-            })
-            .slice(-30);
-        if (!todo.length) return;
-        todo.forEach((m) => requestedRef.current.add(`${m.id}|${responseLang}`));
-
-        let cancelled = false;
-        setTranslatingChat(true);
-        translateMessages(responseLang, todo.map((m) => ({ id: m.id, text: m.text })))
-            .then(({ translations: got }) => {
-                if (cancelled) return;
-                setTranslations((prev) => {
-                    const next = { ...prev };
-                    for (const m of todo) next[`${m.id}|${responseLang}`] = got[m.id] ?? m.text;
-                    return next;
-                });
-            })
-            .catch(() => {
-                // Leave them in the original language; try again on the next language change.
-                todo.forEach((m) => requestedRef.current.delete(`${m.id}|${responseLang}`));
-            })
-            .finally(() => {
-                if (!cancelled) setTranslatingChat(false);
-            });
+        mountedRef.current = true;
         return () => {
-            cancelled = true;
+            mountedRef.current = false;
         };
+    }, []);
+
+    React.useEffect(() => {
+        const lang = responseLang;
+        const todo = messages
+            .filter((m) => !m.noticeKey && !m.isError && m.text && m.lang !== lang)
+            .filter((m) => {
+                const key = `${m.id}|${lang}`;
+                return translations[key] === undefined && !requestedTranslations.has(key);
+            })
+            .slice(-40)
+            .reverse();
+        if (!todo.length) return;
+        todo.forEach((m) => requestedTranslations.add(`${m.id}|${lang}`));
+
+        const batches: Message[][] = [];
+        let batch: Message[] = [];
+        let chars = 0;
+        for (const m of todo) {
+            if (batch.length && (batch.length >= 6 || chars + m.text.length > 8000)) {
+                batches.push(batch);
+                batch = [];
+                chars = 0;
+            }
+            batch.push(m);
+            chars += m.text.length;
+        }
+        if (batch.length) batches.push(batch);
+
+        (async () => {
+            setTranslatingChat(true);
+            for (const part of batches) {
+                try {
+                    const { translations: got } = await translateMessages(
+                        lang,
+                        part.map((m) => ({ id: m.id, text: m.text.slice(0, 8000) }))
+                    );
+                    for (const m of part) translationCache[`${m.id}|${lang}`] = got[m.id] ?? m.text;
+                    if (mountedRef.current) setTranslations({ ...translationCache });
+                } catch {
+                    // Leave these in the original language; try again on the next language change.
+                    part.forEach((m) => requestedTranslations.delete(`${m.id}|${lang}`));
+                }
+            }
+            if (mountedRef.current) setTranslatingChat(false);
+        })();
     }, [responseLang, messages]);
 
     /** The text to show for a message in the current language. */
@@ -271,12 +304,18 @@ export default function AssistantScreen({ navigation }: Props) {
         });
 
     // ── Export ────────────────────────────────────────────────────────
-    const buildExport = (list: Message[]) => {
+    /**
+     * whatsapp: *bold* for WhatsApp · plain: no formatting marks ·
+     * markdown: for the preview on screen (shown with real bold).
+     */
+    const buildExport = (list: Message[], style: "whatsapp" | "plain" | "markdown") => {
+        const bold = (t: string) => (style === "whatsapp" ? `*${t}*` : style === "markdown" ? `**${t}**` : t);
+        const body = (t: string) => (style === "markdown" ? t : toPlainText(t, style === "whatsapp"));
         const lines = [`⚖️ ${b.exportHeader}`, new Date().toLocaleDateString(), ""];
         for (const m of list) {
             if (m.isError) continue;
-            lines.push(`*${m.role === "user" ? b.exportYou : b.exportBot}:*`);
-            lines.push(toPlainText(displayText(m)));
+            lines.push(bold(`${m.role === "user" ? b.exportYou : b.exportBot}:`));
+            lines.push(body(displayText(m)));
             if (m.sources?.length) {
                 lines.push(`${b.exportSources}:`);
                 m.sources.forEach((src) => lines.push(`[${src.id}] ${src.title} – ${src.url}`));
@@ -289,7 +328,7 @@ export default function AssistantScreen({ navigation }: Props) {
 
     const openExport = (list: Message[]) => {
         setCopied(false);
-        setExportText(buildExport(list));
+        setExportList(list);
     };
 
     /** The question before an answer + the answer itself. */
@@ -300,32 +339,50 @@ export default function AssistantScreen({ navigation }: Props) {
     };
 
     const shareWhatsApp = () => {
-        if (!exportText) return;
-        Linking.openURL(`https://wa.me/?text=${encodeURIComponent(exportText)}`);
-        setExportText(null);
+        if (!exportList) return;
+        Linking.openURL(`https://wa.me/?text=${encodeURIComponent(buildExport(exportList, "whatsapp"))}`);
+        setExportList(null);
+    };
+
+    const copyText = async (text: string) => {
+        try {
+            await Clipboard.setStringAsync(text);
+            return true;
+        } catch {
+            showAlert(b.copyText, text);
+            return false;
+        }
+    };
+
+    const copyExport = async () => {
+        if (exportList && (await copyText(buildExport(exportList, "plain")))) setCopied(true);
     };
 
     const shareOther = async () => {
-        if (!exportText) return;
+        if (!exportList) return;
+        // Browsers without a share menu (most computers): copy instead.
+        if (Platform.OS === "web" && !(navigator as any).share) {
+            await copyExport();
+            return;
+        }
         try {
-            if (Platform.OS === "web" && !(navigator as any).share) {
-                await copyExport();
-                return;
-            }
-            await Share.share({ message: exportText });
-            setExportText(null);
+            await Share.share({ message: buildExport(exportList, "plain") });
+            setExportList(null);
         } catch {
             // closed the share sheet
         }
     };
 
-    const copyExport = async () => {
-        if (!exportText) return;
-        try {
-            await navigator.clipboard.writeText(exportText);
-            setCopied(true);
-        } catch {
-            showAlert(b.copyText, exportText);
+    /** Copies one answer (with its sources) from the chat. */
+    const copyAnswer = async (msg: Message) => {
+        const lines = [toPlainText(displayText(msg), false)];
+        if (msg.sources?.length) {
+            lines.push("", `${b.exportSources}:`);
+            msg.sources.forEach((src) => lines.push(`[${src.id}] ${src.title} – ${src.url}`));
+        }
+        if (await copyText(lines.join("\n"))) {
+            setCopiedId(msg.id);
+            setTimeout(() => setCopiedId((id) => (id === msg.id ? null : id)), 2000);
         }
     };
 
@@ -878,9 +935,16 @@ export default function AssistantScreen({ navigation }: Props) {
                                                 </Pressable>
                                             )}
                                             {msg.role === "assistant" && !msg.isError && !msg.noticeKey && (
-                                                <Pressable onPress={() => openExport(pairFor(msg))} hitSlop={6}>
-                                                    <Text style={s.msgActionText}>↗ {b.shareAnswer}</Text>
-                                                </Pressable>
+                                                <>
+                                                    <Pressable onPress={() => openExport(pairFor(msg))} hitSlop={6}>
+                                                        <Text style={s.msgActionText}>↗ {b.shareAnswer}</Text>
+                                                    </Pressable>
+                                                    <Pressable onPress={() => copyAnswer(msg)} hitSlop={6}>
+                                                        <Text style={s.msgActionText}>
+                                                            📋 {copiedId === msg.id ? b.copied : b.copyShort}
+                                                        </Text>
+                                                    </Pressable>
+                                                </>
                                             )}
                                         </View>
                                     )}
@@ -1101,18 +1165,22 @@ export default function AssistantScreen({ navigation }: Props) {
 
             {/* ── Export / share chat ── */}
             <Modal
-                visible={exportText !== null}
+                visible={exportList !== null}
                 transparent
                 animationType="slide"
-                onRequestClose={() => setExportText(null)}
+                onRequestClose={() => setExportList(null)}
             >
                 <View style={s.modalOverlay}>
-                    <Pressable style={StyleSheet.absoluteFill} onPress={() => setExportText(null)} />
+                    <Pressable style={StyleSheet.absoluteFill} onPress={() => setExportList(null)} />
                     <View style={s.modalSheet}>
                         <View style={s.handleBar} />
                         <Text style={s.modalTitle}>{b.exportTitle}</Text>
                         <ScrollView style={s.exportPreview}>
-                            <Text style={s.exportPreviewText}>{exportText}</Text>
+                            {exportList && (
+                                <MarkdownText style={s.exportPreviewText}>
+                                    {buildExport(exportList, "markdown")}
+                                </MarkdownText>
+                            )}
                         </ScrollView>
                         <Pressable style={s.menuOption} onPress={shareWhatsApp}>
                             <Text style={s.menuOptionIcon}>💬</Text>
@@ -1122,13 +1190,11 @@ export default function AssistantScreen({ navigation }: Props) {
                             <Text style={s.menuOptionIcon}>📤</Text>
                             <Text style={s.menuOptionText}>{b.shareOther}</Text>
                         </Pressable>
-                        {Platform.OS === "web" && (
-                            <Pressable style={s.menuOption} onPress={copyExport}>
-                                <Text style={s.menuOptionIcon}>📋</Text>
-                                <Text style={s.menuOptionText}>{copied ? b.copied : b.copyText}</Text>
-                            </Pressable>
-                        )}
-                        <Pressable style={s.cancelBtn} onPress={() => setExportText(null)}>
+                        <Pressable style={s.menuOption} onPress={copyExport}>
+                            <Text style={s.menuOptionIcon}>📋</Text>
+                            <Text style={s.menuOptionText}>{copied ? b.copied : b.copyText}</Text>
+                        </Pressable>
+                        <Pressable style={s.cancelBtn} onPress={() => setExportList(null)}>
                             <Text style={s.cancelText}>{b.cancel}</Text>
                         </Pressable>
                     </View>

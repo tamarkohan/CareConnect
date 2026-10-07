@@ -82,6 +82,7 @@ type Strings = {
     shareOther: string;
     copyText: string;
     copied: string;
+    copyShort: string;
     exportHeader: string;
     exportYou: string;
     exportBot: string;
@@ -179,6 +180,7 @@ export const BOT_T: Record<LangCode, Strings> = {
         shareOther: "Share…",
         copyText: "Copy text",
         copied: "Copied ✓",
+        copyShort: "Copy",
         exportHeader: "CareConnect – my questions about my rights",
         exportYou: "Me",
         exportBot: "CareConnect assistant",
@@ -274,6 +276,7 @@ export const BOT_T: Record<LangCode, Strings> = {
         shareOther: "Ibahagi…",
         copyText: "Kopyahin ang teksto",
         copied: "Nakopya ✓",
+        copyShort: "Kopyahin",
         exportHeader: "CareConnect – mga tanong ko tungkol sa aking mga karapatan",
         exportYou: "Ako",
         exportBot: "CareConnect assistant",
@@ -369,6 +372,7 @@ export const BOT_T: Record<LangCode, Strings> = {
         shareOther: "പങ്കിടുക…",
         copyText: "ടെക്സ്റ്റ് കോപ്പി ചെയ്യുക",
         copied: "കോപ്പി ചെയ്തു ✓",
+        copyShort: "കോപ്പി",
         exportHeader: "CareConnect – എന്റെ അവകാശങ്ങളെക്കുറിച്ചുള്ള ചോദ്യങ്ങൾ",
         exportYou: "ഞാൻ",
         exportBot: "CareConnect അസിസ്റ്റന്റ്",
@@ -464,6 +468,7 @@ export const BOT_T: Record<LangCode, Strings> = {
         shareOther: "Поделиться…",
         copyText: "Скопировать текст",
         copied: "Скопировано ✓",
+        copyShort: "Копировать",
         exportHeader: "CareConnect – мои вопросы о моих правах",
         exportYou: "Я",
         exportBot: "Помощник CareConnect",
