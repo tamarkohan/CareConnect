@@ -70,11 +70,17 @@ Kind of text: decide it yourself and follow the matching rules.
 - slang (family members, the patient, WhatsApp messages): translate the meaning, not the words; give the literal meaning in the note when it helps.
 - general: anything else.
 
-Ambiguous input: a short text can sometimes be read in more than one language (for example a word that exists in one
-language and is also Hebrew written in Latin letters). Only in that case set "ambiguous" to true, translate the most
-likely meaning for a caregiver in Israel, and put the other readings OF THIS SAME TEXT in "alternatives" (max 3).
-In every other case — which is almost always — set "ambiguous" to false and "alternatives" to [].
-Never put unrelated words or examples in "alternatives".
+Double meanings: check EVERY input for these cases, and when one applies set "ambiguous" to true, translate the
+most likely meaning for a caregiver in Israel, and list the other real readings of the SAME text in "alternatives":
+1. Latin letters that could also be Hebrew written as it sounds. Caregivers often type Hebrew they heard in Latin
+   letters, so always ask yourself: "read aloud, is this a Hebrew word?" If it is, and it is also a word in another
+   language, give both readings (one as the translation, the other in "alternatives", with its Hebrew spelling).
+2. Hebrew written without vowels that can be read as different words (e.g. ספר = book / barber / he told).
+3. A word or phrase with several common meanings where the text gives no context (slang vs. literal, a name vs. a word).
+4. A very short text whose language is unclear.
+For each alternative give its language and its meaning in the target language; for a Hebrew reading also add the
+Hebrew word in brackets: "<meaning> (<Hebrew word>)". Max 3. If none of the cases applies, "ambiguous" is false and
+"alternatives" is []. Only list readings of the text you were given — never examples or unrelated words.
 
 Scripts: Malayalam in Malayalam script, Russian in Cyrillic, Hebrew in Hebrew letters, Tagalog and English in Latin letters.
 
@@ -85,7 +91,7 @@ Respond ONLY with valid JSON in this exact shape (no extra text, no markdown fen
  "phonetic":"<see below, or empty>",
  "note":"<one short sentence in the reader's language about anything important: an Israeli brand, an idiom's literal meaning, a medical warning, or empty>",
  "category":"<medical | transit | slang | general>",
- "ambiguous":<true only if you had to guess between readings>,
+ "ambiguous":<true when one of the double-meaning cases applies>,
  "alternatives":[{"language":"<language of that reading, in English>","meaning":"<that meaning, in the target language>"}]}
 
 phonetic: the Hebrew text written as it sounds, in the reader's alphabet, so they can read it aloud.
@@ -256,7 +262,7 @@ function normaliseResult(r, { text, context }) {
     note: str(r.note, 300),
     category,
     // Only when the model says it had to guess, and never the same as the main answer.
-    alternatives: (r.ambiguous === true && Array.isArray(r.alternatives) ? r.alternatives : [])
+    alternatives: ((r.ambiguous === true || r.ambiguous === "true") && Array.isArray(r.alternatives) ? r.alternatives : [])
       .map((a) => ({ language: str(a?.language, 40), meaning: str(a?.meaning, 200) }))
       .filter((a) => a.meaning && a.meaning.toLowerCase() !== str(r.translatedText, 10_000).toLowerCase())
       .slice(0, 3),
