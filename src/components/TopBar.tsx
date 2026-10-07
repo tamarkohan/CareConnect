@@ -111,8 +111,8 @@ export default function TopBar({ title, navigation }: Props) {
                                     style={s.menuItem}
                                     onPress={async () => {
                                         setShowMenu(false);
+                                        // App.tsx goes back to the login screen by itself.
                                         await signOut();
-                                        navigation?.reset({ index: 0, routes: [{ name: "Login" }] });
                                     }}
                                 >
                                     <Text style={[s.menuItemIcon, s.logoutIcon]}>↩</Text>

@@ -120,7 +120,6 @@ export default function LoginScreen({ navigation }: Props) {
     const [code, setCode] = React.useState("");
     const [busy, setBusy] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
-    const [unavailable, setUnavailable] = React.useState(false);
     // Set when the server runs in test mode (same code for everyone).
     const [testCode, setTestCode] = React.useState<string | null>(null);
 
@@ -134,8 +133,6 @@ export default function LoginScreen({ navigation }: Props) {
     const identifier = (): Identifier =>
         tab === "phone" ? { phone: value.trim() } : { email: value.trim() };
 
-    const goHome = () => navigation?.reset({ index: 0, routes: [{ name: "Home" }] });
-
     const errorText = (err: any) => {
         const byCode: Record<string, string> = {
             invalid: step === "code" ? b.errInvalidCode : b.errInvalidId,
@@ -148,15 +145,14 @@ export default function LoginScreen({ navigation }: Props) {
     };
 
     const finish = async (res: SignInResponse) => {
+        // App.tsx shows the app screens as soon as a user is signed in.
         await signIn(res.token, res.user);
-        goHome();
     };
 
     const handleContinue = async () => {
         if (!value.trim() || busy) return;
         setBusy(true);
         setError(null);
-        setUnavailable(false);
         try {
             const res = await requestCode(identifier());
             if ("token" in res) return await finish(res);   // demo number: no code needed
@@ -164,7 +160,6 @@ export default function LoginScreen({ navigation }: Props) {
             setStep("code");
         } catch (err: any) {
             setError(errorText(err));
-            if (err?.code === "unavailable") setUnavailable(true);
         } finally {
             setBusy(false);
         }
@@ -349,13 +344,6 @@ export default function LoginScreen({ navigation }: Props) {
                     </Pressable>
                 )}
 
-                {/* Sign-in by SMS/email not set up on this server yet: let people still use the app */}
-                {unavailable && (
-                    <Pressable style={s.guestBtn} onPress={goHome}>
-                        <Text style={s.guestText}>{b.guest}</Text>
-                        <Text style={s.guestSub}>{b.guestNote}</Text>
-                    </Pressable>
-                )}
 
                 {/* Terms */}
                 <Text style={s.terms}>
@@ -529,15 +517,6 @@ const s = StyleSheet.create({
     noteText: { fontSize: 12, color: Color.blackPearl, lineHeight: 18 },
     errorBox: { backgroundColor: "#ffebee", borderRadius: 8, padding: 12 },
     errorText: { fontSize: 13, color: Color.error },
-    guestBtn: {
-        borderWidth: 1,
-        borderColor: Color.endeavour,
-        borderRadius: 8,
-        paddingVertical: 12,
-        alignItems: "center",
-    },
-    guestText: { fontSize: 15, fontWeight: "600", color: Color.endeavour },
-    guestSub: { fontSize: 12, color: Color.mako, marginTop: 2 },
 
     // Terms
     terms: {
