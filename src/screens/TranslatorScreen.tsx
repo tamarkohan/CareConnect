@@ -220,21 +220,19 @@ export default function TranslatorScreen({ navigation }: Props) {
     const t = T[lang];
     const b = BOT_T[lang];
 
-    // Guests see examples; signed-in users their own last 10 (kept on the server).
-    const [recentTranslations, setRecentTranslations] = React.useState<TranslationEntry[]>(
-        user ? [] : SEED_TRANSLATIONS
-    );
+    // The user's last 10 translations (kept on the server). Until they have
+    // any, a few examples show what the translator can do.
+    const [recentTranslations, setRecentTranslations] = React.useState<TranslationEntry[]>(SEED_TRANSLATIONS);
+    const [showingExamples, setShowingExamples] = React.useState(true);
     const HISTORY_SIZE = 10;
 
     React.useEffect(() => {
-        if (!user) {
-            setRecentTranslations(SEED_TRANSLATIONS);
-            return;
-        }
+        if (!user) return;
         let cancelled = false;
         getTranslationHistory()
             .then(({ translations }) => {
-                if (cancelled) return;
+                if (cancelled || !translations.length) return;
+                setShowingExamples(false);
                 setRecentTranslations(
                     translations.map((x: SavedTranslation) => toEntry(x, "", x.inputType, x.targetLanguage))
                 );
@@ -246,14 +244,18 @@ export default function TranslatorScreen({ navigation }: Props) {
     }, [user?.id]);
 
     /** Adds a new translation at the top, keeping only as many as the user wants. */
-    const addEntry = (entry: TranslationEntry) =>
-        setRecentTranslations((prev) => [entry, ...prev].slice(0, user ? HISTORY_SIZE : prev.length + 1));
+    const addEntry = (entry: TranslationEntry) => {
+        // The first real translation replaces the examples.
+        setRecentTranslations((prev) => [entry, ...(showingExamples ? [] : prev)].slice(0, HISTORY_SIZE));
+        setShowingExamples(false);
+    };
 
     const handleClearHistory = async () => {
         if (!(await confirmAction(b.clearHistoryConfirm, b.clearHistory, b.cancel))) return;
         try {
             await clearTranslationHistory();
-            setRecentTranslations([]);
+            setRecentTranslations(SEED_TRANSLATIONS);
+            setShowingExamples(true);
         } catch (err: any) {
             showAlert("Error", err?.message);
         }
@@ -580,7 +582,7 @@ export default function TranslatorScreen({ navigation }: Props) {
                 )}
 
                 {/* Recent translations / history */}
-                {user && recentTranslations.length > 0 && (
+                {!showingExamples && recentTranslations.length > 0 && (
                     <Pressable onPress={handleClearHistory} hitSlop={8} style={s.clearBtn}>
                         <Text style={s.clearText}>🗑 {b.clearHistory}</Text>
                     </Pressable>
@@ -589,7 +591,7 @@ export default function TranslatorScreen({ navigation }: Props) {
                 {recentTranslations.length > 0 && (
                     <>
                         <Text style={s.recentTitle}>{t.recentTranslations}</Text>
-                        {!user && <Text style={s.exampleNote}>{b.exampleNote}</Text>}
+                        {showingExamples && <Text style={s.exampleNote}>{b.exampleNote}</Text>}
                         <View style={s.recentList}>
                             {recentTranslations.map((item) => {
                                 let tagBg = Color.transitBg;

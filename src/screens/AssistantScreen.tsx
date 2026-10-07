@@ -849,12 +849,6 @@ export default function AssistantScreen({ navigation }: Props) {
                     )}
 
                     {loadingHistory && <ActivityIndicator color={Color.endeavour} />}
-                    {translatingChat && (
-                        <View style={s.translatingRow}>
-                            <ActivityIndicator size="small" color={Color.endeavour} />
-                            <Text style={s.translatingText}>{b.translatingChat}</Text>
-                        </View>
-                    )}
 
                     {/* Empty state before any message */}
                     {messages.length === 0 && !loadingHistory && (
@@ -1032,6 +1026,14 @@ export default function AssistantScreen({ navigation }: Props) {
                     </Pressable>
                 </View>
             </KeyboardAvoidingView>
+
+            {/* ── Small toast while earlier messages are being translated ── */}
+            {translatingChat && (
+                <View style={[s.toast, { top: insets.top + 64 }]} pointerEvents="none">
+                    <ActivityIndicator size="small" color={Color.white} />
+                    <Text style={s.toastText}>{b.translatingChat}</Text>
+                </View>
+            )}
 
             {/* ── Bottom nav — OUTSIDE KAV so it never moves with keyboard ── */}
             <View style={[s.bottomNav, { paddingBottom: 12 + insets.bottom }]}>
@@ -1500,8 +1502,21 @@ const s = StyleSheet.create({
     disclaimerFooter: { fontSize: 11, color: Color.mako, textAlign: "center", paddingHorizontal: 16 },
 
     headerActions: { flexDirection: "row", gap: 12 },
-    translatingRow: { flexDirection: "row", alignItems: "center", gap: 8, alignSelf: "center" },
-    translatingText: { fontSize: 12, color: Color.mako },
+    toast: {
+        position: "absolute",
+        alignSelf: "center",
+        maxWidth: "90%",
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        backgroundColor: "rgba(7,30,39,0.88)",
+        borderRadius: 20,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        zIndex: 50,
+        elevation: 6,
+    },
+    toastText: { color: Color.white, fontSize: 12, flexShrink: 1 },
     msgActions: { flexDirection: "row", gap: 14, marginTop: 8, flexWrap: "wrap" },
     msgActionText: { fontSize: 12, color: Color.endeavour, fontWeight: "600" },
     exportPreview: {
