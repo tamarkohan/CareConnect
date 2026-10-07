@@ -6,7 +6,7 @@
  *   - changed pages    → old chunks replaced (detected by a hash of the text)
  *   - unchanged pages  → only "last seen" is updated (no Gemini calls)
  *   - removed pages    → deleted (only after a complete, healthy crawl)
- * It also purges expired contracts.
+ * It also purges expired contracts and sessions, and accounts unused for a year.
  *
  * Re-running is cheap and safe: if a run stops half way (e.g. Gemini quota),
  * the next run continues with whatever is still missing.
@@ -128,6 +128,22 @@ async function main() {
   // Done here with plain SQL so this job never needs CONTRACT_ENCRYPTION_KEY.
   const { rowCount: purged } = await db.query("DELETE FROM contracts WHERE expires_at <= now()");
   if (purged) console.log(`Purged ${purged} expired contract(s).`);
+
+  // Keep the free Supabase plan small: expired logins, and accounts nobody has
+  // used for a year (their contract, chat and translations go with them).
+  const { rows: [{ ok: hasUsers }] } = await db.query("SELECT to_regclass('sessions') IS NOT NULL AS ok");
+  if (hasUsers) {
+    const { rowCount: sessions } = await db.query("DELETE FROM sessions WHERE expires_at <= now()");
+    if (sessions) console.log(`Purged ${sessions} expired session(s).`);
+    const { rowCount: users } = await db.query(
+      `DELETE FROM users u
+       WHERE NOT u.is_demo AND u.last_login_at < now() - interval '365 days'
+         AND NOT EXISTS (SELECT 1 FROM sessions s WHERE s.user_id = u.id)`
+    );
+    if (users) console.log(`Removed ${users} account(s) unused for a year.`);
+  } else {
+    console.warn("Users tables missing: run db/schema.sql again in Supabase.");
+  }
 
   await db.pool.end();
   if (failed) process.exitCode = 1;

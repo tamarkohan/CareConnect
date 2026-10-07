@@ -20,6 +20,19 @@ export function showAlert(title: string, message?: string) {
     Alert.alert(title, message);
 }
 
+/** Asks "OK / Cancel" and resolves true on OK. Works in the browser too. */
+export function confirmAction(message: string, okLabel = "OK", cancelLabel = "Cancel"): Promise<boolean> {
+    if (Platform.OS === "web") {
+        return Promise.resolve(typeof window !== "undefined" && window.confirm(message));
+    }
+    return new Promise((resolve) =>
+        Alert.alert("", message, [
+            { text: cancelLabel, style: "cancel", onPress: () => resolve(false) },
+            { text: okLabel, style: "destructive", onPress: () => resolve(true) },
+        ])
+    );
+}
+
 /**
  * Reads a local file / blob / data URI and returns plain base64 (no "data:" prefix).
  * expo-file-system can't read files in the browser, so on web we use fetch + FileReader.

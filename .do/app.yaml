@@ -48,6 +48,19 @@ services:
         type: SECRET
         # 32 random bytes, base64. Keep a copy somewhere safe – without it
         # stored contracts can't be decrypted.
+      - key: NODE_ENV
+        value: production
+        scope: RUN_TIME
+        # Hides one-time codes from the logs (see services/otp.js).
+      - key: DEMO_LOGIN
+        value: "true"
+        scope: RUN_TIME
+        # Phone "123" signs in to the demo account without a code.
+        # Set to "false" when the app goes to real users.
+      # One-time codes by SMS / email – add when you have an account:
+      # - key: TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN / TWILIO_FROM   (SMS)
+      # - key: RESEND_API_KEY / OTP_EMAIL_FROM                         (email)
+      #   scope: RUN_TIME, type: SECRET
 
 static_sites:
   - name: web

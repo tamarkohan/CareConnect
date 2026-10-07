@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "sync": "node scripts/sync-knowledge.js"
+    "sync": "node scripts/sync-knowledge.js",
+    "demo:reset": "node scripts/demo-reset.js"
   },
   "dependencies": {
     "@google/genai": "^2.27.0",
@@ -15,6 +16,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "mammoth": "^1.13.0",
     "pg": "^8.23.1",
     "unpdf": "^1.8.1"
   },

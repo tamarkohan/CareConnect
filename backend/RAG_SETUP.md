@@ -107,10 +107,11 @@ which the app shows under each reply.
 | Risk | Protection |
 |---|---|
 | Someone reads the database (leak, stolen password) | Text is encrypted with AES-256-GCM by the backend before saving. The key is never stored in the DB. |
-| Someone guesses another user's ID | No user IDs any more. Upload returns a random 256-bit token; only its SHA-256 is stored. |
+| Someone guesses another user's ID | Signed-in users reach their data only with their session token (random 256-bit, only its SHA-256 stored). Guests get a random contract token the same way. |
 | Access through Supabase's public API | Tables are in a private `careconnect` schema that the API doesn't expose, RLS is on, and API roles have no grants. |
 | Token stolen from the phone | Stored in the iOS Keychain / Android Keystore (`expo-secure-store`). On the web build: `localStorage`. |
-| Data kept forever | Contracts expire after 90 days (`CONTRACT_TTL_DAYS`) and are purged by the daily job. Users can delete theirs at any time ("Remove my contract"). |
+| Data kept forever | Contracts expire after 90 days without use (`CONTRACT_TTL_DAYS`) and are purged by the daily job. Users can delete their contract and chat at any time ("Remove my contract", "Clear chat"). |
+| Chat history and translations | Encrypted the same way (see [USERS_SETUP.md](USERS_SETUP.md)). |
 | In transit | HTTPS app → backend, TLS backend → Supabase. |
 | Logs | The backend never logs contract text or tokens. |
 

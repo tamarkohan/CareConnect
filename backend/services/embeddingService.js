@@ -29,7 +29,10 @@ function isTemporary(err) {
   return [429, 500, 502, 503, 504].includes(err?.status);
 }
 
-async function embedBatch(texts, taskType) {
+// A user is waiting for a chat answer: retry once, quickly, then answer without sources.
+const QUERY_RETRY_DELAYS_MS = [1000];
+
+async function embedBatch(texts, taskType, retryDelays = RETRY_DELAYS_MS) {
   for (let attempt = 0; ; attempt++) {
     try {
       const res = await ai.models.embedContent({
@@ -39,9 +42,9 @@ async function embedBatch(texts, taskType) {
       });
       return res.embeddings.map((e) => e.values);
     } catch (err) {
-      if (!isTemporary(err) || attempt >= RETRY_DELAYS_MS.length) throw err;
-      console.warn(`[embed] ${err.status} – retrying in ${RETRY_DELAYS_MS[attempt] / 1000}s`);
-      await sleep(RETRY_DELAYS_MS[attempt]);
+      if (!isTemporary(err) || attempt >= retryDelays.length) throw err;
+      console.warn(`[embed] ${err.status} – retrying in ${retryDelays[attempt] / 1000}s`);
+      await sleep(retryDelays[attempt]);
     }
   }
 }
@@ -62,7 +65,7 @@ async function embedMany(texts, taskType = "RETRIEVAL_DOCUMENT") {
 
 /** Embed a user question for searching. */
 async function embedQuery(text) {
-  const [vector] = await embedBatch([text], "RETRIEVAL_QUERY");
+  const [vector] = await embedBatch([text], "RETRIEVAL_QUERY", QUERY_RETRY_DELAYS_MS);
   return vector;
 }
 

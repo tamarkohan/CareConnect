@@ -10,17 +10,25 @@ import {
     ActivityIndicator,
     KeyboardAvoidingView,
     Platform,
-    TouchableWithoutFeedback,
     Keyboard,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { Audio } from "expo-av";
-import { showAlert, uriToBase64, mimeFromDataUri } from "../api/platform";
+import { showAlert, uriToBase64, mimeFromDataUri, confirmAction } from "../api/platform";
 import TopBar from "../components/TopBar";
-import { useLang } from "../AppContext";
+import { useApp } from "../AppContext";
 import { T, LangCode, formatRelativeTime } from "../translations";
-import { translateText, TranslateResponse } from "../api/client";
+import { BOT_T } from "../botStrings";
+import {
+    translateText,
+    TranslateResponse,
+    TranslationContext,
+    SavedTranslation,
+    getTranslationHistory,
+    clearTranslationHistory,
+    updateMe,
+} from "../api/client";
 
 // ── Tokens ───────────────────────────────────────────────────────────
 const Color = {
@@ -158,6 +166,25 @@ const SEED_TRANSLATIONS: TranslationEntry[] = [
 // ── Language options (must match what backend supports) ──────────────
 const TARGET_LANGS = ["Hebrew", "English", "Tagalog", "Malayalam", "Russian"];
 
+const CONTEXTS: TranslationContext[] = ["general", "medical", "transit", "slang"];
+const HISTORY_SIZES = [3, 5, 10] as const;
+
+/** A translation from the server (or just made) → a card in the list. */
+function toEntry(r: TranslateResponse, fallbackSource: string, inputType = "text", targetLanguage = ""): TranslationEntry {
+    const category = r.category !== "general" ? r.category : undefined;
+    const prefix = inputType === "image" ? "📷 " : inputType === "audio" ? "🎤 " : "";
+    return {
+        id: r.id ?? Date.now().toString(),
+        category,
+        tag: category ? undefined : `${prefix}${r.detectedLanguage} → ${targetLanguage}`,
+        timestamp: r.createdAt ? new Date(r.createdAt).getTime() : Date.now(),
+        hebrewText: r.sourceText || fallbackSource,
+        phonetic: r.phonetic || undefined,
+        translated: r.translatedText,
+        note: r.note || undefined,
+    };
+}
+
 // ── Recording config ─────────────────────────────────────────────────
 const RECORDING_OPTIONS: Audio.RecordingOptions = {
     android: {
@@ -190,10 +217,58 @@ type Props = { navigation?: any };
 
 export default function TranslatorScreen({ navigation }: Props) {
     const insets = useSafeAreaInsets();
-    const { lang } = useLang();
+    const { lang, user, setUser } = useApp();
     const t = T[lang];
+    const b = BOT_T[lang];
 
-    const [recentTranslations, setRecentTranslations] = React.useState<TranslationEntry[]>(SEED_TRANSLATIONS);
+    // Guests see examples; signed-in users their own last 3 / 5 / 10.
+    const [recentTranslations, setRecentTranslations] = React.useState<TranslationEntry[]>(
+        user ? [] : SEED_TRANSLATIONS
+    );
+    const historySize = user?.translationHistorySize ?? 5;
+    const [context, setContext] = React.useState<TranslationContext>("general");
+
+    React.useEffect(() => {
+        if (!user) {
+            setRecentTranslations(SEED_TRANSLATIONS);
+            return;
+        }
+        let cancelled = false;
+        getTranslationHistory()
+            .then(({ translations }) => {
+                if (cancelled) return;
+                setRecentTranslations(
+                    translations.map((x: SavedTranslation) => toEntry(x, "", x.inputType, x.targetLanguage))
+                );
+            })
+            .catch(() => {});
+        return () => {
+            cancelled = true;
+        };
+    }, [user?.id, historySize]);
+
+    /** Adds a new translation at the top, keeping only as many as the user wants. */
+    const addEntry = (entry: TranslationEntry) =>
+        setRecentTranslations((prev) => [entry, ...prev].slice(0, user ? historySize : prev.length + 1));
+
+    const changeHistorySize = async (size: 3 | 5 | 10) => {
+        if (!user || size === historySize) return;
+        try {
+            setUser((await updateMe({ translationHistorySize: size })).user);
+        } catch (err: any) {
+            showAlert("Error", err?.message);
+        }
+    };
+
+    const handleClearHistory = async () => {
+        if (!(await confirmAction(b.clearHistoryConfirm, b.clearHistory, b.cancel))) return;
+        try {
+            await clearTranslationHistory();
+            setRecentTranslations([]);
+        } catch (err: any) {
+            showAlert("Error", err?.message);
+        }
+    };
 
     // ── Translate modal state ─────────────────────────────────────────
     const [modalVisible, setModalVisible] = React.useState(false);
@@ -243,19 +318,11 @@ export default function TranslatorScreen({ navigation }: Props) {
             const result: TranslateResponse = await translateText({
                 text: trimmed,
                 targetLanguage: targetLang,
+                context,
+                readerLanguage: lang,
             });
 
-            const newItem: TranslationEntry = {
-                id: Date.now().toString(),
-                tag: `${result.detectedLanguage} → ${targetLang}`,
-                tagBg: Color.transitBg,
-                tagText: Color.transitText,
-                timestamp: Date.now(),
-                hebrewText: trimmed,
-                translated: result.translatedText,
-            };
-
-            setRecentTranslations((prev) => [newItem, ...prev]);
+            addEntry(toEntry(result, trimmed, "text", targetLang));
             closeModal();
         } catch (err: any) {
             setError(err?.message ?? "Translation failed. Is the backend running?");
@@ -306,19 +373,11 @@ export default function TranslatorScreen({ navigation }: Props) {
                 imageBase64: base64,
                 imageMimeType: asset.mimeType ?? mimeFromDataUri(asset.uri) ?? "image/jpeg",
                 targetLanguage: targetLang,
+                context,
+                readerLanguage: lang,
             });
 
-            const newItem: TranslationEntry = {
-                id: Date.now().toString(),
-                tag: `📷 Photo (${translated.detectedLanguage}) → ${targetLang}`,
-                tagBg: Color.medicalBg,
-                tagText: Color.medicalText,
-                timestamp: Date.now(),
-                hebrewText: "(scanned from photo)",
-                translated: translated.translatedText,
-            };
-
-            setRecentTranslations((prev) => [newItem, ...prev]);
+            addEntry(toEntry(translated, b.fromPhoto, "image", targetLang));
         } catch (err: any) {
             showAlert("Scan Failed", err?.message ?? "Could not process the image. Is the backend running?");
         } finally {
@@ -382,19 +441,11 @@ export default function TranslatorScreen({ navigation }: Props) {
                 audioBase64: base64,
                 audioMimeType: mimeType,
                 targetLanguage: targetLang,
+                context,
+                readerLanguage: lang,
             });
 
-            const newItem: TranslationEntry = {
-                id: Date.now().toString(),
-                tag: `🎤 Voice (${result.detectedLanguage}) → ${targetLang}`,
-                tagBg: Color.slanBg,
-                tagText: Color.slanText,
-                timestamp: Date.now(),
-                hebrewText: "(spoken via microphone)",
-                translated: result.translatedText,
-            };
-
-            setRecentTranslations((prev) => [newItem, ...prev]);
+            addEntry(toEntry(result, b.fromVoice, "audio", targetLang));
         } catch (err: any) {
             showAlert("Translation Failed", err?.message ?? "Could not translate the recording. Is the backend running?");
         } finally {
@@ -511,7 +562,7 @@ export default function TranslatorScreen({ navigation }: Props) {
 
                 {/* Target language selector (always visible for scan & voice) */}
                 <View>
-                    <Text style={s.langRowLabel}>Translate into:</Text>
+                    <Text style={s.langRowLabel}>{b.translateInto}</Text>
                     <ScrollView
                         horizontal
                         showsHorizontalScrollIndicator={false}
@@ -531,6 +582,24 @@ export default function TranslatorScreen({ navigation }: Props) {
                     </ScrollView>
                 </View>
 
+                {/* Kind of text: gives the translator the right context */}
+                <View>
+                    <Text style={s.langRowLabel}>{b.contextLabel}</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.langRow}>
+                        {CONTEXTS.map((c) => (
+                            <Pressable
+                                key={c}
+                                style={[s.langChip, context === c && s.langChipActive]}
+                                onPress={() => setContext(c)}
+                            >
+                                <Text style={[s.langChipText, context === c && s.langChipTextActive]}>
+                                    {b.contexts[c]}
+                                </Text>
+                            </Pressable>
+                        ))}
+                    </ScrollView>
+                </View>
+
                 {/* Recording active banner */}
                 {isRecording && (
                     <View style={s.recordingBanner}>
@@ -542,9 +611,30 @@ export default function TranslatorScreen({ navigation }: Props) {
                 )}
 
                 {/* Recent translations / history */}
+                {user && (
+                    <View style={s.historyBar}>
+                        <Text style={s.historyLabel}>{b.rememberLast}</Text>
+                        {HISTORY_SIZES.map((n) => (
+                            <Pressable
+                                key={n}
+                                style={[s.sizeChip, historySize === n && s.langChipActive]}
+                                onPress={() => changeHistorySize(n)}
+                            >
+                                <Text style={[s.langChipText, historySize === n && s.langChipTextActive]}>{n}</Text>
+                            </Pressable>
+                        ))}
+                        {recentTranslations.length > 0 && (
+                            <Pressable onPress={handleClearHistory} hitSlop={8} style={{ marginLeft: "auto" }}>
+                                <Text style={s.clearText}>🗑 {b.clearHistory}</Text>
+                            </Pressable>
+                        )}
+                    </View>
+                )}
+
                 {recentTranslations.length > 0 && (
                     <>
                         <Text style={s.recentTitle}>{t.recentTranslations}</Text>
+                        {!user && <Text style={s.exampleNote}>{b.exampleNote}</Text>}
                         <View style={s.recentList}>
                             {recentTranslations.map((item) => {
                                 let tagBg = Color.transitBg;
@@ -592,9 +682,7 @@ export default function TranslatorScreen({ navigation }: Props) {
                                                 {tagLabel}
                                             </Text>
                                             <Text style={s.tagTime}>
-                                                {item.category
-                                                    ? formatRelativeTime(new Date(item.timestamp), lang)
-                                                    : "Just now"}
+                                                {formatRelativeTime(new Date(item.timestamp), lang)}
                                             </Text>
                                         </View>
 
@@ -662,19 +750,23 @@ export default function TranslatorScreen({ navigation }: Props) {
                 animationType="slide"
                 onRequestClose={closeModal}
             >
-                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                    <View style={s.modalOverlay}>
+                {/* No full-screen touch handler: on the web it stole the focus from the text box. */}
+                <View style={s.modalOverlay}>
+                        <Pressable
+                            style={StyleSheet.absoluteFill}
+                            onPress={Platform.OS === "web" ? undefined : Keyboard.dismiss}
+                        />
                         <KeyboardAvoidingView
                             behavior={Platform.OS === "ios" ? "padding" : "height"}
                             style={s.modalSheet}
                         >
                             <View style={s.handleBar} />
 
-                            <Text style={s.modalTitle}>Translate Text</Text>
+                            <Text style={s.modalTitle}>{b.translateTitle}</Text>
 
                             <TextInput
                                 style={s.modalInput}
-                                placeholder="Type or paste text in any language…"
+                                placeholder={b.translatePh}
                                 placeholderTextColor={Color.silver}
                                 value={inputText}
                                 onChangeText={setInputText}
@@ -683,7 +775,7 @@ export default function TranslatorScreen({ navigation }: Props) {
                                 textAlignVertical="top"
                             />
 
-                            <Text style={s.modalLabel}>Translate into:</Text>
+                            <Text style={s.modalLabel}>{b.translateInto}</Text>
                             <ScrollView
                                 horizontal
                                 showsHorizontalScrollIndicator={false}
@@ -702,6 +794,25 @@ export default function TranslatorScreen({ navigation }: Props) {
                                 ))}
                             </ScrollView>
 
+                            <Text style={s.modalLabel}>{b.contextLabel}</Text>
+                            <ScrollView
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                contentContainerStyle={s.langRow}
+                            >
+                                {CONTEXTS.map((c) => (
+                                    <Pressable
+                                        key={c}
+                                        style={[s.langChip, context === c && s.langChipActive]}
+                                        onPress={() => setContext(c)}
+                                    >
+                                        <Text style={[s.langChipText, context === c && s.langChipTextActive]}>
+                                            {b.contexts[c]}
+                                        </Text>
+                                    </Pressable>
+                                ))}
+                            </ScrollView>
+
                             {error && (
                                 <View style={s.errorBox}>
                                     <Text style={s.errorText}>⚠ {error}</Text>
@@ -710,7 +821,7 @@ export default function TranslatorScreen({ navigation }: Props) {
 
                             <View style={s.modalButtons}>
                                 <Pressable style={s.cancelBtn} onPress={closeModal}>
-                                    <Text style={s.cancelText}>Cancel</Text>
+                                    <Text style={s.cancelText}>{b.cancel}</Text>
                                 </Pressable>
                                 <Pressable
                                     style={[
@@ -723,13 +834,12 @@ export default function TranslatorScreen({ navigation }: Props) {
                                     {loading ? (
                                         <ActivityIndicator color={Color.white} size="small" />
                                     ) : (
-                                        <Text style={s.translateBtnText}>Translate →</Text>
+                                        <Text style={s.translateBtnText}>{b.translateBtn}</Text>
                                     )}
                                 </Pressable>
                             </View>
                         </KeyboardAvoidingView>
-                    </View>
-                </TouchableWithoutFeedback>
+                </View>
             </Modal>
         </View>
     );
@@ -821,6 +931,18 @@ const s = StyleSheet.create({
         backgroundColor: Color.recordingPulse,
     },
     recordingBannerText: { fontSize: 13, color: Color.recordingText, fontWeight: "500" },
+    historyBar: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
+    historyLabel: { fontSize: 13, color: Color.mako, fontWeight: "600" },
+    sizeChip: {
+        borderWidth: 1,
+        borderColor: Color.linkWater,
+        borderRadius: 16,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        backgroundColor: Color.white,
+    },
+    clearText: { fontSize: 12, color: Color.mako, fontWeight: "600" },
+    exampleNote: { fontSize: 12, color: Color.mako, fontStyle: "italic", marginTop: -10 },
     recentTitle: { fontSize: 16, fontWeight: "700", color: Color.blackPearl, marginTop: 8 },
     recentList: { gap: 12 },
     recentItem: {

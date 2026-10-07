@@ -34,7 +34,7 @@ type Props = {
 };
 
 export default function TopBar({ title, navigation }: Props) {
-    const { lang, setLang } = useLang();
+    const { lang, setLang, signOut } = useLang();
     const [showMenu, setShowMenu] = React.useState(false);
     const [showLangs, setShowLangs] = React.useState(false);
 
@@ -96,9 +96,10 @@ export default function TopBar({ title, navigation }: Props) {
 
                                 <Pressable
                                     style={s.menuItem}
-                                    onPress={() => {
+                                    onPress={async () => {
                                         setShowMenu(false);
-                                        navigation?.navigate("Login");
+                                        await signOut();
+                                        navigation?.reset({ index: 0, routes: [{ name: "Login" }] });
                                     }}
                                 >
                                     <Text style={[s.menuItemIcon, s.logoutIcon]}>↩</Text>
