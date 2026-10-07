@@ -12,6 +12,7 @@ import {
     ActivityIndicator,
     Keyboard,
     Linking,
+    Share,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Audio } from "expo-av";
@@ -32,6 +33,7 @@ import {
     clearLegalHistory,
     deleteContract,
     translateText,
+    translateMessages,
     updateMe,
     ContractInfo,
     ContractFile,
@@ -90,7 +92,21 @@ type Message = {
     text: string;
     isError?: boolean;
     sources?: LegalSource[];
+    /** Language it was written in ("English"…); null/undefined = unknown. */
+    lang?: string | null;
+    /** App notices ("contract saved"…) are shown from botStrings in the current language. */
+    noticeKey?: "contractReady" | "contractDeleted";
 };
+
+/** Chat text for WhatsApp: *bold*, • bullets, sources as links. */
+function toPlainText(text: string) {
+    return text
+        .replace(/\*\*(.+?)\*\*/g, "*$1*")
+        .replace(/^\s*[-*•]\s+/gm, "• ")
+        .replace(/^#{1,6}\s+/gm, "")
+        .replace(/^([-*_]\s*){3,}$/gm, "")
+        .trim();
+}
 
 // ── Language mapping (app lang → full name for backend) ───────────────
 const LANG_NAMES: Record<string, string> = {
@@ -144,10 +160,23 @@ export default function AssistantScreen({ navigation }: Props) {
     const recordingRef = React.useRef<Audio.Recording | null>(null);
     const timerRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
 
+    // ── Earlier messages shown in the current app language ────────────
+    // key `${id}|${language}` → translated text. Kept in memory only.
+    const [translations, setTranslations] = React.useState<Record<string, string>>({});
+    const [showOriginal, setShowOriginal] = React.useState<Set<string>>(new Set());
+    const [translatingChat, setTranslatingChat] = React.useState(false);
+    const requestedRef = React.useRef<Set<string>>(new Set());
+
+    // ── Export / share ────────────────────────────────────────────────
+    const [exportText, setExportText] = React.useState<string | null>(null);
+    const [copied, setCopied] = React.useState(false);
+
     const scrollToEnd = (delay = 80) =>
         setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), delay);
     const addBotMessage = (text: string, isError = false) =>
         setMessages((prev) => [...prev, { id: `${Date.now()}-${prev.length}`, role: "assistant", text, isError }]);
+    const addNotice = (noticeKey: Message["noticeKey"]) =>
+        setMessages((prev) => [...prev, { id: `${Date.now()}-${prev.length}`, role: "assistant", text: "", noticeKey }]);
 
     // Load the saved contract and chat (signed in) or the guest's contract token.
     React.useEffect(() => {
@@ -159,7 +188,9 @@ export default function AssistantScreen({ navigation }: Props) {
                     const [c, h] = await Promise.all([getContract(), getLegalHistory()]);
                     if (cancelled) return;
                     setContract(c.contract);
-                    setMessages(h.messages.map((m) => ({ id: m.id, role: m.role, text: m.text, sources: m.sources })));
+                    setMessages(
+                        h.messages.map((m) => ({ id: m.id, role: m.role, text: m.text, sources: m.sources, lang: m.language }))
+                    );
                     scrollToEnd(150);
                 } catch (err: any) {
                     if (!cancelled) addBotMessage(`⚠ ${err?.status ? err.message : b.errAsk}`, true);
@@ -185,6 +216,118 @@ export default function AssistantScreen({ navigation }: Props) {
             if (accepted < DISCLAIMER_VERSION) setDisclaimerVisible(true);
         })();
     }, [user?.id]);
+
+    // When the app language changes (or the chat loads), translate earlier
+    // messages written in another language — in one call, newest 30 first.
+    React.useEffect(() => {
+        const todo = messages
+            .filter((m) => !m.noticeKey && !m.isError && m.text && m.lang !== responseLang)
+            .filter((m) => {
+                const key = `${m.id}|${responseLang}`;
+                return translations[key] === undefined && !requestedRef.current.has(key);
+            })
+            .slice(-30);
+        if (!todo.length) return;
+        todo.forEach((m) => requestedRef.current.add(`${m.id}|${responseLang}`));
+
+        let cancelled = false;
+        setTranslatingChat(true);
+        translateMessages(responseLang, todo.map((m) => ({ id: m.id, text: m.text })))
+            .then(({ translations: got }) => {
+                if (cancelled) return;
+                setTranslations((prev) => {
+                    const next = { ...prev };
+                    for (const m of todo) next[`${m.id}|${responseLang}`] = got[m.id] ?? m.text;
+                    return next;
+                });
+            })
+            .catch(() => {
+                // Leave them in the original language; try again on the next language change.
+                todo.forEach((m) => requestedRef.current.delete(`${m.id}|${responseLang}`));
+            })
+            .finally(() => {
+                if (!cancelled) setTranslatingChat(false);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [responseLang, messages]);
+
+    /** The text to show for a message in the current language. */
+    const displayText = (m: Message) => {
+        if (m.noticeKey) return b[m.noticeKey];
+        if (showOriginal.has(m.id)) return m.text;
+        return translations[`${m.id}|${responseLang}`] ?? m.text;
+    };
+    const isTranslated = (m: Message) =>
+        !m.noticeKey && translations[`${m.id}|${responseLang}`] !== undefined &&
+        translations[`${m.id}|${responseLang}`] !== m.text;
+
+    const toggleOriginal = (id: string) =>
+        setShowOriginal((prev) => {
+            const next = new Set(prev);
+            next.has(id) ? next.delete(id) : next.add(id);
+            return next;
+        });
+
+    // ── Export ────────────────────────────────────────────────────────
+    const buildExport = (list: Message[]) => {
+        const lines = [`⚖️ ${b.exportHeader}`, new Date().toLocaleDateString(), ""];
+        for (const m of list) {
+            if (m.isError) continue;
+            lines.push(`*${m.role === "user" ? b.exportYou : b.exportBot}:*`);
+            lines.push(toPlainText(displayText(m)));
+            if (m.sources?.length) {
+                lines.push(`${b.exportSources}:`);
+                m.sources.forEach((src) => lines.push(`[${src.id}] ${src.title} – ${src.url}`));
+            }
+            lines.push("");
+        }
+        lines.push(b.disclaimerFooter);
+        return lines.join("\n");
+    };
+
+    const openExport = (list: Message[]) => {
+        setCopied(false);
+        setExportText(buildExport(list));
+    };
+
+    /** The question before an answer + the answer itself. */
+    const pairFor = (msg: Message) => {
+        const i = messages.findIndex((m) => m.id === msg.id);
+        const q = [...messages.slice(0, i)].reverse().find((m) => m.role === "user");
+        return q ? [q, msg] : [msg];
+    };
+
+    const shareWhatsApp = () => {
+        if (!exportText) return;
+        Linking.openURL(`https://wa.me/?text=${encodeURIComponent(exportText)}`);
+        setExportText(null);
+    };
+
+    const shareOther = async () => {
+        if (!exportText) return;
+        try {
+            if (Platform.OS === "web" && !(navigator as any).share) {
+                await copyExport();
+                return;
+            }
+            await Share.share({ message: exportText });
+            setExportText(null);
+        } catch {
+            // closed the share sheet
+        }
+    };
+
+    const copyExport = async () => {
+        if (!exportText) return;
+        try {
+            await navigator.clipboard.writeText(exportText);
+            setCopied(true);
+        } catch {
+            showAlert(b.copyText, exportText);
+        }
+    };
 
     const acceptDisclaimer = async () => {
         setDisclaimerVisible(false);
@@ -216,7 +359,7 @@ export default function AssistantScreen({ navigation }: Props) {
             setContract(res.contract);
         }
         setShowSummary(true);
-        addBotMessage(b.contractReady);
+        addNotice("contractReady");
         scrollToEnd();
     };
 
@@ -347,7 +490,7 @@ export default function AssistantScreen({ navigation }: Props) {
         await clearContractToken();
         setGuestToken(null);
         setContract(null);
-        addBotMessage(b.contractDeleted);
+        addNotice("contractDeleted");
     };
 
     // ── Clear chat ────────────────────────────────────────────────────
@@ -370,6 +513,7 @@ export default function AssistantScreen({ navigation }: Props) {
             id: Date.now().toString(),
             role: "user",
             text: trimmed,
+            lang: responseLang,
         };
 
         setMessages((prev) => [...prev, userMsg]);
@@ -398,6 +542,7 @@ export default function AssistantScreen({ navigation }: Props) {
                 role: "assistant",
                 text: res.answer,
                 sources: res.sources,
+                lang: res.language,
             };
             setMessages((prev) => [...prev, botMsg]);
         } catch (err: any) {
@@ -557,9 +702,14 @@ export default function AssistantScreen({ navigation }: Props) {
                             <Text style={[s.subheading, { marginTop: 2 }]}>{t.assistantSub}</Text>
                         </View>
                         {messages.length > 0 && (
-                            <Pressable onPress={handleClearChat} hitSlop={8} style={s.clearChatBtn}>
-                                <Text style={s.clearChatText}>🗑 {b.clearChat}</Text>
-                            </Pressable>
+                            <View style={s.headerActions}>
+                                <Pressable onPress={() => openExport(messages)} hitSlop={8} style={s.clearChatBtn}>
+                                    <Text style={s.clearChatText}>📤 {b.exportChat}</Text>
+                                </Pressable>
+                                <Pressable onPress={handleClearChat} hitSlop={8} style={s.clearChatBtn}>
+                                    <Text style={s.clearChatText}>🗑 {b.clearChat}</Text>
+                                </Pressable>
+                            </View>
                         )}
                     </View>
 
@@ -642,6 +792,12 @@ export default function AssistantScreen({ navigation }: Props) {
                     )}
 
                     {loadingHistory && <ActivityIndicator color={Color.endeavour} />}
+                    {translatingChat && (
+                        <View style={s.translatingRow}>
+                            <ActivityIndicator size="small" color={Color.endeavour} />
+                            <Text style={s.translatingText}>{b.translatingChat}</Text>
+                        </View>
+                    )}
 
                     {/* Empty state before any message */}
                     {messages.length === 0 && !loadingHistory && (
@@ -693,10 +849,10 @@ export default function AssistantScreen({ navigation }: Props) {
                                                     : undefined
                                             }
                                         >
-                                            {msg.text}
+                                            {displayText(msg)}
                                         </MarkdownText>
                                     ) : (
-                                        <Text style={s.userText}>{msg.text}</Text>
+                                        <Text style={s.userText}>{displayText(msg)}</Text>
                                     )}
                                     {!!msg.sources?.length && (
                                         <View style={s.sourcesBox}>
@@ -710,6 +866,22 @@ export default function AssistantScreen({ navigation }: Props) {
                                                     [{src.id}] {src.title}
                                                 </Text>
                                             ))}
+                                        </View>
+                                    )}
+                                    {(isTranslated(msg) || (msg.role === "assistant" && !msg.isError && !msg.noticeKey)) && (
+                                        <View style={s.msgActions}>
+                                            {isTranslated(msg) && (
+                                                <Pressable onPress={() => toggleOriginal(msg.id)} hitSlop={6}>
+                                                    <Text style={s.msgActionText}>
+                                                        🌐 {showOriginal.has(msg.id) ? b.showTranslation : b.showOriginal}
+                                                    </Text>
+                                                </Pressable>
+                                            )}
+                                            {msg.role === "assistant" && !msg.isError && !msg.noticeKey && (
+                                                <Pressable onPress={() => openExport(pairFor(msg))} hitSlop={6}>
+                                                    <Text style={s.msgActionText}>↗ {b.shareAnswer}</Text>
+                                                </Pressable>
+                                            )}
                                         </View>
                                     )}
                                 </View>
@@ -924,6 +1096,42 @@ export default function AssistantScreen({ navigation }: Props) {
                             </Pressable>
                         </View>
                     </KeyboardAvoidingView>
+                </View>
+            </Modal>
+
+            {/* ── Export / share chat ── */}
+            <Modal
+                visible={exportText !== null}
+                transparent
+                animationType="slide"
+                onRequestClose={() => setExportText(null)}
+            >
+                <View style={s.modalOverlay}>
+                    <Pressable style={StyleSheet.absoluteFill} onPress={() => setExportText(null)} />
+                    <View style={s.modalSheet}>
+                        <View style={s.handleBar} />
+                        <Text style={s.modalTitle}>{b.exportTitle}</Text>
+                        <ScrollView style={s.exportPreview}>
+                            <Text style={s.exportPreviewText}>{exportText}</Text>
+                        </ScrollView>
+                        <Pressable style={s.menuOption} onPress={shareWhatsApp}>
+                            <Text style={s.menuOptionIcon}>💬</Text>
+                            <Text style={s.menuOptionText}>{b.shareWhatsApp}</Text>
+                        </Pressable>
+                        <Pressable style={s.menuOption} onPress={shareOther}>
+                            <Text style={s.menuOptionIcon}>📤</Text>
+                            <Text style={s.menuOptionText}>{b.shareOther}</Text>
+                        </Pressable>
+                        {Platform.OS === "web" && (
+                            <Pressable style={s.menuOption} onPress={copyExport}>
+                                <Text style={s.menuOptionIcon}>📋</Text>
+                                <Text style={s.menuOptionText}>{copied ? b.copied : b.copyText}</Text>
+                            </Pressable>
+                        )}
+                        <Pressable style={s.cancelBtn} onPress={() => setExportText(null)}>
+                            <Text style={s.cancelText}>{b.cancel}</Text>
+                        </Pressable>
+                    </View>
                 </View>
             </Modal>
 
@@ -1224,6 +1432,19 @@ const s = StyleSheet.create({
     typingRow: { flexDirection: "row", alignItems: "center", gap: 8 },
     inputArea: { backgroundColor: Color.white, borderTopWidth: 1, borderTopColor: Color.linkWater, paddingBottom: 6 },
     disclaimerFooter: { fontSize: 11, color: Color.mako, textAlign: "center", paddingHorizontal: 16 },
+
+    headerActions: { flexDirection: "row", gap: 12 },
+    translatingRow: { flexDirection: "row", alignItems: "center", gap: 8, alignSelf: "center" },
+    translatingText: { fontSize: 12, color: Color.mako },
+    msgActions: { flexDirection: "row", gap: 14, marginTop: 8, flexWrap: "wrap" },
+    msgActionText: { fontSize: 12, color: Color.endeavour, fontWeight: "600" },
+    exportPreview: {
+        maxHeight: 180,
+        backgroundColor: Color.aliceBlue,
+        borderRadius: 12,
+        padding: 12,
+    },
+    exportPreviewText: { fontSize: 12, color: Color.blackPearl, lineHeight: 17 },
 
     // ── Upload menu ──────────────────────────────────────────────────
     menuOption: {

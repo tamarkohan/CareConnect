@@ -61,9 +61,6 @@ type Strings = {
 
     // Translator
     translateInto: string;
-    contextLabel: string;
-    contexts: { general: string; medical: string; transit: string; slang: string };
-    rememberLast: string;
     clearHistory: string;
     clearHistoryConfirm: string;
     translateTitle: string;
@@ -72,6 +69,23 @@ type Strings = {
     fromPhoto: string;
     fromVoice: string;
     exampleNote: string;
+    alsoMeans: string;
+
+    // Chat translation & export
+    translatingChat: string;
+    showOriginal: string;
+    showTranslation: string;
+    exportChat: string;
+    exportTitle: string;
+    shareAnswer: string;
+    shareWhatsApp: string;
+    shareOther: string;
+    copyText: string;
+    copied: string;
+    exportHeader: string;
+    exportYou: string;
+    exportBot: string;
+    exportSources: string;
 };
 
 export const BOT_T: Record<LangCode, Strings> = {
@@ -146,9 +160,6 @@ export const BOT_T: Record<LangCode, Strings> = {
         savedNote: "🔒 Saved encrypted to your account.",
 
         translateInto: "Translate into:",
-        contextLabel: "Type of text:",
-        contexts: { general: "General", medical: "Medical", transit: "Transit", slang: "Slang" },
-        rememberLast: "Remember my last:",
         clearHistory: "Clear",
         clearHistoryConfirm: "Delete your saved translations?",
         translateTitle: "Translate Text",
@@ -157,6 +168,21 @@ export const BOT_T: Record<LangCode, Strings> = {
         fromPhoto: "📷 Photo",
         fromVoice: "🎤 Voice",
         exampleNote: "Examples – sign in to keep your own translations.",
+        alsoMeans: "Could also mean:",
+        translatingChat: "Translating the chat…",
+        showOriginal: "Show original",
+        showTranslation: "Show translation",
+        exportChat: "Export",
+        exportTitle: "Send this chat",
+        shareAnswer: "Share",
+        shareWhatsApp: "Send by WhatsApp",
+        shareOther: "Share…",
+        copyText: "Copy text",
+        copied: "Copied ✓",
+        exportHeader: "CareConnect – my questions about my rights",
+        exportYou: "Me",
+        exportBot: "CareConnect assistant",
+        exportSources: "Sources",
     },
     tl: {
         codeLabel: "Code",
@@ -229,9 +255,6 @@ export const BOT_T: Record<LangCode, Strings> = {
         savedNote: "🔒 Naka-save nang naka-encrypt sa iyong account.",
 
         translateInto: "Isalin sa:",
-        contextLabel: "Uri ng teksto:",
-        contexts: { general: "Pangkalahatan", medical: "Medikal", transit: "Transportasyon", slang: "Slang" },
-        rememberLast: "Tandaan ang huling:",
         clearHistory: "Burahin",
         clearHistoryConfirm: "Burahin ang iyong mga naka-save na salin?",
         translateTitle: "Isalin ang Teksto",
@@ -240,6 +263,21 @@ export const BOT_T: Record<LangCode, Strings> = {
         fromPhoto: "📷 Litrato",
         fromVoice: "🎤 Boses",
         exampleNote: "Mga halimbawa – mag-sign in para ma-save ang sarili mong mga salin.",
+        alsoMeans: "Maaari ring mangahulugang:",
+        translatingChat: "Isinasalin ang chat…",
+        showOriginal: "Ipakita ang orihinal",
+        showTranslation: "Ipakita ang salin",
+        exportChat: "I-export",
+        exportTitle: "Ipadala ang chat na ito",
+        shareAnswer: "Ibahagi",
+        shareWhatsApp: "Ipadala sa WhatsApp",
+        shareOther: "Ibahagi…",
+        copyText: "Kopyahin ang teksto",
+        copied: "Nakopya ✓",
+        exportHeader: "CareConnect – mga tanong ko tungkol sa aking mga karapatan",
+        exportYou: "Ako",
+        exportBot: "CareConnect assistant",
+        exportSources: "Mga pinagkunan",
     },
     ml: {
         codeLabel: "കോഡ്",
@@ -312,9 +350,6 @@ export const BOT_T: Record<LangCode, Strings> = {
         savedNote: "🔒 നിങ്ങളുടെ അക്കൗണ്ടിൽ എൻക്രിപ്റ്റ് ചെയ്ത് സേവ് ചെയ്തു.",
 
         translateInto: "ഇതിലേക്ക് വിവർത്തനം ചെയ്യുക:",
-        contextLabel: "ടെക്സ്റ്റിന്റെ തരം:",
-        contexts: { general: "പൊതുവായത്", medical: "മെഡിക്കൽ", transit: "യാത്ര", slang: "സ്ലാങ്" },
-        rememberLast: "അവസാനത്തെ ഓർക്കുക:",
         clearHistory: "മായ്ക്കുക",
         clearHistoryConfirm: "സേവ് ചെയ്ത വിവർത്തനങ്ങൾ ഇല്ലാതാക്കണോ?",
         translateTitle: "ടെക്സ്റ്റ് വിവർത്തനം ചെയ്യുക",
@@ -323,6 +358,21 @@ export const BOT_T: Record<LangCode, Strings> = {
         fromPhoto: "📷 ഫോട്ടോ",
         fromVoice: "🎤 ശബ്ദം",
         exampleNote: "ഉദാഹരണങ്ങൾ – സ്വന്തം വിവർത്തനങ്ങൾ സൂക്ഷിക്കാൻ സൈൻ ഇൻ ചെയ്യുക.",
+        alsoMeans: "ഇതിനും അർത്ഥമാകാം:",
+        translatingChat: "ചാറ്റ് വിവർത്തനം ചെയ്യുന്നു…",
+        showOriginal: "യഥാർത്ഥം കാണിക്കുക",
+        showTranslation: "വിവർത്തനം കാണിക്കുക",
+        exportChat: "എക്സ്പോർട്ട്",
+        exportTitle: "ഈ ചാറ്റ് അയക്കുക",
+        shareAnswer: "പങ്കിടുക",
+        shareWhatsApp: "WhatsApp വഴി അയക്കുക",
+        shareOther: "പങ്കിടുക…",
+        copyText: "ടെക്സ്റ്റ് കോപ്പി ചെയ്യുക",
+        copied: "കോപ്പി ചെയ്തു ✓",
+        exportHeader: "CareConnect – എന്റെ അവകാശങ്ങളെക്കുറിച്ചുള്ള ചോദ്യങ്ങൾ",
+        exportYou: "ഞാൻ",
+        exportBot: "CareConnect അസിസ്റ്റന്റ്",
+        exportSources: "ഉറവിടങ്ങൾ",
     },
     ru: {
         codeLabel: "Код",
@@ -395,9 +445,6 @@ export const BOT_T: Record<LangCode, Strings> = {
         savedNote: "🔒 Сохранено в зашифрованном виде в вашем аккаунте.",
 
         translateInto: "Перевести на:",
-        contextLabel: "Тип текста:",
-        contexts: { general: "Общий", medical: "Медицина", transit: "Транспорт", slang: "Сленг" },
-        rememberLast: "Помнить последние:",
         clearHistory: "Очистить",
         clearHistoryConfirm: "Удалить сохранённые переводы?",
         translateTitle: "Перевод текста",
@@ -406,5 +453,20 @@ export const BOT_T: Record<LangCode, Strings> = {
         fromPhoto: "📷 Фото",
         fromVoice: "🎤 Голос",
         exampleNote: "Примеры – войдите, чтобы сохранять свои переводы.",
+        alsoMeans: "Может также означать:",
+        translatingChat: "Переводим чат…",
+        showOriginal: "Показать оригинал",
+        showTranslation: "Показать перевод",
+        exportChat: "Экспорт",
+        exportTitle: "Отправить этот чат",
+        shareAnswer: "Поделиться",
+        shareWhatsApp: "Отправить в WhatsApp",
+        shareOther: "Поделиться…",
+        copyText: "Скопировать текст",
+        copied: "Скопировано ✓",
+        exportHeader: "CareConnect – мои вопросы о моих правах",
+        exportYou: "Я",
+        exportBot: "Помощник CareConnect",
+        exportSources: "Источники",
     },
 };

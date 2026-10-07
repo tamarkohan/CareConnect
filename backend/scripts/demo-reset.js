@@ -57,7 +57,7 @@ async function main() {
   ]);
 
   const user = await users.findOrCreateUser({ kind: "phone", value: users.DEMO_PHONE });
-  await db.query("UPDATE users SET disclaimer_version = NULL, translation_history_size = 5 WHERE id = $1", [user.id]);
+  await db.query("UPDATE users SET disclaimer_version = NULL WHERE id = $1", [user.id]);
   await legalHistory.clearMessages(user.id);
   await translations.clearTranslations(user.id);
 

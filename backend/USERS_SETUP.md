@@ -82,6 +82,14 @@ the AI again.
 "Files or Google Drive" opens the phone's own file chooser: Google Drive
 (and iCloud on iPhone) appear there when their apps are installed.
 
+## Changing language, exporting
+
+- Switching the app language translates the earlier chat messages in **one**
+  Gemini call (newest 30). The translations stay in the app's memory only, so they
+  cost nothing in the database; "Show original" shows the message as written.
+- **Export** (whole chat) and **Share** (one question + answer) open WhatsApp,
+  the phone's share menu, or copy the text (browser).
+
 ## Translator glossary
 
 [`data/glossary.json`](data/glossary.json) lists Israeli institutions, medicine

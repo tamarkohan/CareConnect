@@ -9,7 +9,7 @@
  *                               → { token, user }
  * POST /api/auth/verify-code    { phone | email, code }        → { token, user }
  * GET  /api/auth/me             (signed in)                    → { user }
- * POST /api/auth/me             { translationHistorySize?, disclaimerVersion? } → { user }
+ * POST /api/auth/me             { disclaimerVersion } → { user }
  * POST /api/auth/logout         (signed in)                    → { success: true }
  *
  * Environment variables:
@@ -88,14 +88,11 @@ router.get("/me", users.requireAuth, (req, res) => {
 
 router.post("/me", users.requireAuth, async (req, res, next) => {
   try {
-    const { translationHistorySize, disclaimerVersion } = req.body || {};
-    if (translationHistorySize !== undefined && ![3, 5, 10].includes(translationHistorySize)) {
-      return res.status(400).json({ error: "translationHistorySize must be 3, 5 or 10." });
-    }
+    const { disclaimerVersion } = req.body || {};
     if (disclaimerVersion !== undefined && !(Number.isInteger(disclaimerVersion) && disclaimerVersion > 0)) {
       return res.status(400).json({ error: "disclaimerVersion must be a positive integer." });
     }
-    const user = await users.updateUser(req.user.id, { translationHistorySize, disclaimerVersion });
+    const user = await users.updateUser(req.user.id, { disclaimerVersion });
     res.json({ user: users.publicUser(user) });
   } catch (err) {
     next(err);

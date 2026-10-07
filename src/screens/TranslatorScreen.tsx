@@ -23,11 +23,9 @@ import { BOT_T } from "../botStrings";
 import {
     translateText,
     TranslateResponse,
-    TranslationContext,
     SavedTranslation,
     getTranslationHistory,
     clearTranslationHistory,
-    updateMe,
 } from "../api/client";
 
 // ── Tokens ───────────────────────────────────────────────────────────
@@ -98,6 +96,8 @@ type TranslationEntry = {
     phonetic?: Record<LangCode, string> | string;
     translated: Record<LangCode, string> | string;
     note?: Partial<Record<LangCode, string>> | string;
+    /** Other likely meanings when the text was ambiguous. */
+    alternatives?: { language: string; meaning: string }[];
 };
 
 const SEED_TRANSLATIONS: TranslationEntry[] = [
@@ -166,8 +166,6 @@ const SEED_TRANSLATIONS: TranslationEntry[] = [
 // ── Language options (must match what backend supports) ──────────────
 const TARGET_LANGS = ["Hebrew", "English", "Tagalog", "Malayalam", "Russian"];
 
-const CONTEXTS: TranslationContext[] = ["general", "medical", "transit", "slang"];
-const HISTORY_SIZES = [3, 5, 10] as const;
 
 /** A translation from the server (or just made) → a card in the list. */
 function toEntry(r: TranslateResponse, fallbackSource: string, inputType = "text", targetLanguage = ""): TranslationEntry {
@@ -182,6 +180,7 @@ function toEntry(r: TranslateResponse, fallbackSource: string, inputType = "text
         phonetic: r.phonetic || undefined,
         translated: r.translatedText,
         note: r.note || undefined,
+        alternatives: r.alternatives?.length ? r.alternatives : undefined,
     };
 }
 
@@ -217,16 +216,15 @@ type Props = { navigation?: any };
 
 export default function TranslatorScreen({ navigation }: Props) {
     const insets = useSafeAreaInsets();
-    const { lang, user, setUser } = useApp();
+    const { lang, user } = useApp();
     const t = T[lang];
     const b = BOT_T[lang];
 
-    // Guests see examples; signed-in users their own last 3 / 5 / 10.
+    // Guests see examples; signed-in users their own last 10 (kept on the server).
     const [recentTranslations, setRecentTranslations] = React.useState<TranslationEntry[]>(
         user ? [] : SEED_TRANSLATIONS
     );
-    const historySize = user?.translationHistorySize ?? 5;
-    const [context, setContext] = React.useState<TranslationContext>("general");
+    const HISTORY_SIZE = 10;
 
     React.useEffect(() => {
         if (!user) {
@@ -245,20 +243,11 @@ export default function TranslatorScreen({ navigation }: Props) {
         return () => {
             cancelled = true;
         };
-    }, [user?.id, historySize]);
+    }, [user?.id]);
 
     /** Adds a new translation at the top, keeping only as many as the user wants. */
     const addEntry = (entry: TranslationEntry) =>
-        setRecentTranslations((prev) => [entry, ...prev].slice(0, user ? historySize : prev.length + 1));
-
-    const changeHistorySize = async (size: 3 | 5 | 10) => {
-        if (!user || size === historySize) return;
-        try {
-            setUser((await updateMe({ translationHistorySize: size })).user);
-        } catch (err: any) {
-            showAlert("Error", err?.message);
-        }
-    };
+        setRecentTranslations((prev) => [entry, ...prev].slice(0, user ? HISTORY_SIZE : prev.length + 1));
 
     const handleClearHistory = async () => {
         if (!(await confirmAction(b.clearHistoryConfirm, b.clearHistory, b.cancel))) return;
@@ -318,7 +307,6 @@ export default function TranslatorScreen({ navigation }: Props) {
             const result: TranslateResponse = await translateText({
                 text: trimmed,
                 targetLanguage: targetLang,
-                context,
                 readerLanguage: lang,
             });
 
@@ -373,7 +361,6 @@ export default function TranslatorScreen({ navigation }: Props) {
                 imageBase64: base64,
                 imageMimeType: asset.mimeType ?? mimeFromDataUri(asset.uri) ?? "image/jpeg",
                 targetLanguage: targetLang,
-                context,
                 readerLanguage: lang,
             });
 
@@ -441,7 +428,6 @@ export default function TranslatorScreen({ navigation }: Props) {
                 audioBase64: base64,
                 audioMimeType: mimeType,
                 targetLanguage: targetLang,
-                context,
                 readerLanguage: lang,
             });
 
@@ -582,23 +568,6 @@ export default function TranslatorScreen({ navigation }: Props) {
                     </ScrollView>
                 </View>
 
-                {/* Kind of text: gives the translator the right context */}
-                <View>
-                    <Text style={s.langRowLabel}>{b.contextLabel}</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.langRow}>
-                        {CONTEXTS.map((c) => (
-                            <Pressable
-                                key={c}
-                                style={[s.langChip, context === c && s.langChipActive]}
-                                onPress={() => setContext(c)}
-                            >
-                                <Text style={[s.langChipText, context === c && s.langChipTextActive]}>
-                                    {b.contexts[c]}
-                                </Text>
-                            </Pressable>
-                        ))}
-                    </ScrollView>
-                </View>
 
                 {/* Recording active banner */}
                 {isRecording && (
@@ -611,24 +580,10 @@ export default function TranslatorScreen({ navigation }: Props) {
                 )}
 
                 {/* Recent translations / history */}
-                {user && (
-                    <View style={s.historyBar}>
-                        <Text style={s.historyLabel}>{b.rememberLast}</Text>
-                        {HISTORY_SIZES.map((n) => (
-                            <Pressable
-                                key={n}
-                                style={[s.sizeChip, historySize === n && s.langChipActive]}
-                                onPress={() => changeHistorySize(n)}
-                            >
-                                <Text style={[s.langChipText, historySize === n && s.langChipTextActive]}>{n}</Text>
-                            </Pressable>
-                        ))}
-                        {recentTranslations.length > 0 && (
-                            <Pressable onPress={handleClearHistory} hitSlop={8} style={{ marginLeft: "auto" }}>
-                                <Text style={s.clearText}>🗑 {b.clearHistory}</Text>
-                            </Pressable>
-                        )}
-                    </View>
+                {user && recentTranslations.length > 0 && (
+                    <Pressable onPress={handleClearHistory} hitSlop={8} style={s.clearBtn}>
+                        <Text style={s.clearText}>🗑 {b.clearHistory}</Text>
+                    </Pressable>
                 )}
 
                 {recentTranslations.length > 0 && (
@@ -698,6 +653,17 @@ export default function TranslatorScreen({ navigation }: Props) {
                                                 <Text style={s.translatedText}>{translated}</Text>
                                                 {note ? (
                                                     <Text style={s.translatedNote}>{note}</Text>
+                                                ) : null}
+                                                {item.alternatives?.length ? (
+                                                    <View style={s.altBox}>
+                                                        <Text style={s.altTitle}>{b.alsoMeans}</Text>
+                                                        {item.alternatives.map((a, i) => (
+                                                            <Text key={i} style={s.altText}>
+                                                                • {a.meaning}
+                                                                {a.language ? <Text style={s.altLang}> ({a.language})</Text> : null}
+                                                            </Text>
+                                                        ))}
+                                                    </View>
                                                 ) : null}
                                             </View>
                                         </View>
@@ -794,24 +760,6 @@ export default function TranslatorScreen({ navigation }: Props) {
                                 ))}
                             </ScrollView>
 
-                            <Text style={s.modalLabel}>{b.contextLabel}</Text>
-                            <ScrollView
-                                horizontal
-                                showsHorizontalScrollIndicator={false}
-                                contentContainerStyle={s.langRow}
-                            >
-                                {CONTEXTS.map((c) => (
-                                    <Pressable
-                                        key={c}
-                                        style={[s.langChip, context === c && s.langChipActive]}
-                                        onPress={() => setContext(c)}
-                                    >
-                                        <Text style={[s.langChipText, context === c && s.langChipTextActive]}>
-                                            {b.contexts[c]}
-                                        </Text>
-                                    </Pressable>
-                                ))}
-                            </ScrollView>
 
                             {error && (
                                 <View style={s.errorBox}>
@@ -931,16 +879,11 @@ const s = StyleSheet.create({
         backgroundColor: Color.recordingPulse,
     },
     recordingBannerText: { fontSize: 13, color: Color.recordingText, fontWeight: "500" },
-    historyBar: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
-    historyLabel: { fontSize: 13, color: Color.mako, fontWeight: "600" },
-    sizeChip: {
-        borderWidth: 1,
-        borderColor: Color.linkWater,
-        borderRadius: 16,
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        backgroundColor: Color.white,
-    },
+    clearBtn: { alignSelf: "flex-end", marginBottom: -8 },
+    altBox: { marginTop: 6, gap: 2 },
+    altTitle: { fontSize: 12, fontWeight: "700", color: Color.mako },
+    altText: { fontSize: 13, color: Color.blackPearl },
+    altLang: { fontSize: 12, color: Color.mako },
     clearText: { fontSize: 12, color: Color.mako, fontWeight: "600" },
     exampleNote: { fontSize: 12, color: Color.mako, fontStyle: "italic", marginTop: -10 },
     recentTitle: { fontSize: 16, fontWeight: "700", color: Color.blackPearl, marginTop: 8 },

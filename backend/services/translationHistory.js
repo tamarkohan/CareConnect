@@ -1,8 +1,8 @@
 /**
  * translationHistory.js
  *
- * Recent translations of signed-in users, encrypted. Users choose to see the
- * last 3, 5 or 10; we never keep more than MAX_KEPT, so the table stays tiny.
+ * Recent translations of signed-in users, encrypted. Only the last MAX_KEPT
+ * are kept (about 0.5 KB each, so ~5 KB per user), so the table stays tiny.
  */
 
 const db = require("./db");

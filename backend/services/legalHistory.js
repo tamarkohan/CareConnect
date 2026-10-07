@@ -13,8 +13,8 @@ const context = (userId) => `msg:${userId}`;
 
 async function addMessages(userId, messages) {
   await db.withTransaction(async (client) => {
-    for (const { role, text, sources } of messages) {
-      const { ciphertext, iv, authTag } = encryptJson({ text, sources: sources || [] }, context(userId));
+    for (const { role, text, sources, language } of messages) {
+      const { ciphertext, iv, authTag } = encryptJson({ text, sources: sources || [], language }, context(userId));
       await client.query(
         "INSERT INTO legal_messages (user_id, role, ciphertext, iv, auth_tag) VALUES ($1, $2, $3, $4, $5)",
         [userId, role, ciphertext, iv, authTag]
@@ -29,7 +29,7 @@ async function addMessages(userId, messages) {
   });
 }
 
-/** @returns {Promise<Array<{ id, role, text, sources, createdAt }>>} oldest first */
+/** @returns {Promise<Array<{ id, role, text, sources, language, createdAt }>>} oldest first */
 async function listMessages(userId, limit = MAX_MESSAGES) {
   const { rows } = await db.query(
     `SELECT id, role, ciphertext, iv, auth_tag, created_at FROM legal_messages
@@ -38,8 +38,8 @@ async function listMessages(userId, limit = MAX_MESSAGES) {
   );
   return rows.reverse().flatMap((r) => {
     try {
-      const { text, sources } = decryptJson(r, context(userId));
-      return [{ id: String(r.id), role: r.role, text, sources, createdAt: r.created_at }];
+      const { text, sources, language } = decryptJson(r, context(userId));
+      return [{ id: String(r.id), role: r.role, text, sources, language: language ?? null, createdAt: r.created_at }];
     } catch {
       return []; // unreadable (e.g. key changed): skip it rather than fail the chat
     }

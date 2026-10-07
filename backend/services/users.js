@@ -46,7 +46,6 @@ function publicUser(row) {
     id: row.id,
     phone: row.phone,
     email: row.email,
-    translationHistorySize: row.translation_history_size,
     disclaimerVersion: row.disclaimer_version,
     isDemo: row.is_demo,
   };
@@ -94,13 +93,11 @@ async function deleteSession(token) {
   if (typeof token === "string") await db.query("DELETE FROM sessions WHERE token_hash = $1", [sha256(token)]);
 }
 
-async function updateUser(userId, { translationHistorySize, disclaimerVersion }) {
+async function updateUser(userId, { disclaimerVersion }) {
   const { rows } = await db.query(
-    `UPDATE users SET
-       translation_history_size = COALESCE($2, translation_history_size),
-       disclaimer_version       = COALESCE($3, disclaimer_version)
+    `UPDATE users SET disclaimer_version = COALESCE($2, disclaimer_version)
      WHERE id = $1 RETURNING *`,
-    [userId, translationHistorySize ?? null, disclaimerVersion ?? null]
+    [userId, disclaimerVersion ?? null]
   );
   return rows[0];
 }

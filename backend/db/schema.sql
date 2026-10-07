@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS users (
   id                       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   phone                    TEXT UNIQUE,              -- E.164, e.g. +972501234567 ("123" = demo)
   email                    TEXT UNIQUE,              -- lowercase
-  translation_history_size INT  NOT NULL DEFAULT 5
+  translation_history_size INT  NOT NULL DEFAULT 5          -- no longer used (fixed at 10)
                            CHECK (translation_history_size IN (3, 5, 10)),
   disclaimer_version       INT,                      -- legal disclaimer version accepted
   is_demo                  BOOLEAN NOT NULL DEFAULT false,

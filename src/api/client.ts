@@ -82,7 +82,6 @@ export type User = {
     id: string;
     phone: string | null;
     email: string | null;
-    translationHistorySize: 3 | 5 | 10;
     disclaimerVersion: number | null;
     isDemo: boolean;
 };
@@ -102,7 +101,7 @@ export const verifyCode = (id: Identifier, code: string) =>
 
 export const getMe = () => apiFetch<{ user: User }>("/api/auth/me");
 
-export const updateMe = (changes: { translationHistorySize?: 3 | 5 | 10; disclaimerVersion?: number }) =>
+export const updateMe = (changes: { disclaimerVersion: number }) =>
     apiFetch<{ user: User }>("/api/auth/me", changes);
 
 export const logout = () => apiFetch<{ success: true }>("/api/auth/logout", {});
@@ -120,6 +119,7 @@ export type TranslateRequest = {
     /** MIME type of the audio (e.g. "audio/m4a"). Defaults to "audio/m4a" on the server. */
     audioMimeType?: string;
     targetLanguage: string;
+    /** Optional hint; normally the server works out the kind of text itself. */
     context?: TranslationContext;
     /** App language code ("en", "tl"…): Hebrew pronunciation is written in its alphabet. */
     readerLanguage?: string;
@@ -134,6 +134,8 @@ export type TranslateResponse = {
     phonetic: string;
     note: string;
     category: TranslationContext;
+    /** Other likely meanings when the text is ambiguous (e.g. "hola"). */
+    alternatives?: { language: string; meaning: string }[];
     /** Set when the translation was saved to the signed-in user's history. */
     id?: string;
     createdAt?: string;
@@ -151,7 +153,7 @@ export function translateText(req: TranslateRequest): Promise<TranslateResponse>
 }
 
 export const getTranslationHistory = () =>
-    apiFetch<{ translations: SavedTranslation[]; size: number }>("/api/translate/history");
+    apiFetch<{ translations: SavedTranslation[] }>("/api/translate/history");
 
 export const clearTranslationHistory = () =>
     apiFetch<{ success: true }>("/api/translate/clear-history", {});
@@ -229,8 +231,14 @@ export type LegalMessage = {
     role: "user" | "assistant";
     text: string;
     sources?: LegalSource[];
+    /** App language when it was written ("English", "Tagalog"…), null for old messages. */
+    language: string | null;
     createdAt: string;
 };
+
+/** Translates earlier chat messages into the new app language (nothing is stored). */
+export const translateMessages = (language: string, messages: { id: string; text: string }[]) =>
+    apiFetch<{ translations: Record<string, string> }>("/api/legal/translate-messages", { language, messages });
 
 export const getLegalHistory = () => apiFetch<{ messages: LegalMessage[] }>("/api/legal/history");
 

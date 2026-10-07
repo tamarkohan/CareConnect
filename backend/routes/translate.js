@@ -13,18 +13,22 @@
  *                               then translates the spoken content
  *     audioMimeType?: string  – MIME type of the audio (e.g. "audio/m4a")
  *     targetLanguage: string  – "Hebrew", "English", "Tagalog", "Malayalam", "Russian"
- *     context?:      string   – "general" (default), "medical", "transit", "slang"
+ *     context?:      string   – optional hint: "medical", "transit", "slang"; by
+ *                               default the model decides (and returns `category`)
  *     readerLanguage?: string – the app language of the user (e.g. "Tagalog"),
  *                               used to write Hebrew pronunciation in their alphabet
  *     save?:         boolean  – false to not add it to the history (default true)
  *   }
  *
  * Response:
- *   { translatedText, detectedLanguage, sourceText, phonetic, note, category, id? }
+ *   { translatedText, detectedLanguage, sourceText, phonetic, note, category,
+ *     alternatives: [{ language, meaning }], id? }
+ *   `alternatives` lists other likely readings when the text is ambiguous
+ *   (e.g. "hola" = Spanish "hello", or Hebrew חולה "sick" written in Latin letters).
  *   Signed-in users' translations are saved (encrypted) and `id` is returned.
  *
- * GET /api/translate/history   (signed in) → { translations: [...], size }
- *   The last 3 / 5 / 10 translations, as the user chose in their settings.
+ * GET /api/translate/history   (signed in) → { translations: [...] }
+ *   The user's last 10 translations.
  * POST /api/translate/clear-history (signed in) → { success: true }
  */
 
@@ -59,6 +63,17 @@ Names and places:
   e.g. "Acamol (paracetamol)", "Maccabi (health fund)".
 - Use the <glossary> when given: it is the correct meaning of those terms.
 
+Kind of text: decide it yourself and follow the matching rules.
+- medical (prescription, medicine box, doctor's letter, care instructions): keep dosages, frequencies and units exact,
+  explain medical abbreviations, and mention in the note if something looks like a warning.
+- transit (buses, trains, stations, directions): keep line numbers, station and street names exactly, as on Israeli signs.
+- slang (family members, the patient, WhatsApp messages): translate the meaning, not the words; give the literal meaning in the note when it helps.
+- general: anything else.
+
+Ambiguous input: short texts can mean different things in different languages, or be Hebrew written in Latin letters
+(e.g. "hola" is Spanish "hello" but also sounds like Hebrew חולה "sick"). Translate the most likely meaning for a
+caregiver in Israel, and list the other likely readings in "alternatives" (max 3). Leave it empty when the meaning is clear.
+
 Scripts: Malayalam in Malayalam script, Russian in Cyrillic, Hebrew in Hebrew letters, Tagalog and English in Latin letters.
 
 Respond ONLY with valid JSON in this exact shape (no extra text, no markdown fences):
@@ -67,22 +82,18 @@ Respond ONLY with valid JSON in this exact shape (no extra text, no markdown fen
  "sourceText":"<the original text you translated (what you read in the image or heard), max 500 characters>",
  "phonetic":"<see below, or empty>",
  "note":"<one short sentence in the reader's language about anything important: an Israeli brand, an idiom's literal meaning, a medical warning, or empty>",
- "category":"<medical | transit | slang | general>"}
+ "category":"<medical | transit | slang | general>",
+ "alternatives":[{"language":"<language of that reading, in English>","meaning":"<that meaning, in the target language>"}]}
 
 phonetic: the Hebrew text written as it sounds, in the reader's alphabet, so they can read it aloud.
 If the original is Hebrew, spell the original; if the translation is Hebrew, spell the translation; otherwise "".`;
 
+// Optional hint from the app; normally the model decides the kind of text itself.
 const CONTEXT_HINTS = {
   general: "",
-  medical:
-    "Context: MEDICAL (prescription, medicine box, doctor's letter, care instructions). Keep dosages, frequencies and units exact, " +
-    "explain medical abbreviations, and mention in the note if something looks like a warning.",
-  transit:
-    "Context: TRANSPORT (buses, trains, stations, directions). Keep line numbers, station and street names exactly; " +
-    "write place names the way they appear on Israeli signs.",
-  slang:
-    "Context: SPOKEN / SLANG (family members, the patient, WhatsApp messages). Translate the meaning, not the words, " +
-    "and give the literal meaning in the note when it helps.",
+  medical: "The user says this is a MEDICAL text.",
+  transit: "The user says this is about TRANSPORT.",
+  slang: "The user says this is spoken language / slang.",
 };
 
 const READER_LANGS = { en: "English", tl: "Tagalog", ml: "Malayalam", ru: "Russian" };
@@ -191,8 +202,7 @@ Then translate that extracted text.\n${instructions}`,
 
 router.get("/history", requireAuth, async (req, res) => {
   try {
-    const size = req.user.translation_history_size;
-    return res.json({ translations: await translations.listTranslations(req.user.id, size), size });
+    return res.json({ translations: await translations.listTranslations(req.user.id, translations.MAX_KEPT) });
   } catch (err) {
     console.error("[translate/history] Error:", err.message);
     return res.status(500).json({ error: "Could not load your translations." });
@@ -242,6 +252,10 @@ function normaliseResult(r, { text, context }) {
     phonetic: str(r.phonetic, 1_000),
     note: str(r.note, 300),
     category,
+    alternatives: (Array.isArray(r.alternatives) ? r.alternatives : [])
+      .map((a) => ({ language: str(a?.language, 40), meaning: str(a?.meaning, 200) }))
+      .filter((a) => a.meaning)
+      .slice(0, 3),
   };
 }
 
