@@ -3,7 +3,7 @@
  *
  * Sign-in with a one-time code sent by SMS or email. No passwords.
  *
- * GET  /api/auth/options        → { phone, email, demo } which sign-in methods work
+ * GET  /api/auth/options        → { phone, email, demo, testCode } which sign-in methods work
  * POST /api/auth/request-code   { phone } | { email }          → { sent: true }
  *                               demo phone "123" (when DEMO_LOGIN=true) signs in at once:
  *                               → { token, user }
@@ -13,7 +13,8 @@
  * POST /api/auth/logout         (signed in)                    → { success: true }
  *
  * Environment variables:
- *   DEMO_LOGIN=true   lets phone number "123" sign in without a code (demo account)
+ *   DEMO_LOGIN=true      lets phone number "123" sign in without a code (demo account)
+ *   OTP_TEST_CODE=123456 the code for every phone/email, nothing sent (see services/otp.js)
  */
 
 const express = require("express");
@@ -31,7 +32,13 @@ async function signIn(id, res) {
 }
 
 router.get("/options", (_req, res) => {
-  res.json({ phone: otp.isAvailable("phone"), email: otp.isAvailable("email"), demo: demoEnabled() });
+  res.json({
+    phone: otp.isAvailable("phone"),
+    email: otp.isAvailable("email"),
+    demo: demoEnabled(),
+    // Test mode: the code is the same for everyone, so the login screen shows it.
+    testCode: otp.isTestMode() ? process.env.OTP_TEST_CODE : null,
+  });
 });
 
 router.post("/request-code", async (req, res, next) => {

@@ -24,6 +24,7 @@ with `CONTRACT_ENCRYPTION_KEY`.
 |---|---|---|
 | `DEMO_LOGIN` | `true` | Phone **123** signs in to the demo account without a code. Set `false` for real users. |
 | `NODE_ENV` | `production` | Already in `.do/app.yaml`. |
+| `OTP_TEST_CODE` | `123456` | Test mode: **any** phone number or email signs in with this code, nothing is sent, and the login screen shows the code. For testing with many accounts. Remove before real users. |
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM` | from twilio.com | Optional: real SMS codes (paid per SMS). |
 | `RESEND_API_KEY`, `OTP_EMAIL_FROM` | from resend.com | Optional: real email codes (free tier: 3,000/month, needs your own domain). |
 

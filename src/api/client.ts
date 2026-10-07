@@ -90,7 +90,7 @@ export type Identifier = { phone: string } | { email: string };
 export type SignInResponse = { token: string; user: User };
 
 export const getAuthOptions = () =>
-    apiFetch<{ phone: boolean; email: boolean; demo: boolean }>("/api/auth/options");
+    apiFetch<{ phone: boolean; email: boolean; demo: boolean; testCode: string | null }>("/api/auth/options");
 
 /** Sends a code. The demo number signs in at once and returns a token instead. */
 export const requestCode = (id: Identifier) =>

@@ -2,7 +2,7 @@ import * as React from "react";
 import { useApp } from "../AppContext";
 import { LangCode } from "../translations";
 import { BOT_T } from "../botStrings";
-import { requestCode, verifyCode, Identifier, SignInResponse } from "../api/client";
+import { requestCode, verifyCode, getAuthOptions, Identifier, SignInResponse } from "../api/client";
 
 import {
     View,
@@ -121,6 +121,12 @@ export default function LoginScreen({ navigation }: Props) {
     const [busy, setBusy] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
     const [unavailable, setUnavailable] = React.useState(false);
+    // Set when the server runs in test mode (same code for everyone).
+    const [testCode, setTestCode] = React.useState<string | null>(null);
+
+    React.useEffect(() => {
+        getAuthOptions().then((o) => setTestCode(o.testCode)).catch(() => {});
+    }, []);
     const t = T[lang];
     const b = BOT_T[lang as LangCode];
     const currentLang = LANGUAGES.find(l => l.code === lang)!;
@@ -302,6 +308,11 @@ export default function LoginScreen({ navigation }: Props) {
                             onSubmitEditing={handleVerify}
                             autoFocus
                         />
+                        {testCode && (
+                            <View style={s.testBox}>
+                                <Text style={s.testText}>🧪 {b.testModeHint.replace("{code}", testCode)}</Text>
+                            </View>
+                        )}
                         <Pressable onPress={handleContinue} hitSlop={8} disabled={busy}>
                             <Text style={[s.linkText, { textAlign: "center" }]}>{b.resend}</Text>
                         </Pressable>
@@ -509,6 +520,9 @@ const s = StyleSheet.create({
     sentRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
     linkText: { fontSize: 13, color: Color.endeavour, fontWeight: "600" },
     codeInput: { flex: 0, fontSize: 22, letterSpacing: 8, textAlign: "center" },
+
+    testBox: { backgroundColor: "#fff8e1", borderRadius: 8, padding: 10 },
+    testText: { fontSize: 13, color: "#8d6e00", fontWeight: "600", textAlign: "center" },
 
     // Notes & errors
     noteBox: { backgroundColor: Color.aliceBlue, borderRadius: 8, padding: 12 },

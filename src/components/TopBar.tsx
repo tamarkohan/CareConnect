@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { useLang } from "../AppContext";
 import { LANGUAGES, T } from "../translations";
+import { BOT_T } from "../botStrings";
 
 const Color = {
     aliceBlue: "#f3faff",
@@ -34,7 +35,14 @@ type Props = {
 };
 
 export default function TopBar({ title, navigation }: Props) {
-    const { lang, setLang, signOut } = useLang();
+    const { lang, setLang, signOut, user } = useLang();
+    const b = BOT_T[lang];
+    // Shown in the menu so testers know which account they are using.
+    const account = user
+        ? user.isDemo
+            ? `${b.demoAccount} (123)`
+            : user.phone ?? user.email ?? ""
+        : b.guestAccount;
     const [showMenu, setShowMenu] = React.useState(false);
     const [showLangs, setShowLangs] = React.useState(false);
 
@@ -74,6 +82,11 @@ export default function TopBar({ title, navigation }: Props) {
                                     </Pressable>
                                 </View>
 
+                                <View style={s.accountBox}>
+                                    {user && <Text style={s.accountLabel}>{b.signedInAs}</Text>}
+                                    <Text style={s.accountValue}>{account}</Text>
+                                </View>
+
                                 <View style={s.menuDivider} />
 
                                 {/* Items */}
@@ -103,7 +116,7 @@ export default function TopBar({ title, navigation }: Props) {
                                     }}
                                 >
                                     <Text style={[s.menuItemIcon, s.logoutIcon]}>↩</Text>
-                                    <Text style={[s.menuItemText, s.logoutText]}>{t.logout}</Text>
+                                    <Text style={[s.menuItemText, s.logoutText]}>{user ? t.logout : b.signInMenu}</Text>
                                 </Pressable>
                             </View>
                         </TouchableWithoutFeedback>
@@ -266,4 +279,7 @@ const s = StyleSheet.create({
     langGlobe: { fontSize: 18 },
     langOptionText: { fontSize: 15, color: Color.blackPearl },
     langOptionTextActive: { color: Color.endeavour, fontWeight: "700" },
+    accountBox: { paddingHorizontal: 16, paddingVertical: 10, gap: 2 },
+    accountLabel: { fontSize: 11, color: Color.mako },
+    accountValue: { fontSize: 14, color: Color.blackPearl, fontWeight: "600" },
 });

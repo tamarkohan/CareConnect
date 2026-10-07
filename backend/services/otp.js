@@ -12,6 +12,10 @@
  *   Email via Resend  – RESEND_API_KEY, OTP_EMAIL_FROM (e.g. "CareConnect <login@yourdomain>")
  * With no provider configured the code is printed in the server log, but only
  * outside production (NODE_ENV !== "production"), for local testing.
+ *
+ * Test mode: OTP_TEST_CODE=123456 makes that the code for EVERY phone number and
+ * email, and nothing is sent. Lets testers create as many accounts as they want.
+ * Turn it off (remove it) before real users sign up.
  */
 
 const crypto = require("crypto");
@@ -25,6 +29,8 @@ const RESEND_AFTER_MS = 30 * 1000;
 const pending = new Map();
 
 const keyOf = (id) => `${id.kind}:${id.value}`;
+const testCode = () => (/^\d{6}$/.test(process.env.OTP_TEST_CODE || "") ? process.env.OTP_TEST_CODE : null);
+const isTestMode = () => testCode() !== null;
 const isProduction = () => process.env.NODE_ENV === "production";
 
 function canSend(kind) {
@@ -35,7 +41,7 @@ function canSend(kind) {
 }
 
 /** True when codes can reach this kind of identifier (or dev logging is on). */
-const isAvailable = (kind) => canSend(kind) || !isProduction();
+const isAvailable = (kind) => isTestMode() || canSend(kind) || !isProduction();
 
 async function sendSms(to, body) {
   const sid = process.env.TWILIO_ACCOUNT_SID;
@@ -78,10 +84,12 @@ async function requestCode(id) {
   const prev = pending.get(key);
   if (prev && Date.now() - prev.sentAt < RESEND_AFTER_MS) return { ok: false, reason: "wait" };
 
-  const code = crypto.randomInt(0, 1_000_000).toString().padStart(6, "0");
+  const code = testCode() ?? crypto.randomInt(0, 1_000_000).toString().padStart(6, "0");
   pending.set(key, { hash: sha256(`${key}:${code}`), expiresAt: Date.now() + CODE_TTL_MS, attempts: 0, sentAt: Date.now() });
 
-  if (canSend(id.kind)) {
+  if (isTestMode()) {
+    // Test mode: nothing is sent, the fixed test code works.
+  } else if (canSend(id.kind)) {
     if (id.kind === "phone") await sendSms(id.value, `Your CareConnect code is ${code}`);
     else await sendEmail(id.value, code);
   } else {
@@ -113,4 +121,4 @@ setInterval(() => {
   for (const [k, v] of pending) if (v.expiresAt < now) pending.delete(k);
 }, 60 * 1000).unref();
 
-module.exports = { requestCode, verifyCode, isAvailable };
+module.exports = { requestCode, verifyCode, isAvailable, isTestMode };
