@@ -98,3 +98,19 @@ brands, care words, places and slang with their meaning. When a term appears in
 the text, it is added to the prompt. Add the corrections caregivers give you in
 interviews (`tl`, `ml`, `ru` fields) — that is the best way to improve the
 Asian-language translations.
+
+## Tagalog rating sheet for caregivers
+
+```bash
+cd backend
+npm run demo:reset                     # clean demo account with the fake contract
+npm run language-test -- https://careconnect-il-app-id9mu.ondigitalocean.app
+```
+
+Sends the 25 test sentences (5 each: medical, transport, slang, general, double
+meaning) and a 10-question legal conversation to the real bots, in Tagalog, and
+writes `backend/reports/language-test-tagalog-<date>.html`: open it in the browser
+and print it (Ctrl+P). Each item has 1–5 rating boxes and a line for a better
+translation; the last page is a summary for the interviewer. Without a URL it uses
+the local backend (`npm run dev`). The inputs are in
+[`data/language-test-tl.json`](data/language-test-tl.json) — edit them freely.

@@ -43,3 +43,6 @@ backend/.env
 # generated native folders
 /ios
 /android
+
+# Generated rating sheets (npm run language-test)
+backend/reports/
