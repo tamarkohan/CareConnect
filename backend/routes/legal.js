@@ -250,7 +250,7 @@ router.post("/ask", async (req, res) => {
       parts: [{ text: buildPrompt({ question: q, language, contractText: contract?.text, sources }) }],
     });
 
-    let { text: answer } = await generate({ system: LEGAL_SYSTEM_PROMPT, contents: { contents: turns } });
+    let { text: answer, model: usedModel } = await generate({ system: LEGAL_SYSTEM_PROMPT, contents: { contents: turns } });
     // Gemini sometimes slips Hebrew sentences into a Tagalog/English answer (the
     // sources are often Hebrew). If so, ask once more with a reminder.
     if (hasStrayHebrew(answer, language)) {
@@ -260,7 +260,10 @@ router.post("/ask", async (req, res) => {
         parts: [{ text: `${turns[turns.length - 1].parts[0].text}\n\nIMPORTANT: answer entirely in ${language}. Do not write Hebrew sentences.` }],
       }];
       const second = await generate({ system: LEGAL_SYSTEM_PROMPT, contents: { contents: retryTurns } });
-      if (!hasStrayHebrew(second.text, language)) answer = second.text;
+      if (!hasStrayHebrew(second.text, language)) {
+        answer = second.text;
+        usedModel = second.model;
+      }
     }
     const publicSources = sources.map(({ id, title, url }) => ({ id, title, url }));
 
@@ -276,6 +279,7 @@ router.post("/ask", async (req, res) => {
       sources: publicSources,
       contractAvailable: !!contract,
       language,
+      model: usedModel, // which Gemini model answered (for testing)
     });
   } catch (err) {
     console.error("[legal/ask] Error:", err.cause?.message || err.message);

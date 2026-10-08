@@ -220,8 +220,10 @@ Then translate that extracted text.\n${instructions}`,
     // Gemini sometimes adds junk around its JSON; parseJsonReply handles that.
     // If there's still no usable answer, ask once more rather than showing raw text.
     let parsed = null;
+    let usedModel = null;
     for (let attempt = 0; attempt < 2 && !parsed?.translatedText; attempt++) {
-      const { text: raw } = await generate({ system: TRANSLATOR_SYSTEM_PROMPT, contents, json: true });
+      const { text: raw, model } = await generate({ system: TRANSLATOR_SYSTEM_PROMPT, contents, json: true });
+      usedModel = model;
       parsed = parseJsonReply(raw);
       if (!parsed?.translatedText) console.warn(`[translate] unreadable reply (attempt ${attempt + 1}): ${raw.slice(0, 120)}`);
     }
@@ -232,7 +234,7 @@ Then translate that extracted text.\n${instructions}`,
       const saved = await translations.addTranslation(req.user.id, { inputType, targetLanguage, ...result });
       Object.assign(result, saved);
     }
-    return res.json(result);
+    return res.json({ ...result, model: usedModel }); // model: which Gemini model answered (for testing)
   } catch (err) {
     console.error("[translate] Error:", err.cause || err);
     return res

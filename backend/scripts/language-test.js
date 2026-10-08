@@ -30,6 +30,8 @@ const RETRY_FAILED = args.includes("--retry-failed");
 const BASE = (args.find((a) => !a.startsWith("--")) || process.env.LANGTEST_URL || "http://localhost:3000").replace(/\/+$/, "");
 const OUT_DIR = path.join(__dirname, "../reports");
 const PAUSE_MS = 1500; // be gentle with the Gemini free tier
+// The model the app is meant to use; answers from a backup model are marked.
+const PRIMARY = process.env.GEMINI_MODEL || "gemini-3.5-flash";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -168,7 +170,8 @@ function buildHtml({ translations, legal, contractName, date }) {
     const ok = t.group === "double" || r.category === t.group;
     return `<tr><td>${i + 1}</td><td dir="auto">${esc(t.he)}</td><td>${esc(expected)}</td>
       <td class="${ok ? "" : "bad"}">${esc(r.category || "error")}</td>
-      <td>${r.alternatives?.length ? esc(r.alternatives.map((a) => a.meaning).join(" · ")) : "—"}</td></tr>`;
+      <td>${r.alternatives?.length ? esc(r.alternatives.map((a) => a.meaning).join(" · ")) : "—"}</td>
+      <td class="${r.model && r.model !== PRIMARY ? "bad" : ""}">${esc(r.model || "—")}</td></tr>`;
   }).join("");
 
   return `<!doctype html>
@@ -241,8 +244,11 @@ function buildHtml({ translations, legal, contractName, date }) {
   <div class="pb interviewer">
     <h2>Para sa interviewer · For the interviewer (not for raters)</h2>
     <p>Kind of text the app chose on its own, compared with the group the sentence was written for. Red = different.</p>
-    <table><thead><tr><th>#</th><th>Input</th><th>Group</th><th>App chose</th><th>Could also mean</th></tr></thead>
+    <table><thead><tr><th>#</th><th>Input</th><th>Group</th><th>App chose</th><th>Could also mean</th><th>Model</th></tr></thead>
     <tbody>${summaryRows}</tbody></table>
+    <p><b>Legal answers by model:</b> ${legal.map((m, i) => `${i + 1}: ${esc(m.model || (m.error ? "error" : "?"))}`).join(" · ")}</p>
+    <p>Answers from a backup model (not ${esc(PRIMARY)}) usually happen when the free daily Gemini quota is used up;
+    they can be weaker than what users normally get.</p>
     <p>Server: ${esc(BASE)} · generated ${esc(new Date().toISOString())}</p>
   </div>
 </div></body></html>`;
@@ -284,7 +290,7 @@ async function main() {
         text: t.he, targetLanguage: test.language, readerLanguage: test.readerLanguage, save: false,
       });
       translations.push({ ...t, result });
-      console.log(result.translatedText.slice(0, 60));
+      console.log(`${result.translatedText.slice(0, 60)}${result.model && result.model !== PRIMARY ? `  [${result.model}]` : ""}`);
     } catch (err) {
       translations.push({ ...t, error: err.message });
       console.log(`FAILED: ${err.message}`);
@@ -302,8 +308,8 @@ async function main() {
     process.stdout.write(`Legal ${i + 1}/${test.legal.length} … `);
     try {
       const r = await api("/api/legal/ask", { question, language: test.language });
-      legal.push({ question, answer: r.answer, sources: r.sources });
-      console.log(`${r.answer.length} chars`);
+      legal.push({ question, answer: r.answer, sources: r.sources, model: r.model });
+      console.log(`${r.answer.length} chars${r.model && r.model !== PRIMARY ? `  [${r.model}]` : ""}`);
     } catch (err) {
       legal.push({ question, error: err.message });
       console.log(`FAILED: ${err.message}`);

@@ -47,6 +47,24 @@ function isTemporary(err) {
   return [429, 500, 502, 503, 504].includes(err?.status);
 }
 
+/**
+ * Models whose daily free quota is used up: skip them until Google says the
+ * quota is back, instead of failing twice on every request.
+ * modelName → time (ms) it may be tried again.
+ */
+const exhaustedUntil = new Map();
+
+/** A 429 for a per-DAY quota (not a short per-minute burst). @returns retry delay in ms, or 0 */
+function dailyQuotaDelay(err) {
+  const msg = String(err?.message || "");
+  if (err?.status !== 429 || !/PerDay/i.test(msg)) return 0;
+  const seconds = Number(msg.match(/"retryDelay":"(\d+)s"/)?.[1]);
+  return (Number.isFinite(seconds) && seconds > 0 ? seconds : 3600) * 1000;
+}
+
+/** First line of a Gemini error, without the long JSON details. */
+const shortError = (err) => `${err?.status || ""} ${String(err?.message || "").split("\n")[0].slice(0, 160)}`;
+
 /** The model name doesn't exist / isn't available for this key – skip it. */
 function isModelUnavailable(err) {
   return err?.status === 404 || /not found|not supported/i.test(err?.message || "");
@@ -66,6 +84,7 @@ async function generate({ system, contents, json = false }) {
   let lastErr;
 
   for (const modelName of MODELS) {
+    if ((exhaustedUntil.get(modelName) || 0) > Date.now()) continue;
     const model = genAI.getGenerativeModel({
       model: modelName,
       ...(system ? { systemInstruction: { parts: [{ text: system }] } } : {}),
@@ -76,13 +95,18 @@ async function generate({ system, contents, json = false }) {
       try {
         const result = await model.generateContent(contents);
         const text = result.response.text().trim();
-        if (modelName !== PRIMARY_MODEL || attempt > 0) {
-          console.log(`[gemini] answered by ${modelName} (attempt ${attempt + 1})`);
-        }
+        if (attempt > 0) console.log(`[gemini] answered by ${modelName} (attempt ${attempt + 1})`);
         return { text, model: modelName };
       } catch (err) {
         lastErr = err;
-        console.warn(`[gemini] ${modelName} attempt ${attempt + 1} failed: ${err.status || ""} ${err.message}`);
+        const quotaDelay = dailyQuotaDelay(err);
+        if (quotaDelay) {
+          exhaustedUntil.set(modelName, Date.now() + quotaDelay);
+          console.warn(`[gemini] ${modelName}: daily free quota used up — using the backup models for ` +
+            `${Math.round(quotaDelay / 3_600_000)}h`);
+          break;                                     // next model, no pointless retry
+        }
+        console.warn(`[gemini] ${modelName} attempt ${attempt + 1} failed: ${shortError(err)}`);
 
         if (isModelUnavailable(err)) break;          // try next model now
         if (!isTemporary(err)) throw err;            // real error (bad key, bad input…)
