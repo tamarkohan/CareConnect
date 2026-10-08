@@ -16,6 +16,7 @@
 const mammoth = require("mammoth");
 const { extractText, getDocumentProxy } = require("unpdf");
 const { generate } = require("./geminiService");
+const { parseJsonReply } = require("./jsonReply");
 
 const MAX_FILES = 5;
 const MAX_TOTAL_BYTES = 8 * 1024 * 1024;   // after base64 decoding
@@ -158,7 +159,8 @@ async function summariseContract(text) {
       contents: `<contract>\n${text}\n</contract>`,
       json: true,
     });
-    const parsed = JSON.parse(raw.replace(/^```(json)?\s*|```\s*$/g, ""));
+    const parsed = parseJsonReply(raw);
+    if (!parsed) throw new Error("unreadable reply");
     const clean = (v) => (typeof v === "string" && v.trim() ? v.trim().slice(0, 200) : null);
     const summary = {};
     for (const lang of Object.keys(SUMMARY_LANGS)) {

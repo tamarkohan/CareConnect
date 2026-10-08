@@ -44,6 +44,7 @@ const contracts = require("../services/contractStore");
 const history = require("../services/legalHistory");
 const { readContractFiles, summariseContract } = require("../services/contractReader");
 const { searchKnowledgeBase } = require("../services/retrieval");
+const { parseJsonReply } = require("../services/jsonReply");
 const { optionalAuth, requireAuth } = require("../services/users");
 
 const MAX_CONTRACT_CHARS = 100_000;
@@ -303,7 +304,8 @@ router.post("/translate-messages", async (req, res) => {
       contents: `Requested language: ${language}\n\n${JSON.stringify({ items })}`,
       json: true,
     });
-    const parsed = JSON.parse(raw.replace(/^```(json)?\s*|```\s*$/g, ""));
+    const parsed = parseJsonReply(raw);
+    if (!parsed) throw new Error("Unreadable reply from Gemini");
     const wanted = new Set(items.map((m) => m.id));
     const translations = {};
     for (const it of Array.isArray(parsed?.items) ? parsed.items : []) {
