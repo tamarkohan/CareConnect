@@ -40,6 +40,11 @@ const prepared = new WeakSet();
 async function getClient() {
   const client = await pool.connect();
   if (!prepared.has(client)) {
+    // A connection can drop while in use (network, Supabase pooler restart).
+    // pg then emits 'error' on the client; without a listener that crashes the
+    // whole server. The running query fails on its own and the pool replaces
+    // the broken connection, so logging is enough.
+    client.on("error", (err) => console.error("[db] Connection error:", err.message));
     try {
       await client.query("SET search_path TO careconnect, public, extensions");
     } catch (err) {
@@ -55,9 +60,14 @@ async function getClient() {
 async function query(text, params) {
   const client = await getClient();
   try {
-    return await client.query(text, params);
-  } finally {
+    const result = await client.query(text, params);
     client.release();
+    return result;
+  } catch (err) {
+    // Passing the error makes the pool throw this connection away instead of
+    // reusing it (it may be broken), so the next query gets a fresh one.
+    client.release(err);
+    throw err;
   }
 }
 
@@ -68,12 +78,12 @@ async function withTransaction(fn) {
     await client.query("BEGIN");
     const result = await fn(client);
     await client.query("COMMIT");
+    client.release();
     return result;
   } catch (err) {
     await client.query("ROLLBACK").catch(() => {});
+    client.release(err);
     throw err;
-  } finally {
-    client.release();
   }
 }
 

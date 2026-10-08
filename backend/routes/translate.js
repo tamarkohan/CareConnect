@@ -36,6 +36,7 @@ const express = require("express");
 const router = express.Router();
 const { generate } = require("../services/geminiService");
 const { glossaryFor } = require("../services/glossary");
+const { parseJsonReply } = require("../services/jsonReply");
 const translations = require("../services/translationHistory");
 const { optionalAuth, requireAuth } = require("../services/users");
 
@@ -67,8 +68,10 @@ Kind of text: decide it yourself and follow the matching rules.
 - medical (prescription, medicine box, doctor's letter, care instructions): keep dosages, frequencies and units exact,
   explain medical abbreviations, and mention in the note if something looks like a warning.
 - transit (buses, trains, stations, directions): keep line numbers, station and street names exactly, as on Israeli signs.
-- slang (family members, the patient, WhatsApp messages): translate the meaning, not the words; give the literal meaning in the note when it helps.
-- general: anything else.
+- slang: ONLY when the text contains slang words or idioms whose literal meaning is different (e.g. סבבה, יאללה,
+  תכלס, בקטנה, סחוט, חבל על הזמן). Translate the meaning, not the words; give the literal meaning in the note.
+- general: everything else, including ordinary everyday sentences from the family (visits, letters, meals, thanks)
+  that contain no slang words. Being spoken or friendly does NOT make a text slang.
 
 Double meanings: check EVERY input for these cases, and when one applies set "ambiguous" to true, translate the
 most likely meaning for a caregiver in Israel, and list the other real readings of the SAME text in "alternatives":
@@ -107,10 +110,34 @@ const CONTEXT_HINTS = {
 
 const READER_LANGS = { en: "English", tl: "Tagalog", ml: "Malayalam", ru: "Russian" };
 
-function buildInstructions({ targetLanguage, context, readerLanguage, glossary }) {
+/**
+ * Short inputs are where double meanings happen, and the general rule in the
+ * system prompt is easy for the model to skip — so say it on that request.
+ */
+function ambiguityHint(text) {
+  const t = String(text || "").trim();
+  const words = t.split(/\s+/).filter(Boolean);
+  if (!t || words.length > 3) return "";
+  if (/^[A-Za-z' -]+$/.test(t)) {
+    return `This is a short text in Latin letters. Caregivers often write Hebrew words the way they sound, so first ` +
+      `work out which Hebrew word(s) "${t}" sounds like when read aloud (a Latin "h", "j", "ch" or "kh" is often Hebrew ח/כ, ` +
+      `and a final "a" is often the Hebrew ending ה, e.g. a feminine or adjective form — consider those forms first). ` +
+      `If "${t}" is ALSO a word in another language (e.g. Spanish, English, Tagalog), set "ambiguous" to true, translate ` +
+      `the most likely reading, and put the other reading in "alternatives" — the Hebrew one with its Hebrew spelling. ` +
+      `An alternative must have a different meaning from the translation; never repeat the translation there.`;
+  }
+  if (/^[\u0590-\u05FF"'׳״ -]+$/.test(t)) {
+    return `This is a short Hebrew text without vowels. If it can be read as different words with different meanings, ` +
+      `set "ambiguous" to true and list the other readings in "alternatives" (never repeat the translation there).`;
+  }
+  return "";
+}
+
+function buildInstructions({ targetLanguage, context, readerLanguage, glossary, text }) {
   const reader = LANGUAGES.includes(readerLanguage) && readerLanguage !== "Hebrew" ? readerLanguage : "English";
   return [
     `Translate into ${targetLanguage}.`,
+    ambiguityHint(text),
     `The reader's language is ${reader}: write "phonetic" in ${reader === "Malayalam" ? "Malayalam script" : reader === "Russian" ? "Cyrillic" : "Latin letters"} and "note" in ${reader}.`,
     CONTEXT_HINTS[context] || "",
     glossary ? `<glossary>\n${glossary}\n</glossary>` : "",
@@ -154,6 +181,7 @@ router.post("/", async (req, res) => {
       context,
       readerLanguage: reader,
       glossary: glossaryFor(imageBase64 || audioBase64 ? null : String(text)),
+      text: imageBase64 || audioBase64 ? "" : text,
     });
 
     let contents;
@@ -189,18 +217,24 @@ Then translate that extracted text.\n${instructions}`,
       contents = `${instructions}\n\nText to translate:\n${text}`;
     }
 
-    const { text: raw } = await generate({
-      system: TRANSLATOR_SYSTEM_PROMPT,
-      contents,
-      json: true,
-    });
-    const result = normaliseResult(safeParseJSON(raw), { text, context });
+    // Gemini sometimes adds junk around its JSON; parseJsonReply handles that.
+    // If there's still no usable answer, ask once more rather than showing raw text.
+    let parsed = null;
+    let usedModel = null;
+    for (let attempt = 0; attempt < 2 && !parsed?.translatedText; attempt++) {
+      const { text: raw, model } = await generate({ system: TRANSLATOR_SYSTEM_PROMPT, contents, json: true });
+      usedModel = model;
+      parsed = parseJsonReply(raw);
+      if (!parsed?.translatedText) console.warn(`[translate] unreadable reply (attempt ${attempt + 1}): ${raw.slice(0, 120)}`);
+    }
+    if (!parsed?.translatedText) throw new Error("Unreadable reply from Gemini");
+    const result = normaliseResult(parsed, { text, context });
 
     if (req.user && save !== false) {
       const saved = await translations.addTranslation(req.user.id, { inputType, targetLanguage, ...result });
       Object.assign(result, saved);
     }
-    return res.json(result);
+    return res.json({ ...result, model: usedModel }); // model: which Gemini model answered (for testing)
   } catch (err) {
     console.error("[translate] Error:", err.cause || err);
     return res
@@ -229,24 +263,11 @@ router.post("/clear-history", requireAuth, async (req, res) => {
 });
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-/**
- * Attempts to parse the model's response as JSON.
- * Falls back gracefully if the model returns stray markdown fences.
- */
-function safeParseJSON(raw) {
-  try {
-    // Strip optional ```json … ``` fences some models add
-    const cleaned = raw
-      .replace(/^```json\s*/i, "")
-      .replace(/^```\s*/i, "")
-      .replace(/```\s*$/i, "")
-      .trim();
-    return JSON.parse(cleaned);
-  } catch {
-    // If we can't parse JSON, return the raw text as the translation
-    return { translatedText: raw, detectedLanguage: "unknown" };
-  }
-}
+/** For comparing meanings: lowercase, no brackets, no punctuation. */
+const sameMeaning = (a, b) => {
+  const n = (x) => x.toLowerCase().replace(/\([^)]*\)|\[[^\]]*\]/g, "").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+  return n(a) === n(b);
+};
 
 /** Always the same fields, as short strings. */
 function normaliseResult(r, { text, context }) {
@@ -264,7 +285,7 @@ function normaliseResult(r, { text, context }) {
     // Only when the model says it had to guess, and never the same as the main answer.
     alternatives: ((r.ambiguous === true || r.ambiguous === "true") && Array.isArray(r.alternatives) ? r.alternatives : [])
       .map((a) => ({ language: str(a?.language, 40), meaning: str(a?.meaning, 200) }))
-      .filter((a) => a.meaning && a.meaning.toLowerCase() !== str(r.translatedText, 10_000).toLowerCase())
+      .filter((a) => a.meaning && !sameMeaning(a.meaning, str(r.translatedText, 10_000)))
       .slice(0, 3),
   };
 }

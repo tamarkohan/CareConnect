@@ -1,0 +1,48 @@
+{
+  "_about": "Inputs for `npm run language-test` (Tagalog rating sheet for caregivers). 'en' is what the text really means, shown to the raters as the answer key. Edit freely.",
+  "language": "Tagalog",
+  "readerLanguage": "tl",
+  "translations": [
+    { "group": "medical", "he": "לתת לו כדור אקמול אחד כל 6 שעות, לא יותר מ-4 ביום", "en": "Give him one Acamol (paracetamol) tablet every 6 hours, no more than 4 a day." },
+    { "group": "medical", "he": "לבדוק סוכר לפני ארוחת בוקר ולרשום בטבלה", "en": "Check (blood) sugar before breakfast and write it in the table." },
+    { "group": "medical", "he": "אם יש לה חום מעל 38 – להתקשר מיד לרופא", "en": "If she has a fever above 38, call the doctor immediately." },
+    { "group": "medical", "he": "יש לו תור במרפאה של מכבי ביום שלישי ב-10:30, צריך להביא את טופס 17", "en": "He has an appointment at the Maccabi clinic on Tuesday at 10:30; you need to bring Form 17." },
+    { "group": "medical", "he": "קומדין רק בערב, אחרי האוכל. לא לתת יחד עם אופטלגין", "en": "Coumadin only in the evening, after food. Don't give it together with Optalgin." },
+
+    { "group": "transit", "he": "קחי את קו 5 מהתחנה המרכזית ורדי בתחנה של בית החולים", "en": "Take bus line 5 from the central bus station and get off at the hospital stop." },
+    { "group": "transit", "he": "צריך לטעון את הרב קו לפני שעולים לאוטובוס", "en": "You need to top up the Rav-Kav card before getting on the bus." },
+    { "group": "transit", "he": "הרכבת לחיפה יוצאת מתחנת סבידור מרכז כל חצי שעה", "en": "The train to Haifa leaves from Savidor Center station every half hour." },
+    { "group": "transit", "he": "ביום שישי אחרי הצהריים אין אוטובוסים עד מוצאי שבת", "en": "On Friday afternoon there are no buses until Saturday night (end of Shabbat)." },
+    { "group": "transit", "he": "תרדי ברחוב ויצמן ליד הסופר, ואני אחכה לך שם", "en": "Get off on Weizmann Street next to the supermarket, and I'll wait for you there." },
+
+    { "group": "slang", "he": "סבבה, יאללה נצא בעוד רבע שעה", "en": "OK, come on, we'll leave in a quarter of an hour." },
+    { "group": "slang", "he": "הוא היום קצת סחוט, תני לו לנוח", "en": "He's a bit exhausted today, let him rest." },
+    { "group": "slang", "he": "אל תדאגי, זה בקטנה", "en": "Don't worry, it's no big deal." },
+    { "group": "slang", "he": "תכלס, היא צריכה מישהו איתה כל הזמן", "en": "Basically, she needs someone with her all the time." },
+    { "group": "slang", "he": "האוכל שלך חבל על הזמן!", "en": "Your food is amazing!" },
+
+    { "group": "general", "he": "הבת שלה, מיכל, תגיע מרעננה בערב", "en": "Her daughter, Michal, will come from Ra'anana in the evening." },
+    { "group": "general", "he": "צריך להביא את הדרכון לרשות האוכלוסין ביום ראשון", "en": "You need to bring the passport to the Population (and Immigration) Authority on Sunday." },
+    { "group": "general", "he": "ביטוח לאומי שלחו מכתב, תשאירי אותו על השולחן", "en": "National Insurance sent a letter, leave it on the table." },
+    { "group": "general", "he": "בשבת כולנו אוכלים אצל סבתא, תכיני משהו קטן", "en": "On Shabbat we all eat at grandma's, prepare something small." },
+    { "group": "general", "he": "תודה רבה על כל מה שאת עושה בשבילו", "en": "Thank you very much for everything you do for him." },
+
+    { "group": "double", "he": "hola", "en": "Spanish \"hello\" — or Hebrew חולה \"sick\" written in Latin letters. Both meanings should appear." },
+    { "group": "double", "he": "ספר", "en": "Without vowels: \"book\", \"barber\", or \"he told / counted\". More than one meaning should appear." },
+    { "group": "double", "he": "toda", "en": "Hebrew תודה \"thank you\" in Latin letters — or Spanish \"all\". Both meanings should appear." },
+    { "group": "double", "he": "kupat cholim", "en": "Hebrew קופת חולים \"health fund\" in Latin letters. Only one meaning — no \"could also mean\"." },
+    { "group": "double", "he": "בית חולים", "en": "\"Hospital\". Only one meaning — no \"could also mean\"." }
+  ],
+  "legal": [
+    "Ilang araw ng bakasyon ang meron ako bawat taon?",
+    "Pero sa kontrata ko, 10 araw lang ang nakasulat. Legal ba iyon?",
+    "Puwede bang itago ng employer ang passport ko?",
+    "Ano ang aking lingguhang araw ng pahinga at ilang oras dapat ito?",
+    "May kaltas sa sahod ko para sa pabahay, pagkain at bayad sa ahensya. Pinapayagan ba iyon?",
+    "Magkano ang minimum na sahod ng caregiver sa Israel?",
+    "Kailangan ko bang linisin ang buong bahay at hugasan ang kotse ng pamilya?",
+    "Ano ang mangyayari kung magkasakit ako? May bayad ba ang sick leave?",
+    "Kung gusto kong umalis sa trabaho, ilang araw na abiso ang kailangan?",
+    "Saan ako puwedeng humingi ng tulong kung hindi ako binayaran ngayong buwan?"
+  ]
+}
