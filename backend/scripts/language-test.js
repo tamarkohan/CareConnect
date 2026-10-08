@@ -14,6 +14,8 @@
  *   npm run language-test                    against the local backend (npm run dev)
  *   npm run language-test -- https://careconnect-il-app-id9mu.ondigitalocean.app
  *                                            against the live site
+ *   npm run language-test -- --retry-failed  only redo the items that failed in
+ *                                            today's run (keeps the rest)
  *
  * Output: backend/reports/language-test-tagalog-<date>.html  (open it, print it)
  *         backend/reports/language-test-tagalog-<date>.json  (raw answers)
@@ -23,7 +25,9 @@ const fs = require("fs");
 const path = require("path");
 const test = require("../data/language-test-tl.json");
 
-const BASE = (process.argv[2] || process.env.LANGTEST_URL || "http://localhost:3000").replace(/\/+$/, "");
+const args = process.argv.slice(2);
+const RETRY_FAILED = args.includes("--retry-failed");
+const BASE = (args.find((a) => !a.startsWith("--")) || process.env.LANGTEST_URL || "http://localhost:3000").replace(/\/+$/, "");
 const OUT_DIR = path.join(__dirname, "../reports");
 const PAUSE_MS = 1500; // be gentle with the Gemini free tier
 
@@ -32,14 +36,25 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let token = null;
 async function api(p, body) {
   for (let attempt = 1; ; attempt++) {
-    const res = await fetch(`${BASE}${p}`, {
+    let res;
+    try {
+      res = await fetch(`${BASE}${p}`, {
       method: body ? "POST" : "GET",
       headers: {
         ...(body ? { "Content-Type": "application/json" } : {}),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: body ? JSON.stringify(body) : undefined,
-    });
+      });
+    } catch (err) {
+      // The server isn't answering (stopped, or restarting): wait for it a little.
+      if (attempt < 4) {
+        console.log(`   … can't reach ${BASE} (${err.cause?.code || err.message}), retrying in ${attempt * 10}s`);
+        await sleep(attempt * 10_000);
+        continue;
+      }
+      throw new Error(`can't reach ${BASE} — is the backend still running?`);
+    }
     const data = await res.json().catch(() => ({}));
     if (res.ok) return data;
     // "AI busy" / rate limit: wait and try again a few times.
@@ -242,11 +257,27 @@ async function main() {
   if (!signIn.token) throw new Error("The demo login didn't return a token. Is DEMO_LOGIN=true on that server?");
   token = signIn.token;
 
+  const date = new Date().toISOString().slice(0, 10);
+  const base = path.join(OUT_DIR, `language-test-${test.language.toLowerCase()}-${date}`);
+  let previous = null;
+  if (RETRY_FAILED) {
+    try {
+      previous = JSON.parse(fs.readFileSync(`${base}.json`, "utf8"));
+      console.log("Re-running only the items that failed in today's run.");
+    } catch {
+      console.log("No earlier run from today found: running everything.");
+    }
+  }
+  const prevTr = (t) => previous?.translations?.find((x) => x.he === t.he && x.result && !x.error);
+  const prevLegal = (q) => previous?.legal?.find((x) => x.question === q && x.answer && !x.error);
+
   const { contract } = await api("/api/legal/contract");
   if (!contract) console.warn("⚠ The demo account has no contract: run `npm run demo:reset` first for contract-based answers.");
 
   const translations = [];
   for (const [i, t] of test.translations.entries()) {
+    const kept = prevTr(t);
+    if (kept) { translations.push(kept); continue; }
     process.stdout.write(`Translation ${i + 1}/${test.translations.length} (${t.group}) … `);
     try {
       const result = await api("/api/translate", {
@@ -261,9 +292,13 @@ async function main() {
     await sleep(PAUSE_MS);
   }
 
-  await api("/api/legal/clear-history", {});
+  // A fresh conversation, unless we continue one: then the server still has
+  // the earlier questions, so the follow-ups keep their context.
+  if (!previous) await api("/api/legal/clear-history", {});
   const legal = [];
   for (const [i, question] of test.legal.entries()) {
+    const kept = prevLegal(question);
+    if (kept) { legal.push(kept); continue; }
     process.stdout.write(`Legal ${i + 1}/${test.legal.length} … `);
     try {
       const r = await api("/api/legal/ask", { question, language: test.language });
@@ -276,14 +311,13 @@ async function main() {
     await sleep(PAUSE_MS);
   }
 
-  const date = new Date().toISOString().slice(0, 10);
   fs.mkdirSync(OUT_DIR, { recursive: true });
-  const base = path.join(OUT_DIR, `language-test-${test.language.toLowerCase()}-${date}`);
   fs.writeFileSync(`${base}.json`, JSON.stringify({ server: BASE, date, translations, legal }, null, 2));
   fs.writeFileSync(`${base}.html`, buildHtml({ translations, legal, contractName: contract?.fileName, date }));
 
   const failed = [...translations, ...legal].filter((x) => x.error).length;
-  console.log(`\nDone${failed ? ` (${failed} failed)` : ""}. Open this file in your browser and print it:\n  ${base}.html`);
+  console.log(`\nDone${failed ? ` (${failed} failed — run again with:  npm.cmd run language-test -- --retry-failed)` : ""}.`);
+  console.log(`Open this file in your browser and print it:\n  ${base}.html`);
 }
 
 main().catch((err) => {

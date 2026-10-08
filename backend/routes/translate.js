@@ -120,7 +120,8 @@ function ambiguityHint(text) {
   if (!t || words.length > 3) return "";
   if (/^[A-Za-z' -]+$/.test(t)) {
     return `This is a short text in Latin letters. Caregivers often write Hebrew words the way they sound, so first ` +
-      `work out which Hebrew word(s) "${t}" sounds like when read aloud (a Latin "h" or "j" is often Hebrew ח/כ, "ch"/"kh" too). ` +
+      `work out which Hebrew word(s) "${t}" sounds like when read aloud (a Latin "h", "j", "ch" or "kh" is often Hebrew ח/כ, ` +
+      `and a final "a" is often the Hebrew ending ה, e.g. a feminine or adjective form — consider those forms first). ` +
       `If "${t}" is ALSO a word in another language (e.g. Spanish, English, Tagalog), set "ambiguous" to true, translate ` +
       `the most likely reading, and put the other reading in "alternatives" — the Hebrew one with its Hebrew spelling. ` +
       `An alternative must have a different meaning from the translation; never repeat the translation there.`;

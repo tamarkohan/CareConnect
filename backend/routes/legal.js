@@ -81,11 +81,24 @@ Guidelines:
 - If no contract was provided and the question is about the user's own contract, say so and advise them to upload it first.
 - If the situation sounds urgent or serious (unpaid wages, passport taken, violence, being fired), say who can help: a labour lawyer, the caregiver's agency, the Population and Immigration Authority ombudsman or a workers' rights organisation such as Kav LaOved.
 - Do NOT add a disclaimer: the app already shows one.
+- Write the whole answer in the requested language only. Never switch to Hebrew in the middle of a sentence;
+  Hebrew is allowed only for the official name of a law or office, in brackets after its translation.
 
 Formatting (the app shows a small set of Markdown):
 - Short paragraphs. Use "- " bullet lists for several items, "1. " for steps.
 - Use **bold** only for key numbers, days and rights. No headings, tables, horizontal lines or emojis.
 - Keep answers focused: usually under 200 words unless the user asks for more.`;
+
+/**
+ * True when an answer that should not be in Hebrew contains a run of Hebrew
+ * words outside brackets (law names in brackets are fine).
+ */
+function hasStrayHebrew(text, language) {
+  if (/hebrew/i.test(language)) return false;
+  const outsideBrackets = String(text).replace(/\([^)]*\)|\[[^\]]*\]|"[^"]*"/g, " ");
+  return /[\u0590-\u05FF]{2,}(\s+[\u0590-\u05FF]{2,}){1,}/.test(outsideBrackets) ||
+    /[A-Za-z][\u0590-\u05FF]/.test(outsideBrackets); // Hebrew glued to a Latin word, e.g. "batס"
+}
 
 /** Groups retrieved chunks by page, best match first; [n] numbers refer to these. */
 function groupByPage(passages) {
@@ -237,7 +250,18 @@ router.post("/ask", async (req, res) => {
       parts: [{ text: buildPrompt({ question: q, language, contractText: contract?.text, sources }) }],
     });
 
-    const { text: answer } = await generate({ system: LEGAL_SYSTEM_PROMPT, contents: { contents: turns } });
+    let { text: answer } = await generate({ system: LEGAL_SYSTEM_PROMPT, contents: { contents: turns } });
+    // Gemini sometimes slips Hebrew sentences into a Tagalog/English answer (the
+    // sources are often Hebrew). If so, ask once more with a reminder.
+    if (hasStrayHebrew(answer, language)) {
+      console.warn("[legal/ask] answer mixed in Hebrew, asking again");
+      const retryTurns = [...turns.slice(0, -1), {
+        role: "user",
+        parts: [{ text: `${turns[turns.length - 1].parts[0].text}\n\nIMPORTANT: answer entirely in ${language}. Do not write Hebrew sentences.` }],
+      }];
+      const second = await generate({ system: LEGAL_SYSTEM_PROMPT, contents: { contents: retryTurns } });
+      if (!hasStrayHebrew(second.text, language)) answer = second.text;
+    }
     const publicSources = sources.map(({ id, title, url }) => ({ id, title, url }));
 
     if (req.user) {
