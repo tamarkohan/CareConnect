@@ -26,15 +26,16 @@ const Color = {
 };
 
 // ── Tool card data ───────────────────────────────────────────────────
+// Each card opens its page: InfoScreen shows the content in infoPages.ts.
 const TOOLS = [
-    { id: "1", labelKey: "arrivalGuides" as const, emoji: "▶" },
-    { id: "2", labelKey: "safetyShelters" as const, emoji: "⚠" },
-    { id: "3", labelKey: "migrationSupport" as const, emoji: "🌐" },
-    { id: "4", labelKey: "pibaApp" as const, emoji: "✦" },
-    { id: "5", labelKey: "publicTransport" as const, emoji: "🚌" },
-    { id: "6", labelKey: "remittanceApps" as const, emoji: "💲" },
-    { id: "7", labelKey: "faqElderly" as const, emoji: "📍" },
-    { id: "8", labelKey: "aboutUs" as const, emoji: "ℹ" },
+    { id: "1", labelKey: "arrivalGuides" as const, emoji: "▶", screen: "Info", params: { page: "arrival" } },
+    { id: "2", labelKey: "safetyShelters" as const, emoji: "⚠", screen: "Info", params: { page: "safety" } },
+    { id: "3", labelKey: "migrationSupport" as const, emoji: "🌐", screen: "Info", params: { page: "migration" } },
+    { id: "4", labelKey: "payslips" as const, emoji: "🧾", screen: "Payslips" },
+    { id: "5", labelKey: "publicTransport" as const, emoji: "🚌", screen: "Info", params: { page: "transport" } },
+    { id: "6", labelKey: "remittanceApps" as const, emoji: "💲", screen: "Remittance" },
+    { id: "7", labelKey: "faqElderly" as const, emoji: "📍", screen: "Info", params: { page: "faq" } },
+    { id: "8", labelKey: "aboutUs" as const, emoji: "ℹ", screen: "Info", params: { page: "about" } },
 ];
 
 // ── Bottom nav items ─────────────────────────────────────────────────
@@ -93,15 +94,16 @@ export default function HomeDashboard({ navigation }: any) {
                 <Text style={s.sectionTitle}>{t.essentialTools}</Text>
 
                 {/* My Agency – full-width CTA */}
-                <Pressable style={s.agencyBtn} onPress={() => { }}>
+                <Pressable style={s.agencyBtn} onPress={() => navigation.navigate("Info", { page: "agency" })}>
                     <Text style={s.agencyIcon}>📞</Text>
                     <Text style={s.agencyLabel}>{t.myAgency}</Text>
+                    <Text style={s.agencySub}>🚑 101 · 👮 100 · 🚒 102</Text>
                 </Pressable>
 
                 {/* 2-column tool grid */}
                 <View style={s.grid}>
                     {TOOLS.map((tool) => (
-                        <Pressable key={tool.id} style={s.toolCard} onPress={() => { }}>
+                        <Pressable key={tool.id} style={s.toolCard} onPress={() => navigation.navigate(tool.screen, tool.params)}>
                             <Text style={s.toolEmoji}>{tool.emoji}</Text>
                             <Text style={s.toolLabel}>{t[tool.labelKey]}</Text>
                         </Pressable>
@@ -243,8 +245,14 @@ const s = StyleSheet.create({
     },
     agencyIcon: { fontSize: 20 },
     agencyLabel: {
+        flex: 1,
         fontSize: 16,
         fontWeight: "700",
+        color: Color.white,
+    },
+    agencySub: {
+        fontSize: 13,
+        fontWeight: "600",
         color: Color.white,
     },
 

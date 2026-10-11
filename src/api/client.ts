@@ -254,3 +254,32 @@ export type DeleteContractResponse = {
 export function deleteContract(contractToken?: string): Promise<DeleteContractResponse> {
     return apiFetch<DeleteContractResponse>("/api/legal/delete-contract", { contractToken });
 }
+
+// ── Exchange rates (remittance page) ─────────────────────────────────────────
+export type Rates = {
+    base: "USD";
+    rates: Record<string, number>;   // 1 USD = rates[code] of that currency
+    updatedAt: string;
+    source: { name: string; url: string };
+};
+export const getRates = () => apiFetch<Rates>("/api/rates");
+
+// ── Payslips ──────────────────────────────────────────────────────────────────
+export type PayslipExplanation = {
+    overview: string;
+    items: { original: string; meaning: string; amount: string }[];
+    checks: string[];
+};
+export type Payslip = Record<"en" | "tl" | "ml" | "ru", PayslipExplanation> & {
+    id: string;
+    fileName: string;
+    period: string | null;       // "2026-08"
+    employer: string | null;
+    gross: number | null;
+    net: number | null;
+    createdAt: string;
+};
+export const getPayslips = () => apiFetch<{ payslips: Payslip[] }>("/api/payslips");
+export const uploadPayslip = (files: ContractFile[]) =>
+    apiFetch<{ payslip: Payslip }>("/api/payslips/upload", { files });
+export const deletePayslip = (id: string) => apiFetch<{ success: true }>("/api/payslips/delete", { id });
