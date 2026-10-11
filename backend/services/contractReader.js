@@ -54,36 +54,37 @@ const tidy = (text) =>
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 
-const READ_INSTRUCTION =
-  "These are the pages of an employment contract, in order. Transcribe ALL the text exactly as written, " +
+const readInstruction = (docName) =>
+  `These are the pages of ${docName}, in order. Transcribe ALL the text exactly as written, ` +
   "in its original language (often Hebrew). Keep headings, clause numbers and line breaks. " +
   "Do not translate, summarise or add anything. If a page is not readable, write [unreadable page]. " +
   "If this is clearly not a document, answer only: NOT_A_DOCUMENT";
 
-async function readWithGemini(parts) {
-  const { text } = await generate({ contents: [READ_INSTRUCTION, ...parts] });
+async function readWithGemini(parts, docName) {
+  const { text } = await generate({ contents: [readInstruction(docName), ...parts] });
   if (/^NOT_A_DOCUMENT/i.test(text.trim())) {
-    throw userError("This doesn't look like a document. Please choose a photo or file of your contract.", "notDocument");
+    throw userError("This doesn't look like a document. Please choose a photo or a file of the document.", "notDocument");
   }
   return text;
 }
 
-async function readPdf(buffer) {
+async function readPdf(buffer, docName) {
   const pdf = await getDocumentProxy(new Uint8Array(buffer), { verbosity: 0 });
   const { text } = await extractText(pdf, { mergePages: true });
   const clean = tidy(text || "");
   // A scanned PDF has (almost) no text layer: let Gemini read the pages.
   if (clean.replace(/\s/g, "").length < 50 * Math.max(1, pdf.numPages)) {
-    return readWithGemini([{ inlineData: { data: buffer.toString("base64"), mimeType: "application/pdf" } }]);
+    return readWithGemini([{ inlineData: { data: buffer.toString("base64"), mimeType: "application/pdf" } }], docName);
   }
   return clean;
 }
 
 /**
  * @param {Array<{ base64: string, mimeType?: string, name?: string }>} files
+ * @param {string} [docName] what the document is, for the AI reading scans (e.g. "a payslip")
  * @returns {Promise<{ text: string, fileName: string }>}
  */
-async function readContractFiles(files) {
+async function readContractFiles(files, docName = "an employment contract") {
   if (!Array.isArray(files) || !files.length) throw userError("Please choose a file.", "noFile");
   if (files.length > MAX_FILES) throw userError(`Please choose up to ${MAX_FILES} photos.`, "tooMany");
 
@@ -106,11 +107,12 @@ async function readContractFiles(files) {
   let text;
   if (images.length) {
     text = await readWithGemini(
-      images.map((i) => ({ inlineData: { data: i.buffer.toString("base64"), mimeType: i.mime } }))
+      images.map((i) => ({ inlineData: { data: i.buffer.toString("base64"), mimeType: i.mime } })),
+      docName
     );
   } else {
     const [file] = others;
-    if (file.mime === "application/pdf") text = await readPdf(file.buffer);
+    if (file.mime === "application/pdf") text = await readPdf(file.buffer, docName);
     else if (file.mime === DOCX) text = (await mammoth.extractRawText({ buffer: file.buffer })).value;
     else if (file.mime === "text/plain") text = file.buffer.toString("utf8");
     else if (file.mime === "application/msword") {

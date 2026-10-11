@@ -15,6 +15,8 @@ const cors = require("cors");
 const translateRouter = require("./routes/translate");
 const legalRouter = require("./routes/legal");
 const authRouter = require("./routes/auth");
+const ratesRouter = require("./routes/rates");
+const payslipsRouter = require("./routes/payslips");
 
 // ── App setup ─────────────────────────────────────────────────────────────────
 const app = express();
@@ -49,6 +51,8 @@ app.get("/health", (_req, res) => {
 app.use("/api/translate", translateRouter);
 app.use("/api/legal", legalRouter);
 app.use("/api/auth", authRouter);
+app.use("/api/rates", ratesRouter);
+app.use("/api/payslips", payslipsRouter);
 
 // ── 404 handler ───────────────────────────────────────────────────────────────
 app.use((_req, res) => {
