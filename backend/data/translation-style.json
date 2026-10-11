@@ -1,0 +1,51 @@
+{
+  "_about": "How caregivers really speak, per language. Added to the translator prompt when translating into that language (or writing notes in it). Rules and examples come from caregivers' corrections of the printed language test. Add new corrections to 'examples'.",
+  "Tagalog": {
+    "rules": [
+      "Write the everyday Tagalog (Taglish) that Filipino caregivers in Israel speak, not textbook Tagalog.",
+      "Keep common English words that caregivers use every day instead of a formal Tagalog word: e.g. blood sugar (not asukal / antas ng asukal sa dugo), chart (not talaan / tsart), load (a card), card, bus, tablet.",
+      "Use the simplest common word: e.g. umaalis (not umuusad) for a bus or train leaving, simpleng (not kahit anong maliit na), sobrang sarap (not grabe ang sarap).",
+      "Keep sentences short. Leave out words the meaning doesn't need, e.g. 'sa kanya' after Magbigay, or an English word that repeats the brand name ('Acamol (paracetamol) pill' → 'Acamol (paracetamol)').",
+      "Limits: 'at hindi hihigit sa ...' (not 'hindi higit sa ...'). Times per day: 'apat na beses sa isang araw'.",
+      "'All the time' / 'the whole time' for care is 'buong araw' (not 'buong oras').",
+      "Topping up a card: 'mag-load ng Rav-Kav card' (not 'i-load ang Rav-Kav')."
+    ],
+    "examples": [
+      {
+        "he": "לתת לו כדור אקמול אחד כל 6 שעות, לא יותר מ-4 ביום",
+        "wrong": "Magbigay sa kanya ng isang Acamol (paracetamol) pill bawat 6 oras, hindi higit sa 4 sa isang araw.",
+        "right": "Magbigay ng isang Acamol (paracetamol) bawat 6 oras, at hindi hihigit sa 4 na tablet sa isang araw."
+      },
+      {
+        "he": "לבדוק סוכר לפני ארוחת בוקר ולרשום בטבלה",
+        "wrong": "Suriin ang asukal bago mag-almusal at isulat sa talaan.",
+        "right": "Suriin ang blood sugar bago mag-almusal at isulat sa chart."
+      },
+      {
+        "he": "צריך לטעון את הרב קו לפני שעולים לאוטובוס",
+        "wrong": "Kailangang i-load ang Rav-Kav (public transport card) bago sumakay ng bus.",
+        "right": "Kailangang mag-load ng Rav-Kav card bago sumakay ng bus."
+      },
+      {
+        "he": "הרכבת לחיפה יוצאת מתחנת סבידור מרכז כל חצי שעה",
+        "wrong": "Ang tren patungong Haifa ay umuusad mula sa estasyon ng Savidor Center tuwing kalahating oras.",
+        "right": "Ang tren papuntang Haifa ay umaalis mula sa estasyon ng Savidor Center tuwing kalahating oras."
+      },
+      {
+        "he": "תכלס, היא צריכה מישהו איתה כל הזמן",
+        "wrong": "Sa totoo lang, kailangan niya ng kasama buong oras.",
+        "right": "Sa totoo lang, kailangan niya ng kasama buong araw."
+      },
+      {
+        "he": "האוכל שלך חבל על הזמן!",
+        "wrong": "Ang pagkain mo ay grabe ang sarap!",
+        "right": "Ang pagkain mo ay sobrang sarap!"
+      },
+      {
+        "he": "בשבת כולנו אוכלים אצל סבתא, תכיני משהו קטן",
+        "wrong": "Sa Shabbat, tayong lahat ay kakain kina Lola, maghanda ka ng kahit anong maliit na pagkain.",
+        "right": "Sa Shabbat, tayong lahat ay kakain kina Lola, maghanda ka ng simpleng pagkain."
+      }
+    ]
+  }
+}

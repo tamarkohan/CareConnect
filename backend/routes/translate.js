@@ -110,6 +110,22 @@ const CONTEXT_HINTS = {
 
 const READER_LANGS = { en: "English", tl: "Tagalog", ml: "Malayalam", ru: "Russian" };
 
+// How caregivers really speak each language (rules + corrected examples from the
+// caregivers' language test). Edit backend/data/translation-style.json to add more.
+const STYLE = require("../data/translation-style.json");
+
+function styleGuide(language) {
+  const style = STYLE[language];
+  if (!style?.rules?.length) return "";
+  const examples = (style.examples || [])
+    .map((e) => `Hebrew: ${e.he}\nNot: ${e.wrong}\nBut: ${e.right}`)
+    .join("\n\n");
+  return `<style language="${language}">\nCaregivers corrected earlier translations. Write ${language} like this:\n` +
+    style.rules.map((r) => `- ${r}`).join("\n") +
+    (examples ? `\nCorrected examples (learn the style, don't copy them into unrelated texts):\n${examples}` : "") +
+    `\n</style>`;
+}
+
 /**
  * Short inputs are where double meanings happen, and the general rule in the
  * system prompt is easy for the model to skip — so say it on that request.
@@ -140,6 +156,9 @@ function buildInstructions({ targetLanguage, context, readerLanguage, glossary, 
     ambiguityHint(text),
     `The reader's language is ${reader}: write "phonetic" in ${reader === "Malayalam" ? "Malayalam script" : reader === "Russian" ? "Cyrillic" : "Latin letters"} and "note" in ${reader}.`,
     CONTEXT_HINTS[context] || "",
+    // The translation and the note are both read by the caregiver, so the style
+    // applies to the target language and to the reader's language.
+    ...[...new Set([targetLanguage, reader])].map(styleGuide),
     glossary ? `<glossary>\n${glossary}\n</glossary>` : "",
   ].filter(Boolean).join("\n");
 }

@@ -3,8 +3,8 @@
   "language": "Tagalog",
   "readerLanguage": "tl",
   "translations": [
-    { "group": "medical", "he": "לתת לו כדור אקמול אחד כל 6 שעות, לא יותר מ-4 ביום", "en": "Give him one Acamol (paracetamol) tablet every 6 hours, no more than 4 a day." },
-    { "group": "medical", "he": "לבדוק סוכר לפני ארוחת בוקר ולרשום בטבלה", "en": "Check (blood) sugar before breakfast and write it in the table." },
+    { "group": "medical", "he": "לתת לו כדור אקמול אחד כל 6 שעות, לא יותר מ-4 ביום", "en": "Give him one Acamol (paracetamol) tablet every 6 hours, not more than 4 tablets a day." },
+    { "group": "medical", "he": "לבדוק סוכר לפני ארוחת בוקר ולרשום בטבלה", "en": "Check (blood) sugar before breakfast and write it in the chart." },
     { "group": "medical", "he": "אם יש לה חום מעל 38 – להתקשר מיד לרופא", "en": "If she has a fever above 38, call the doctor immediately." },
     { "group": "medical", "he": "יש לו תור במרפאה של מכבי ביום שלישי ב-10:30, צריך להביא את טופס 17", "en": "He has an appointment at the Maccabi clinic on Tuesday at 10:30; you need to bring Form 17." },
     { "group": "medical", "he": "קומדין רק בערב, אחרי האוכל. לא לתת יחד עם אופטלגין", "en": "Coumadin only in the evening, after food. Don't give it together with Optalgin." },
