@@ -131,7 +131,7 @@ function buildHtml({ translations, legal, contractName, date }) {
             <div class="label">Salin ng app / App's translation</div>
             ${t.error ? `<div class="err">Error: ${esc(t.error)}</div>` : `
             <div class="answer">${esc(r.translatedText)}</div>
-            ${r.phonetic ? `<div class="small"><b>Bigkas / Pronunciation:</b> ${esc(r.phonetic)}</div>` : ""}
+            ${r.phonetic ? `<div class="small"><b>Pagbigkas / Pronunciation:</b> ${esc(r.phonetic)}</div>` : ""}
             ${r.note ? `<div class="small"><b>Paalala / Note:</b> ${esc(r.note)}</div>` : ""}
             ${r.alternatives?.length ? `<div class="small"><b>Maaari ring mangahulugang / Could also mean:</b> ${r.alternatives.map((a) => `${esc(a.meaning)}${a.language ? ` (${esc(a.language)})` : ""}`).join(" · ")}</div>` : ""}`}
             <div class="ratings">
