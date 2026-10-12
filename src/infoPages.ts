@@ -37,11 +37,11 @@ export const EMERGENCY_SECTION: InfoSection = {
         "Звонки бесплатные, с любого телефона. Единого номера, как 911, нет: звоните в нужную службу."
     ),
     phones: [
-        { number: "101", label: t("Ambulance – Magen David Adom", "Ambulansya – Magen David Adom", "ആംബുലൻസ് – മാഗൻ ഡേവിഡ് അഡോം", "Скорая помощь – Маген Давид Адом") },
         { number: "100", label: t("Police", "Pulis", "പോലീസ്", "Полиция") },
+        { number: "101", label: t("Ambulance – Magen David Adom", "Ambulansya – Magen David Adom", "ആംബുലൻസ് – മാഗൻ ഡേവിഡ് അഡോം", "Скорая помощь – Маген Давид Адом") },
         { number: "102", label: t("Fire and rescue", "Bumbero at rescue", "അഗ്നിശമന സേന", "Пожарная служба") },
-        { number: "104", label: t("Home Front Command (rockets, war)", "Home Front Command (rocket, giyera)", "ഹോം ഫ്രണ്ട് കമാൻഡ് (റോക്കറ്റ്, യുദ്ധം)", "Служба тыла (ракеты, война)") },
         { number: "103", label: t("Electricity company (power cut)", "Kuryente (brownout)", "വൈദ്യുതി കമ്പനി (വൈദ്യുതി മുടക്കം)", "Электрокомпания (нет света)") },
+        { number: "104", label: t("Home Front Command (rockets, war)", "Home Front Command (rocket, giyera)", "ഹോം ഫ്രണ്ട് കമാൻഡ് (റോക്കറ്റ്, യുദ്ധം)", "Служба тыла (ракеты, война)") },
         { number: "106", label: t("Municipality hotline", "Hotline ng munisipyo", "നഗരസഭ ഹോട്ട്‌ലൈൻ", "Горячая линия муниципалитета") },
         { number: "1201", label: t("ERAN – emotional support, 24 hours", "ERAN – emotional support, 24 oras", "ERAN – മാനസിക പിന്തുണ, 24 മണിക്കൂർ", "ЭРАН – психологическая помощь, круглосуточно") },
         { number: "03-6883766", label: t("Kav LaOved – workers' rights (Tel Aviv)", "Kav LaOved – karapatan ng manggagawa (Tel Aviv)", "കാവ് ലഓവേദ് – തൊഴിലാളി അവകാശങ്ങൾ (ടെൽ അവീവ്)", "Кав ЛаОвед – права работников (Тель-Авив)") },
@@ -158,8 +158,8 @@ export const INFO_PAGES = {
             {
                 title: t("Important numbers", "Mahahalagang number", "പ്രധാന നമ്പറുകൾ", "Важные номера"),
                 phones: [
-                    { number: "104", label: t("Home Front Command", "Home Front Command", "ഹോം ഫ്രണ്ട് കമാൻഡ്", "Служба тыла") },
                     { number: "101", label: t("Ambulance – Magen David Adom", "Ambulansya – Magen David Adom", "ആംബുലൻസ് – മാഗൻ ഡേവിഡ് അഡോം", "Скорая помощь") },
+                    { number: "104", label: t("Home Front Command", "Home Front Command", "ഹോം ഫ്രണ്ട് കമാൻഡ്", "Служба тыла") },
                     { number: "1201", label: t("ERAN – emotional support", "ERAN – emotional support", "ERAN – മാനസിക പിന്തുണ", "ЭРАН – психологическая помощь") },
                 ],
             },

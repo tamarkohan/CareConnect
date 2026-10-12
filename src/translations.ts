@@ -207,6 +207,8 @@ export const T: Record<LangCode, {
     caregivers: string;
     clinics: string;
     taxis: string;
+    atms: string;
+    banks: string;
     actionChat: string;
     actionInfo: string;
     dist100m: string;
@@ -325,6 +327,8 @@ export const T: Record<LangCode, {
         caregivers: "Caregivers",
         clinics: "Clinics",
         taxis: "Taxis",
+        atms: "ATMs",
+        banks: "Banks & cash",
         actionChat: "Chat",
         actionInfo: "Info & Directions",
         dist100m: "100m away",
@@ -445,6 +449,8 @@ export const T: Record<LangCode, {
         caregivers: "Mga Caregiver",
         clinics: "Mga Klinika",
         taxis: "Mga Taksi",
+        atms: "Mga ATM",
+        banks: "Bangko at cash",
         actionChat: "Chat",
         actionInfo: "Impormasyon at Direksyon",
         dist100m: "100m ang layo",
@@ -565,6 +571,8 @@ export const T: Record<LangCode, {
         caregivers: "കെയർഗിവർമാർ",
         clinics: "ക്ലിനിക്കുകൾ",
         taxis: "ടാക്സികൾ",
+        atms: "എടിഎം",
+        banks: "ബാങ്കും പണവും",
         actionChat: "ചാറ്റ്",
         actionInfo: "വിവരവും വഴിയും",
         dist100m: "100 മീറ്റർ അകലെ",
@@ -685,6 +693,8 @@ export const T: Record<LangCode, {
         caregivers: "Сиделки",
         clinics: "Клиники",
         taxis: "Такси",
+        atms: "Банкоматы",
+        banks: "Банки и наличные",
         actionChat: "Чат",
         actionInfo: "Инфо и маршрут",
         dist100m: "В 100 м",
@@ -783,7 +793,7 @@ export const INFLUENCERS: Influencer[] = [
     },
 ];
 
-export type MapFilterId = "caregivers" | "clinics" | "taxis";
+export type MapFilterId = "caregivers" | "clinics" | "taxis" | "atms" | "banks";
 
 export type MapResultItem = {
     id: string;
@@ -805,6 +815,15 @@ export const MAP_RESULTS: Record<MapFilterId, MapResultItem[]> = {
     ],
     taxis: [
         { id: "1", nameKey: "taxiStopLabel", distanceKey: "dist500m", actionKey: "actionInfo", color: "#f57c00" },
+    ],
+    // Sample places until the map is connected to real data.
+    atms: [
+        { id: "1", name: "ATM – Bank Leumi", distanceKey: "dist100m", actionKey: "actionInfo", color: "#005dac" },
+        { id: "2", name: "ATM – Bank Hapoalim", distanceKey: "dist500m", actionKey: "actionInfo", color: "#c62828" },
+    ],
+    banks: [
+        { id: "1", name: "Israel Post – cash & transfers", distanceKey: "dist500m", actionKey: "actionInfo", color: "#f57c00" },
+        { id: "2", name: "Bank Mizrahi-Tefahot branch", distanceKey: "dist1km", actionKey: "actionInfo", color: "#2e7d32" },
     ],
 };
 

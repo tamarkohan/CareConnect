@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import TopBar from "../components/TopBar";
+import LocationPicker, { useSavedLocation } from "../components/LocationPicker";
 import { useLang } from "../AppContext";
 import {
     T,
@@ -46,7 +47,7 @@ const NAV_ITEMS = [
 ];
 
 // ── Map filter tabs ───────────────────────────────────────────────────
-const MAP_FILTERS: MapFilterId[] = ["caregivers", "clinics", "taxis"];
+const MAP_FILTERS: MapFilterId[] = ["caregivers", "clinics", "taxis", "atms", "banks"];
 
 // ════════════════════════════════════════════════════════════════════
 type Props = { navigation?: any };
@@ -57,12 +58,14 @@ export default function CommunityScreen({ navigation }: Props) {
     const t = T[lang];
     const [activeFilter, setActiveFilter] = React.useState<MapFilterId>("caregivers");
     const [searchText, setSearchText] = React.useState("");
+    const [location, setLocation] = useSavedLocation();
 
     const results = MAP_RESULTS[activeFilter];
     const actionLabel =
         activeFilter === "caregivers" ? t.goToChats :
             activeFilter === "clinics" ? t.goToClinics :
-                t.goToTransport;
+                activeFilter === "taxis" ? t.goToTransport :
+                    null;   // ATMs and banks: no "see all" page yet
 
     return (
         <View style={[s.root, { paddingTop: insets.top }]}>
@@ -75,6 +78,66 @@ export default function CommunityScreen({ navigation }: Props) {
                 contentContainerStyle={s.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
+                {/* Near You map – first on the page */}
+                <View style={s.nearYouHeader}>
+                    <Text style={s.sectionTitle}>{t.nearYou}</Text>
+                    <View style={s.filterRow}>
+                        {MAP_FILTERS.map((f) => (
+                            <Pressable
+                                key={f}
+                                style={[s.filterChip, activeFilter === f && s.filterChipActive]}
+                                onPress={() => setActiveFilter(f)}
+                            >
+                                <Text
+                                    style={[s.filterChipText, activeFilter === f && s.filterChipTextActive]}
+                                    numberOfLines={1}
+                                    adjustsFontSizeToFit
+                                    minimumFontScale={0.75}
+                                >
+                                    {t[f]}
+                                </Text>
+                            </Pressable>
+                        ))}
+                    </View>
+                </View>
+
+                {/* Map placeholder */}
+                <View style={s.mapContainer}>
+                    <View style={s.mapPlaceholder}>
+                        <Text style={s.mapEmoji}>🗺</Text>
+                        <Text style={s.mapLabel}>
+                            {location?.city ? `${t.mapView} · ${location.neighborhood ? `${location.neighborhood}, ` : ""}${location.city}` : t.mapView}
+                        </Text>
+                    </View>
+                    <LocationPicker value={location} onChange={setLocation} />
+                </View>
+
+                {/* Results list */}
+                <View style={s.resultsList}>
+                    {results.map((r) => {
+                        const displayName = r.nameKey ? t[r.nameKey] : r.name!;
+                        return (
+                            <View key={r.id} style={s.resultItem}>
+                                <View style={[s.resultAvatar, { backgroundColor: r.color }]}>
+                                    <Text style={s.resultAvatarText}>{displayName.charAt(0)}</Text>
+                                </View>
+                                <View style={s.resultInfo}>
+                                    <Text style={s.resultName} numberOfLines={1}>{displayName}</Text>
+                                    <Text style={s.resultDistance}>{t[r.distanceKey]}</Text>
+                                </View>
+                                <Pressable style={s.resultActionBtn}>
+                                    <Text style={s.resultActionText} numberOfLines={1}>{t[r.actionKey]}</Text>
+                                </Pressable>
+                            </View>
+                        );
+                    })}
+                    {actionLabel ? (
+                        <Pressable>
+                            <Text style={s.seeMoreCenter}>{actionLabel}</Text>
+                        </Pressable>
+                    ) : null}
+                </View>
+
                 <Text style={s.subheading}>{t.communityHeading}</Text>
 
                 {/* Search */}
@@ -126,65 +189,6 @@ export default function CommunityScreen({ navigation }: Props) {
                 <Pressable>
                     <Text style={s.seeMore}>{t.seeMore}</Text>
                 </Pressable>
-
-                {/* Near You map section */}
-                <View style={s.nearYouHeader}>
-                    <Text style={s.sectionTitle}>{t.nearYou}</Text>
-                    <View style={s.filterRow}>
-                        {MAP_FILTERS.map((f) => (
-                            <Pressable
-                                key={f}
-                                style={[s.filterChip, activeFilter === f && s.filterChipActive]}
-                                onPress={() => setActiveFilter(f)}
-                            >
-                                <Text
-                                    style={[s.filterChipText, activeFilter === f && s.filterChipTextActive]}
-                                    numberOfLines={1}
-                                    adjustsFontSizeToFit
-                                    minimumFontScale={0.75}
-                                >
-                                    {t[f]}
-                                </Text>
-                            </Pressable>
-                        ))}
-                    </View>
-                </View>
-
-                {/* Map placeholder */}
-                <View style={s.mapContainer}>
-                    <View style={s.mapPlaceholder}>
-                        <Text style={s.mapEmoji}>🗺</Text>
-                        <Text style={s.mapLabel}>{t.mapView}</Text>
-                    </View>
-                    <View style={s.locationBadge}>
-                        <Text style={s.locationDot}>●</Text>
-                        <Text style={s.locationText}>{t.locationEnabled}</Text>
-                    </View>
-                </View>
-
-                {/* Results list */}
-                <View style={s.resultsList}>
-                    {results.map((r) => {
-                        const displayName = r.nameKey ? t[r.nameKey] : r.name!;
-                        return (
-                            <View key={r.id} style={s.resultItem}>
-                                <View style={[s.resultAvatar, { backgroundColor: r.color }]}>
-                                    <Text style={s.resultAvatarText}>{displayName.charAt(0)}</Text>
-                                </View>
-                                <View style={s.resultInfo}>
-                                    <Text style={s.resultName} numberOfLines={1}>{displayName}</Text>
-                                    <Text style={s.resultDistance}>{t[r.distanceKey]}</Text>
-                                </View>
-                                <Pressable style={s.resultActionBtn}>
-                                    <Text style={s.resultActionText} numberOfLines={1}>{t[r.actionKey]}</Text>
-                                </Pressable>
-                            </View>
-                        );
-                    })}
-                    <Pressable>
-                        <Text style={s.seeMoreCenter}>{actionLabel}</Text>
-                    </Pressable>
-                </View>
 
                 {/* Popular Religious Places */}
                 <Text style={s.sectionTitle}>{t.popularReligious}</Text>
@@ -290,7 +294,7 @@ const s = StyleSheet.create({
     influencerTitle: { fontSize: 13, fontWeight: "700", color: Color.blackPearl, lineHeight: 17 },
     influencerAuthor: { fontSize: 11, color: Color.mako },
     nearYouHeader: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
-    filterRow: { flexDirection: "row", gap: 8 },
+    filterRow: { flexDirection: "row", gap: 8, flexWrap: "wrap", width: "100%" },
     filterChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: Color.linkWater, backgroundColor: Color.white, maxWidth: 110 },
     filterChipActive: { backgroundColor: Color.endeavour, borderColor: Color.endeavour },
     filterChipText: { fontSize: 12, color: Color.mako, fontWeight: "500" },
