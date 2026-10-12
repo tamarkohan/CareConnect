@@ -21,6 +21,16 @@ const C = {
 };
 const place = (p: { city: string; neighborhood: string }) => (p.neighborhood ? `${p.neighborhood}, ${p.city}` : p.city);
 const digits = (phone: string) => phone.replace(/[^\d+]/g, "");
+// What the phone box accepts while typing: digits only, with an optional + at
+// the start for a foreign number. Israeli numbers: up to 10 digits; with +: up to 15.
+const phoneInput = (text: string) => {
+    const plus = text.trim().startsWith("+");
+    const d = text.replace(/\D/g, "");
+    return plus ? `+${d.slice(0, 15)}` : d.slice(0, 10);
+};
+const validPhone = (p: string) => /^0\d{8,9}$/.test(p) || /^\+?[1-9]\d{7,14}$/.test(p);
+// First name: letters, spaces and - ' only (no numbers, links or emojis).
+const nameInput = (text: string) => text.replace(/[^\p{L}\p{M} .'-]/gu, "").slice(0, 20);
 // Israeli numbers for WhatsApp links: 050-1234567 → 972501234567
 const waNumber = (phone: string) => {
     const d = digits(phone).replace(/^\+/, "");
@@ -134,7 +144,7 @@ export default function CaregiversPanel({ location }: { location: UserLocation |
                     <Text style={s.small}>{t.joinBody}</Text>
                     {city ? (
                         <>
-                            <TextInput style={s.input} placeholder={t.firstName} value={name} onChangeText={setName} maxLength={20} autoCorrect={false} />
+                            <TextInput style={s.input} placeholder={t.firstName} value={name} onChangeText={(v) => setName(nameInput(v))} maxLength={20} autoCorrect={false} />
                             <Btn label={t.join} onPress={join} primary disabled={busy || !name.trim()} />
                         </>
                     ) : (
@@ -237,12 +247,12 @@ function Connection({ request: r, onChanged, onBlock }: { request: ContactReques
                             style={[s.input, { flex: 1 }]}
                             placeholder={t.phonePlaceholder}
                             value={phone}
-                            onChangeText={setPhone}
+                            onChangeText={(v) => setPhone(phoneInput(v))}
                             keyboardType="phone-pad"
                             inputMode="tel"
-                            maxLength={20}
+                            maxLength={16}
                         />
-                        <Btn label={t.send} onPress={share} primary disabled={saving || phone.trim().length < 7} />
+                        <Btn label={t.send} onPress={share} primary disabled={saving || !validPhone(phone)} />
                     </View>
                 </View>
             )}
