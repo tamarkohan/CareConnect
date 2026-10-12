@@ -41,6 +41,11 @@ type Strings = {
     checks: string;
     deletePayslip: string;
     deleteConfirm: string;
+    download: string;
+    noFile: string;
+    tapForMore: string;
+    explaining: string;
+    faqTitle: string;
     errUpload: string;
     errTooLarge: string;
     errNotDocument: string;
@@ -81,7 +86,12 @@ export const PAGE_T: Record<LangCode, Strings> = {
         lines: "What each line means",
         checks: "Worth checking",
         deletePayslip: "Delete",
-        deleteConfirm: "Delete this payslip?",
+        deleteConfirm: "Delete this payslip? The explanation and the original file will be deleted for good and can't be retrieved afterwards.",
+        download: "⬇ Download original",
+        noFile: "The original file of this payslip wasn't saved (uploaded before files were kept).",
+        tapForMore: "Tap a line for more explanation.",
+        explaining: "Explaining…",
+        faqTitle: "Popular questions",
         errUpload: "Could not read the payslip. Please try again.",
         errTooLarge: "The file is too large (max 8 MB). Please use a smaller file or fewer photos.",
         errNotDocument: "This doesn't look like a payslip. Please choose a photo or file of your payslip.",
@@ -120,7 +130,12 @@ export const PAGE_T: Record<LangCode, Strings> = {
         lines: "Ibig sabihin ng bawat linya",
         checks: "Dapat i-check",
         deletePayslip: "Burahin",
-        deleteConfirm: "Burahin ang payslip na ito?",
+        deleteConfirm: "Burahin ang payslip na ito? Mabubura nang tuluyan ang paliwanag at ang original na file, at hindi na ito maibabalik.",
+        download: "⬇ I-download ang original",
+        noFile: "Hindi na-save ang original na file ng payslip na ito (na-upload bago itinago ang mga file).",
+        tapForMore: "I-tap ang linya para sa mas mahabang paliwanag.",
+        explaining: "Ipinapaliwanag…",
+        faqTitle: "Mga madalas itanong",
         errUpload: "Hindi mabasa ang payslip. Pakisubukan ulit.",
         errTooLarge: "Masyadong malaki ang file (max 8 MB). Gumamit ng mas maliit na file o mas kaunting picture.",
         errNotDocument: "Mukhang hindi ito payslip. Pumili ng picture o file ng payslip mo.",
@@ -159,7 +174,12 @@ export const PAGE_T: Record<LangCode, Strings> = {
         lines: "ഓരോ വരിയുടെയും അർത്ഥം",
         checks: "പരിശോധിക്കേണ്ടവ",
         deletePayslip: "ഇല്ലാതാക്കുക",
-        deleteConfirm: "ഈ ശമ്പള സ്ലിപ്പ് ഇല്ലാതാക്കണോ?",
+        deleteConfirm: "ഈ ശമ്പള സ്ലിപ്പ് ഇല്ലാതാക്കണോ? വിശദീകരണവും യഥാർത്ഥ ഫയലും എന്നെന്നേക്കുമായി ഇല്ലാതാകും, പിന്നീട് തിരികെ ലഭിക്കില്ല.",
+        download: "⬇ യഥാർത്ഥ ഫയൽ ഡൗൺലോഡ് ചെയ്യുക",
+        noFile: "ഈ ശമ്പള സ്ലിപ്പിന്റെ യഥാർത്ഥ ഫയൽ സേവ് ചെയ്തിട്ടില്ല (ഫയലുകൾ സൂക്ഷിക്കുന്നതിന് മുമ്പ് അപ്‌ലോഡ് ചെയ്തത്).",
+        tapForMore: "കൂടുതൽ വിശദീകരണത്തിന് ഒരു വരിയിൽ ടാപ്പ് ചെയ്യുക.",
+        explaining: "വിശദീകരിക്കുന്നു…",
+        faqTitle: "പതിവ് ചോദ്യങ്ങൾ",
         errUpload: "ശമ്പള സ്ലിപ്പ് വായിക്കാനായില്ല. വീണ്ടും ശ്രമിക്കുക.",
         errTooLarge: "ഫയൽ വളരെ വലുതാണ് (പരമാവധി 8 MB). ചെറിയ ഫയലോ കുറച്ച് ഫോട്ടോകളോ ഉപയോഗിക്കുക.",
         errNotDocument: "ഇത് ശമ്പള സ്ലിപ്പ് അല്ലെന്ന് തോന്നുന്നു. നിങ്ങളുടെ ശമ്പള സ്ലിപ്പിന്റെ ഫോട്ടോയോ ഫയലോ തിരഞ്ഞെടുക്കുക.",
@@ -198,7 +218,12 @@ export const PAGE_T: Record<LangCode, Strings> = {
         lines: "Что означает каждая строка",
         checks: "Стоит проверить",
         deletePayslip: "Удалить",
-        deleteConfirm: "Удалить этот расчётный лист?",
+        deleteConfirm: "Удалить этот расчётный лист? Объяснение и исходный файл будут удалены навсегда, восстановить их будет нельзя.",
+        download: "⬇ Скачать оригинал",
+        noFile: "Исходный файл этого листа не сохранён (загружен до того, как файлы начали сохраняться).",
+        tapForMore: "Нажмите на строку, чтобы узнать больше.",
+        explaining: "Объясняем…",
+        faqTitle: "Частые вопросы",
         errUpload: "Не удалось прочитать расчётный лист. Попробуйте ещё раз.",
         errTooLarge: "Файл слишком большой (макс. 8 МБ). Используйте файл поменьше или меньше фото.",
         errNotDocument: "Это не похоже на расчётный лист. Выберите фото или файл расчётного листа.",

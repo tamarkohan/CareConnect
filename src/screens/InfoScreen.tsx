@@ -7,7 +7,8 @@ import { View, Text, Pressable } from "react-native";
 import { useLang } from "../AppContext";
 import { INFO_PAGES, InfoPageId } from "../infoPages";
 import { PAGE_T } from "../pageStrings";
-import { PageFrame, InfoSections, s } from "../components/InfoSections";
+import { FAQ } from "../infoFaq";
+import { PageFrame, InfoSections, FaqList, s } from "../components/InfoSections";
 import { getContract, ContractSummary } from "../api/client";
 
 export default function InfoScreen({ navigation, route }: any) {
@@ -21,6 +22,7 @@ export default function InfoScreen({ navigation, route }: any) {
             {"intro" in page && page.intro ? <Text style={s.intro}>{page.intro[lang]}</Text> : null}
             {id === "agency" ? <AgencyCard navigation={navigation} /> : null}
             <InfoSections sections={page.sections} />
+            <FaqList items={FAQ[id]} />
         </PageFrame>
     );
 }

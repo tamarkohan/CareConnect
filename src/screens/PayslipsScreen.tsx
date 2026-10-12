@@ -1,7 +1,8 @@
 // ── PayslipsScreen.tsx ───────────────────────────────────────────────
 // Upload payslips (PDF / Word file, or photos of the paper), see each one
 // explained line by line in the app language, and learn the general rules.
-// Only the explanation is stored (encrypted, see backend/services/payslips.js).
+// The explanation and the original file are stored encrypted (see
+// backend/services/payslips.js), so the original can be downloaded later.
 import * as React from "react";
 import { View, Text, Pressable, Modal, StyleSheet, ActivityIndicator } from "react-native";
 import * as ImagePicker from "expo-image-picker";
@@ -10,9 +11,12 @@ import { useLang } from "../AppContext";
 import { LangCode, T } from "../translations";
 import { PAGE_T } from "../pageStrings";
 import { PAYSLIP_SECTIONS } from "../infoPages";
-import { PageFrame, InfoSections, s as page, PageColor } from "../components/InfoSections";
-import { getPayslips, uploadPayslip, deletePayslip, Payslip, ContractFile } from "../api/client";
-import { showAlert, confirmAction, uriToBase64 } from "../api/platform";
+import { FAQ } from "../infoFaq";
+import { PageFrame, InfoSections, FaqList, s as page, PageColor } from "../components/InfoSections";
+import {
+    getPayslips, uploadPayslip, deletePayslip, getPayslipFiles, explainPayslipLine, Payslip, ContractFile,
+} from "../api/client";
+import { showAlert, confirmAction, uriToBase64, saveFile } from "../api/platform";
 
 const MAX_UPLOAD_BYTES = 7 * 1024 * 1024;
 const MAX_PHOTOS = 5;
@@ -35,6 +39,150 @@ const monthName = (period: string | null, lang: LangCode) => {
     return m ? `${MONTHS[lang][Number(m[2]) - 1]} ${m[1]}` : null;
 };
 const money = (n: number | null) => (n === null ? "–" : `₪${n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`);
+
+/** Payslips grouped by year, newest year first ("" = month not found, last). */
+function byYear(list: Payslip[]): [string, Payslip[]][] {
+    const groups = new Map<string, Payslip[]>();
+    for (const ps of list) {
+        const year = ps.period?.slice(0, 4) || "";
+        groups.set(year, [...(groups.get(year) || []), ps]);
+    }
+    return [...groups.entries()].sort(([a], [b]) => (b || "0").localeCompare(a || "0"));
+}
+
+function YearGroup({ year, count, startOpen, forceOpen, children }: {
+    year: string; count: number; startOpen: boolean; forceOpen: boolean; children: React.ReactNode;
+}) {
+    const [isOpen, setIsOpen] = React.useState(startOpen);
+    const shown = isOpen || forceOpen;
+    return (
+        <View style={x.year}>
+            <Pressable style={x.yearHead} onPress={() => setIsOpen(!shown)} accessibilityRole="button">
+                <Text style={x.yearTitle}>{year}</Text>
+                <View style={x.badge}><Text style={x.badgeText}>{count}</Text></View>
+                <Text style={x.caret}>{shown ? "▴" : "▾"}</Text>
+            </Pressable>
+            {shown ? children : null}
+        </View>
+    );
+}
+
+function PayslipItem({ payslip: ps, expanded, onToggle, onDelete }: {
+    payslip: Payslip; expanded: boolean; onToggle: () => void; onDelete: () => void;
+}) {
+    const { lang } = useLang();
+    const p = PAGE_T[lang];
+    const info = ps[lang] || ps.en;
+    const [downloading, setDownloading] = React.useState(false);
+
+    const download = async () => {
+        setDownloading(true);
+        try {
+            const { files } = await getPayslipFiles(ps.id);
+            for (const f of files) await saveFile(f.name, f.mimeType, f.base64);
+        } catch (err: any) {
+            showAlert(p.download, err?.status === 404 ? p.noFile : err?.message ?? p.errUpload);
+        } finally {
+            setDownloading(false);
+        }
+    };
+
+    return (
+        <View style={x.item}>
+            <Pressable onPress={onToggle} style={x.itemHead} accessibilityRole="button">
+                <View style={{ flex: 1 }}>
+                    <Text style={x.month}>{monthName(ps.period, lang) || p.unknownMonth}</Text>
+                    <Text style={[page.small, { textAlign: "left" }]}>
+                        {p.net}: {money(ps.net)}{ps.employer ? `  ·  ${ps.employer}` : ""}
+                    </Text>
+                </View>
+                <Text style={x.caret}>{expanded ? "▴" : "▾"}</Text>
+            </Pressable>
+            {expanded ? (
+                <View style={{ gap: 8 }}>
+                    <Text style={page.body}>{info.overview}</Text>
+                    <Text style={page.body}>{p.gross}: {money(ps.gross)}   ·   {p.net}: {money(ps.net)}</Text>
+                    {info.items.length ? (
+                        <>
+                            <Text style={x.sub}>{p.lines}</Text>
+                            <Text style={page.small}>{p.tapForMore}</Text>
+                            {info.items.map((it, i) => (
+                                <PayslipLine key={i} payslipId={ps.id} line={it} original={ps.en?.items?.[i]?.original || it.original} />
+                            ))}
+                        </>
+                    ) : null}
+                    {info.checks.length ? (
+                        <View style={x.checks}>
+                            <Text style={x.sub}>⚠ {p.checks}</Text>
+                            {info.checks.map((ch, i) => <Text key={i} style={page.body}>• {ch}</Text>)}
+                        </View>
+                    ) : null}
+                    <View style={x.actions}>
+                        {ps.hasFile ? (
+                            <Pressable onPress={download} disabled={downloading} style={x.action}>
+                                <Text style={page.linkText}>{downloading ? "…" : p.download}</Text>
+                            </Pressable>
+                        ) : (
+                            <Text style={[page.small, { flex: 1 }]}>{p.noFile}</Text>
+                        )}
+                        <Pressable onPress={onDelete} style={x.action}>
+                            <Text style={{ color: PageColor.red, fontWeight: "600" }}>{p.deletePayslip}</Text>
+                        </Pressable>
+                    </View>
+                </View>
+            ) : null}
+        </View>
+    );
+}
+
+/** A payslip line; tapping it asks for (and remembers) a longer explanation. */
+function PayslipLine({ payslipId, line, original }: {
+    payslipId: string; line: { original: string; meaning: string; amount: string }; original: string;
+}) {
+    const { lang } = useLang();
+    const p = PAGE_T[lang];
+    const [detail, setDetail] = React.useState<string | null>(null);
+    const [open, setOpen] = React.useState(false);
+    const [loading, setLoading] = React.useState(false);
+
+    React.useEffect(() => { setDetail(null); setOpen(false); }, [lang]);
+
+    const toggle = async () => {
+        if (open) return setOpen(false);
+        setOpen(true);
+        if (detail) return;
+        setLoading(true);
+        try {
+            setDetail((await explainPayslipLine(payslipId, original, lang)).text);
+        } catch (err: any) {
+            setDetail(err?.message ?? p.errUpload);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <Pressable onPress={toggle} style={x.line} accessibilityRole="button">
+            <View style={x.lineHead}>
+                <View style={{ flex: 1 }}>
+                    <Text style={x.original}>{line.original}</Text>
+                    <Text style={page.body}>{line.meaning}</Text>
+                </View>
+                {line.amount ? <Text style={x.amount}>{line.amount}</Text> : null}
+                <Text style={x.more}>{open ? "−" : "+"}</Text>
+            </View>
+            {open ? (
+                <View style={x.detail}>
+                    {loading ? (
+                        <View style={x.reading}><ActivityIndicator color={PageColor.blue} size="small" /><Text style={page.small}>{p.explaining}</Text></View>
+                    ) : (
+                        <Text style={page.body}>{detail}</Text>
+                    )}
+                </View>
+            ) : null}
+        </Pressable>
+    );
+}
 
 export default function PayslipsScreen({ navigation }: any) {
     const { lang } = useLang();
@@ -144,56 +292,30 @@ export default function PayslipsScreen({ navigation }: any) {
                 ) : payslips.length === 0 ? (
                     <Text style={page.small}>{p.noPayslips}</Text>
                 ) : (
-                    payslips.map((ps) => {
-                        const info = ps[lang] || ps.en;
-                        const expanded = open === ps.id;
-                        return (
-                            <View key={ps.id} style={x.item}>
-                                <Pressable onPress={() => setOpen(expanded ? null : ps.id)} style={x.itemHead}>
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={x.month}>{monthName(ps.period, lang) || p.unknownMonth}</Text>
-                                        <Text style={page.small}>
-                                            {ps.employer ? `${ps.employer} · ` : ""}{p.net}: {money(ps.net)}
-                                        </Text>
-                                    </View>
-                                    <Text style={x.caret}>{expanded ? "▴" : "▾"}</Text>
-                                </Pressable>
-                                {expanded ? (
-                                    <View style={{ gap: 8 }}>
-                                        <Text style={page.body}>{info.overview}</Text>
-                                        <Text style={page.body}>{p.gross}: {money(ps.gross)}   ·   {p.net}: {money(ps.net)}</Text>
-                                        {info.items.length ? (
-                                            <>
-                                                <Text style={x.sub}>{p.lines}</Text>
-                                                {info.items.map((it, i) => (
-                                                    <View key={i} style={x.line}>
-                                                        <View style={{ flex: 1 }}>
-                                                            <Text style={x.original}>{it.original}</Text>
-                                                            <Text style={page.body}>{it.meaning}</Text>
-                                                        </View>
-                                                        {it.amount ? <Text style={x.amount}>{it.amount}</Text> : null}
-                                                    </View>
-                                                ))}
-                                            </>
-                                        ) : null}
-                                        {info.checks.length ? (
-                                            <View style={x.checks}>
-                                                <Text style={x.sub}>⚠ {p.checks}</Text>
-                                                {info.checks.map((ch, i) => <Text key={i} style={page.body}>• {ch}</Text>)}
-                                            </View>
-                                        ) : null}
-                                        <Pressable onPress={() => remove(ps.id)} style={{ alignSelf: "flex-end", padding: 6 }}>
-                                            <Text style={{ color: PageColor.red, fontWeight: "600" }}>{p.deletePayslip}</Text>
-                                        </Pressable>
-                                    </View>
-                                ) : null}
-                            </View>
-                        );
-                    })
+                    byYear(payslips).map(([year, list], i) => (
+                        <YearGroup
+                            key={year}
+                            year={year || p.unknownMonth}
+                            count={list.length}
+                            startOpen={i === 0}
+                            forceOpen={list.some((ps) => ps.id === open)}
+                        >
+                            {list.map((ps) => (
+                                <PayslipItem
+                                    key={ps.id}
+                                    payslip={ps}
+                                    expanded={open === ps.id}
+                                    onToggle={() => setOpen(open === ps.id ? null : ps.id)}
+                                    onDelete={() => remove(ps.id)}
+                                />
+                            ))}
+                        </YearGroup>
+                    ))
                 )}
             </View>
 
             <InfoSections sections={PAYSLIP_SECTIONS} />
+            <FaqList items={FAQ.payslips} />
 
             <Modal visible={menu} transparent animationType="fade" onRequestClose={() => setMenu(false)}>
                 <View style={x.backdrop}>
@@ -215,12 +337,22 @@ export default function PayslipsScreen({ navigation }: any) {
 
 const x = StyleSheet.create({
     reading: { flexDirection: "row", alignItems: "center", gap: 10 },
-    item: { borderTopWidth: 1, borderTopColor: PageColor.line, paddingTop: 8, gap: 6 },
+    year: { borderTopWidth: 1, borderTopColor: PageColor.line, paddingTop: 6, gap: 4 },
+    yearHead: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 6 },
+    badge: { backgroundColor: PageColor.line, borderRadius: 999, minWidth: 26, paddingHorizontal: 8, paddingVertical: 2, alignItems: "center" },
+    badgeText: { fontSize: 13, fontWeight: "700", color: PageColor.blue },
+    yearTitle: { fontSize: 18, fontWeight: "800", color: PageColor.blue, flex: 1 },
+    item: { backgroundColor: PageColor.bg, borderRadius: 10, padding: 10, gap: 6, marginBottom: 6 },
     itemHead: { flexDirection: "row", alignItems: "center", gap: 8 },
     month: { fontSize: 16, fontWeight: "700", color: PageColor.ink },
     caret: { fontSize: 16, color: PageColor.muted },
     sub: { fontSize: 14, fontWeight: "700", color: PageColor.blue, marginTop: 4 },
-    line: { flexDirection: "row", gap: 10, paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: PageColor.bg },
+    line: { paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: PageColor.line, gap: 6 },
+    lineHead: { flexDirection: "row", gap: 10, alignItems: "center" },
+    more: { fontSize: 18, fontWeight: "700", color: PageColor.blue, width: 18, textAlign: "center" },
+    detail: { backgroundColor: PageColor.white, borderRadius: 8, padding: 10, borderLeftWidth: 3, borderLeftColor: PageColor.blue },
+    actions: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+    action: { paddingVertical: 6 },
     original: { fontSize: 15, fontWeight: "700", color: PageColor.ink, textAlign: "left" },
     amount: { fontSize: 15, fontWeight: "700", color: PageColor.ink },
     checks: { backgroundColor: "#fff7e0", borderRadius: 8, padding: 10, gap: 4 },
