@@ -108,7 +108,7 @@ export function FaqList({ items }: { items: Faq[] }) {
 
 export const s = StyleSheet.create({
     root: { flex: 1, backgroundColor: PageColor.bg },
-    content: { paddingHorizontal: 16, paddingTop: 8, gap: 14 },
+    content: { width: "100%", maxWidth: 720, alignSelf: "center", paddingHorizontal: 16, paddingTop: 8, gap: 14 },
     back: { alignSelf: "flex-start", paddingVertical: 6, paddingRight: 12 },
     backText: { color: PageColor.blue, fontSize: 15, fontWeight: "600" },
     pageTitle: { fontSize: 22, fontWeight: "700", color: PageColor.ink },
