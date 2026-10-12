@@ -170,6 +170,9 @@ export const T: Record<LangCode, {
     speakTranslate: string;
     writeAny: string;
     scanPhoto: string;
+    speakShort: string;
+    writeShort: string;
+    scanShort: string;
     recentTranslations: string;
     catMedical: string;
     catSlang: string;
@@ -299,6 +302,9 @@ export const T: Record<LangCode, {
         speakTranslate: "Speak to Translate",
         writeAny: "Write in any language",
         scanPhoto: "Scan or Take Photo",
+        speakShort: "Speak",
+        writeShort: "Write",
+        scanShort: "Scan / Photo",
         recentTranslations: "Recent Translations",
         catMedical: "Medical",
         catSlang: "Slang",
@@ -421,6 +427,9 @@ export const T: Record<LangCode, {
         speakTranslate: "Magsalita para Isalin",
         writeAny: "Sumulat sa anumang wika",
         scanPhoto: "I-scan o Kumuha ng Larawan",
+        speakShort: "Magsalita",
+        writeShort: "Sumulat",
+        scanShort: "I-scan / Picture",
         recentTranslations: "Mga Kamakailang Pagsasalin",
         catMedical: "Medikal",
         catSlang: "Slang",
@@ -543,6 +552,9 @@ export const T: Record<LangCode, {
         speakTranslate: "സംസാരിച്ച് വിവർത്തനം ചെയ്യുക",
         writeAny: "ഏത് ഭാഷയിലും എഴുതുക",
         scanPhoto: "സ്കാൻ ചെയ്യുക അല്ലെങ്കിൽ ഫോട്ടോ എടുക്കുക",
+        speakShort: "സംസാരിക്കുക",
+        writeShort: "എഴുതുക",
+        scanShort: "സ്കാൻ / ഫോട്ടോ",
         recentTranslations: "സമീപകാല വിവർത്തനങ്ങൾ",
         catMedical: "മെഡിക്കൽ",
         catSlang: "സ്ലാങ്",
@@ -665,6 +677,9 @@ export const T: Record<LangCode, {
         speakTranslate: "Говорить для перевода",
         writeAny: "Писать на любом языке",
         scanPhoto: "Сканировать или сфотографировать",
+        speakShort: "Сказать",
+        writeShort: "Написать",
+        scanShort: "Скан / фото",
         recentTranslations: "Недавние переводы",
         catMedical: "Медицинское",
         catSlang: "Сленг",
