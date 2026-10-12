@@ -469,18 +469,10 @@ export default function TranslatorScreen({ navigation }: Props) {
                 contentContainerStyle={s.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
-                {/* Heading */}
+                {/* Heading + one small line about the translator (kept compact so
+                    the recent translations get at least half of the screen) */}
                 <Text style={s.heading}>{t.translatorHeading}</Text>
-                <Text style={s.subheading}>{t.translatorSub}</Text>
-
-                {/* Info card */}
-                <View style={s.infoCard}>
-                    <Text style={s.infoIcon}>ℹ</Text>
-                    <View style={s.infoContent}>
-                        <Text style={s.infoTitle}>{t.infoCardText}</Text>
-                        <Text style={s.infoHighlight}>{t.infoCardHighlight}</Text>
-                    </View>
-                </View>
+                <Text style={s.infoLine}>{t.infoCardText}</Text>
 
                 {/* Input modes */}
                 <View style={s.inputModes}>
@@ -501,7 +493,7 @@ export default function TranslatorScreen({ navigation }: Props) {
                         )}
                         <Text
                             style={s.modeLabel}
-                            numberOfLines={2}
+                            numberOfLines={1}
                             adjustsFontSizeToFit
                             minimumFontScale={0.75}
                         >
@@ -509,7 +501,7 @@ export default function TranslatorScreen({ navigation }: Props) {
                                 ? "Processing…"
                                 : isRecording
                                 ? `Stop  ${formatSeconds(recordingSeconds)}`
-                                : t.speakTranslate}
+                                : t.speakShort}
                         </Text>
                     </Pressable>
 
@@ -518,11 +510,11 @@ export default function TranslatorScreen({ navigation }: Props) {
                         <Text style={s.modeEmoji}>✏</Text>
                         <Text
                             style={s.modeLabel}
-                            numberOfLines={2}
+                            numberOfLines={1}
                             adjustsFontSizeToFit
                             minimumFontScale={0.75}
                         >
-                            {t.writeAny}
+                            {t.writeShort}
                         </Text>
                     </Pressable>
 
@@ -539,11 +531,11 @@ export default function TranslatorScreen({ navigation }: Props) {
                         )}
                         <Text
                             style={s.modeLabel}
-                            numberOfLines={2}
+                            numberOfLines={1}
                             adjustsFontSizeToFit
                             minimumFontScale={0.75}
                         >
-                            {scanLoading ? "Scanning…" : t.scanPhoto}
+                            {scanLoading ? "Scanning…" : t.scanShort}
                         </Text>
                     </Pressable>
                 </View>
@@ -800,12 +792,16 @@ const s = StyleSheet.create({
     root: { flex: 1, backgroundColor: Color.aliceBlue },
     scroll: { flex: 1 },
     scrollContent: {
+        width: "100%",
+        maxWidth: 720,
+        alignSelf: "center",
         paddingHorizontal: 16,
-        paddingTop: 16,
+        paddingTop: 12,
         paddingBottom: 40,
-        gap: 16,
+        gap: 12,
     },
-    heading: { fontSize: 20, fontWeight: "700", color: Color.blackPearl },
+    heading: { fontSize: 18, fontWeight: "700", color: Color.blackPearl },
+    infoLine: { fontSize: 11, lineHeight: 15, color: Color.mako, opacity: 0.85, marginTop: -6 },
     subheading: { fontSize: 14, color: Color.mako, marginBottom: 4 },
     infoCard: {
         backgroundColor: "#f3e5f5",
@@ -827,28 +823,25 @@ const s = StyleSheet.create({
         textTransform: "uppercase",
         letterSpacing: 0.5,
     },
-    inputModes: { flexDirection: "row", gap: 8, marginVertical: 8 },
-    // Same look as the "Translate into" language chips: light pills with a thin border.
+    inputModes: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+    // Same size and look as the "Translate into" language chips.
     mode: {
-        flex: 1,
-        flexDirection: "column",
-        borderRadius: 16,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 20,
         borderWidth: 1,
         borderColor: Color.linkWater,
         backgroundColor: Color.aliceBlue,
-        paddingVertical: 8,
-        paddingHorizontal: 6,
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 2,
-        minHeight: 56,
     },
     modeMic: {},
     modeMicActive: { backgroundColor: "#fff0f0", borderColor: Color.recordingPulse },
     modeType: {},
     modeScan: {},
-    modeEmoji: { fontSize: 16 },
-    modeLabel: { fontSize: 13, lineHeight: 16, fontWeight: "600", color: Color.mako, textAlign: "center" },
+    modeEmoji: { fontSize: 14 },
+    modeLabel: { fontSize: 13, fontWeight: "500", color: Color.mako },
     langRowLabel: { fontSize: 13, fontWeight: "600", color: Color.mako, marginBottom: 6 },
     langRow: { gap: 8, paddingVertical: 2 },
     langChip: {
