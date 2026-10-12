@@ -9,7 +9,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
 import { useLang } from "../AppContext";
 import { LangCode, T } from "../translations";
-import { PAGE_T } from "../pageStrings";
+import { PAGE_T, fill } from "../pageStrings";
 import { PAYSLIP_SECTIONS } from "../infoPages";
 import { FAQ } from "../infoFaq";
 import { PageFrame, InfoSections, FaqList, s as page, PageColor } from "../components/InfoSections";
@@ -19,7 +19,12 @@ import {
 import { showAlert, confirmAction, uriToBase64, saveFile } from "../api/platform";
 
 const MAX_UPLOAD_BYTES = 7 * 1024 * 1024;
-const MAX_PHOTOS = 5;
+// Payslips per selection. Each one is a Gemini call (the free plan allows
+// about 20 a day for the main model; after that the backup models answer).
+const MAX_PER_SELECTION = 20;
+
+type Asset = { uri: string; base64?: string | null; mimeType?: string | null; fileName?: string | null; name?: string };
+type Upload = { name: string; read: () => Promise<ContractFile[]> };
 const FILE_TYPES = [
     "application/pdf",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -189,7 +194,9 @@ export default function PayslipsScreen({ navigation }: any) {
     const p = PAGE_T[lang];
     const [payslips, setPayslips] = React.useState<Payslip[] | null>(null);
     const [menu, setMenu] = React.useState(false);
-    const [uploading, setUploading] = React.useState(false);
+    const [progress, setProgress] = React.useState<{ n: number; total: number } | null>(null);
+    const [result, setResult] = React.useState<{ ok: number; total: number; failed: { item: Upload; error: string }[] } | null>(null);
+    const uploading = progress !== null;
     const [open, setOpen] = React.useState<string | null>(null);
 
     React.useEffect(() => {
@@ -202,21 +209,45 @@ export default function PayslipsScreen({ navigation }: any) {
         return p.errUpload;
     };
 
-    const send = async (files: ContractFile[]) => {
-        if (files.reduce((n, f) => n + approxBytes(f.base64), 0) > MAX_UPLOAD_BYTES) return showAlert(p.errTooLarge);
-        setUploading(true);
-        try {
-            const { payslip } = await uploadPayslip(files);
-            setPayslips((list) => [payslip, ...(list || [])].sort((a, b) => (b.period || "").localeCompare(a.period || "")));
-            setOpen(payslip.id);
-        } catch (err) {
-            showAlert(p.uploadPayslip, errorText(err));
-        } finally {
-            setUploading(false);
+    // Several payslips can be chosen at once: each file (or photo) is one
+    // payslip, read one after the other so the screen can show progress and a
+    // file that fails doesn't stop the others.
+    const sendMany = async (items: Upload[]) => {
+        if (!items.length) return;
+        if (items.length > MAX_PER_SELECTION) return showAlert(fill(p.tooManyFiles, { max: String(MAX_PER_SELECTION) }));
+        setProgress({ n: 1, total: items.length });
+        setResult(null);
+        const failed: { item: Upload; error: string }[] = [];
+        let firstId: string | null = null;
+        for (let i = 0; i < items.length; i++) {
+            setProgress({ n: i + 1, total: items.length });
+            try {
+                const files = await items[i].read();
+                if (files.reduce((n, f) => n + approxBytes(f.base64), 0) > MAX_UPLOAD_BYTES) throw { code: "tooLarge" };
+                const { payslip } = await uploadPayslip(files);
+                firstId = firstId || payslip.id;
+                setPayslips((list) => [payslip, ...(list || [])].sort((a, b) => (b.period || "").localeCompare(a.period || "")));
+            } catch (err) {
+                failed.push({ item: items[i], error: errorText(err) });
+            }
+        }
+        setProgress(null);
+        if (items.length === 1 && !failed.length) {
+            setOpen(firstId);
+        } else if (items.length === 1) {
+            showAlert(p.uploadPayslip, failed[0].error);
+        } else {
+            setResult({ ok: items.length - failed.length, total: items.length, failed });
         }
     };
 
-    const toFiles = (assets: { uri: string; base64?: string | null; mimeType?: string | null; fileName?: string | null; name?: string }[]) =>
+    /** One upload per payslip; files are read only when it's their turn. */
+    const asUploads = (assets: Asset[], each: boolean): Upload[] =>
+        each
+            ? assets.map((a) => ({ name: a.fileName ?? a.name ?? "payslip", read: () => toFiles([a]) }))
+            : [{ name: assets[0]?.fileName ?? "photo", read: () => toFiles(assets) }];
+
+    const toFiles = (assets: Asset[]) =>
         Promise.all(assets.map(async (a) => ({
             base64: a.base64 || (await uriToBase64(a.uri)),
             mimeType: a.mimeType ?? undefined,
@@ -229,7 +260,7 @@ export default function PayslipsScreen({ navigation }: any) {
             const { status } = await ImagePicker.requestCameraPermissionsAsync();
             if (status !== "granted") return showAlert(p.takePhoto, "Please allow camera access in Settings.");
             const result = await ImagePicker.launchCameraAsync({ quality: 0.5, base64: true });
-            if (!result.canceled && result.assets?.length) await send(await toFiles(result.assets));
+            if (!result.canceled && result.assets?.length) await sendMany(asUploads(result.assets, false));
         } catch (err: any) {
             showAlert(p.takePhoto, err?.message ?? p.errUpload);
         }
@@ -239,10 +270,10 @@ export default function PayslipsScreen({ navigation }: any) {
         setMenu(false);
         try {
             const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ["images"], allowsMultipleSelection: true, selectionLimit: MAX_PHOTOS,
+                mediaTypes: ["images"], allowsMultipleSelection: true, selectionLimit: MAX_PER_SELECTION,
                 orderedSelection: true, quality: 0.5, base64: true,
             });
-            if (!result.canceled && result.assets?.length) await send(await toFiles(result.assets.slice(0, MAX_PHOTOS)));
+            if (!result.canceled && result.assets?.length) await sendMany(asUploads(result.assets, true));
         } catch (err: any) {
             showAlert(p.choosePhotos, err?.message ?? p.errUpload);
         }
@@ -251,10 +282,9 @@ export default function PayslipsScreen({ navigation }: any) {
     const chooseFile = async () => {
         setMenu(false);
         try {
-            const result = await DocumentPicker.getDocumentAsync({ type: FILE_TYPES, multiple: false, copyToCacheDirectory: true });
+            const result = await DocumentPicker.getDocumentAsync({ type: FILE_TYPES, multiple: true, copyToCacheDirectory: true });
             if (result.canceled || !result.assets?.length) return;
-            if (result.assets[0].size && result.assets[0].size > MAX_UPLOAD_BYTES) return showAlert(p.errTooLarge);
-            await send(await toFiles([result.assets[0]]));
+            await sendMany(asUploads(result.assets, true));
         } catch (err: any) {
             showAlert(p.chooseFile, err?.message ?? p.errUpload);
         }
@@ -278,10 +308,26 @@ export default function PayslipsScreen({ navigation }: any) {
             <Pressable style={[page.button, uploading && { opacity: 0.6 }]} onPress={() => setMenu(true)} disabled={uploading}>
                 <Text style={page.buttonText}>⬆  {p.uploadPayslip}</Text>
             </Pressable>
-            {uploading ? (
+            {progress ? (
                 <View style={x.reading}>
                     <ActivityIndicator color={PageColor.blue} />
-                    <Text style={page.body}>{p.readingPayslip}</Text>
+                    <Text style={page.body}>
+                        {progress.total > 1 ? fill(p.readingMany, { n: String(progress.n), total: String(progress.total) }) : p.readingPayslip}
+                    </Text>
+                </View>
+            ) : null}
+            {result ? (
+                <View style={[x.checks, !result.failed.length && { backgroundColor: "#e8f5e9" }]}>
+                    <Text style={page.body}>{result.failed.length ? "⚠ " : "✓ "}{fill(p.uploadSummary, { ok: String(result.ok), total: String(result.total) })}</Text>
+                    {result.failed.length ? (
+                        <>
+                            <Text style={x.sub}>{p.uploadFailedList}</Text>
+                            {result.failed.map((f, i) => <Text key={i} style={page.small}>• {f.item.name}: {f.error}</Text>)}
+                            <Pressable onPress={() => sendMany(result.failed.map((f) => f.item))} style={{ paddingVertical: 4 }}>
+                                <Text style={page.linkText}>{p.retryFailed}</Text>
+                            </Pressable>
+                        </>
+                    ) : null}
                 </View>
             ) : null}
 
