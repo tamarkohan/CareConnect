@@ -495,7 +495,7 @@ export default function TranslatorScreen({ navigation }: Props) {
                         disabled={recordingLoading}
                     >
                         {recordingLoading ? (
-                            <ActivityIndicator color={Color.white} size="small" />
+                            <ActivityIndicator color={Color.endeavour} size="small" />
                         ) : (
                             <Text style={s.modeEmoji}>{isRecording ? "⏹" : "🎤"}</Text>
                         )}
@@ -517,7 +517,7 @@ export default function TranslatorScreen({ navigation }: Props) {
                     <Pressable style={[s.mode, s.modeType]} onPress={openModal}>
                         <Text style={s.modeEmoji}>✏</Text>
                         <Text
-                            style={[s.modeLabel, { color: Color.blackPearl }]}
+                            style={s.modeLabel}
                             numberOfLines={2}
                             adjustsFontSizeToFit
                             minimumFontScale={0.75}
@@ -533,7 +533,7 @@ export default function TranslatorScreen({ navigation }: Props) {
                         disabled={scanLoading}
                     >
                         {scanLoading ? (
-                            <ActivityIndicator color={Color.white} size="small" />
+                            <ActivityIndicator color={Color.endeavour} size="small" />
                         ) : (
                             <Text style={s.modeEmoji}>📷</Text>
                         )}
@@ -827,28 +827,28 @@ const s = StyleSheet.create({
         textTransform: "uppercase",
         letterSpacing: 0.5,
     },
-    inputModes: { flexDirection: "row", gap: 12, marginVertical: 8 },
+    inputModes: { flexDirection: "row", gap: 8, marginVertical: 8 },
+    // Same look as the "Translate into" language chips: light pills with a thin border.
     mode: {
         flex: 1,
-        borderRadius: 12,
-        paddingVertical: 14,
-        paddingHorizontal: 4,
+        flexDirection: "column",
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: Color.linkWater,
+        backgroundColor: Color.aliceBlue,
+        paddingVertical: 8,
+        paddingHorizontal: 6,
         alignItems: "center",
         justifyContent: "center",
-        gap: 8,
-        minHeight: 84,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 1,
+        gap: 2,
+        minHeight: 56,
     },
-    modeMic: { backgroundColor: Color.blueMic },
-    modeMicActive: { backgroundColor: Color.recordingPulse },
-    modeType: { backgroundColor: Color.yellowType },
-    modeScan: { backgroundColor: Color.greenScan },
-    modeEmoji: { fontSize: 22 },
-    modeLabel: { fontSize: 12, lineHeight: 15, fontWeight: "600", color: Color.white, textAlign: "center" },
+    modeMic: {},
+    modeMicActive: { backgroundColor: "#fff0f0", borderColor: Color.recordingPulse },
+    modeType: {},
+    modeScan: {},
+    modeEmoji: { fontSize: 16 },
+    modeLabel: { fontSize: 13, lineHeight: 16, fontWeight: "600", color: Color.mako, textAlign: "center" },
     langRowLabel: { fontSize: 13, fontWeight: "600", color: Color.mako, marginBottom: 6 },
     langRow: { gap: 8, paddingVertical: 2 },
     langChip: {

@@ -109,8 +109,25 @@ export function FaqList({ items }: { items: Faq[] }) {
 export const s = StyleSheet.create({
     root: { flex: 1, backgroundColor: PageColor.bg },
     content: { width: "100%", maxWidth: 720, alignSelf: "center", paddingHorizontal: 16, paddingTop: 8, gap: 14 },
-    back: { alignSelf: "flex-start", paddingVertical: 6, paddingRight: 12 },
-    backText: { color: PageColor.blue, fontSize: 15, fontWeight: "600" },
+    // A clear, finger-sized button (not just blue text).
+    back: {
+        alignSelf: "flex-start",
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: PageColor.white,
+        borderWidth: 1,
+        borderColor: PageColor.line,
+        borderRadius: 999,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        marginTop: 4,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.06,
+        shadowRadius: 2,
+        elevation: 1,
+    },
+    backText: { color: PageColor.blue, fontSize: 17, fontWeight: "700" },
     pageTitle: { fontSize: 22, fontWeight: "700", color: PageColor.ink },
     intro: { fontSize: 15, color: PageColor.muted, lineHeight: 21 },
     card: {
