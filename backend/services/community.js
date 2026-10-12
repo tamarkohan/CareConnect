@@ -25,7 +25,15 @@ const LANGS = ["en", "tl", "ml", "ru"];
 const userError = (message, code, status = 400) => Object.assign(new Error(message), { expose: true, status, code });
 
 const NAME_RE = /^[\p{L}][\p{L}\p{M} .'-]{0,19}$/u;   // letters only: no numbers, links or emojis
-const PHONE_RE = /^\+?[\d\s-]{7,20}$/;
+// Phone numbers: digits only. An Israeli number has 9–10 digits starting with 0
+// (050-1234567 is typed as 0501234567); a foreign one may start with + and
+// have up to 15 digits (the international maximum).
+function normalisePhone(input) {
+  const p = String(input || "").replace(/[\s-]/g, "");
+  if (/^0\d{8,9}$/.test(p)) return p;
+  if (/^\+?[1-9]\d{7,14}$/.test(p)) return p;
+  return null;
+}
 
 const clean = (v, max) => (typeof v === "string" ? v.trim().replace(/\s+/g, " ").slice(0, max) : "");
 
@@ -52,11 +60,15 @@ async function saveProfile(userId, { displayName, city, neighborhood, language }
   return getProfile(userId);
 }
 
-/** Leaving the list also withdraws the requests that weren't answered yet (blocks stay). */
+/**
+ * Leaving the list removes all the user's requests and connections, so any
+ * phone number they shared disappears for the other person too (and theirs
+ * for them). Blocks stay, so a blocked person stays blocked if they rejoin.
+ */
 async function leave(userId) {
   await db.withTransaction(async (client) => {
     await client.query("DELETE FROM community_profiles WHERE user_id = $1", [userId]);
-    await client.query("DELETE FROM contact_requests WHERE (from_user = $1 OR to_user = $1) AND status = 'pending'", [userId]);
+    await client.query("DELETE FROM contact_requests WHERE (from_user = $1 OR to_user = $1) AND status <> 'blocked'", [userId]);
   });
 }
 
@@ -120,9 +132,11 @@ async function listRequests(userId) {
   const { rows } = await db.query(
     `SELECT r.*, p.public_id, p.display_name, p.city, p.neighborhood
      FROM contact_requests r
-     LEFT JOIN community_profiles p ON p.user_id = CASE WHEN r.from_user = $1 THEN r.to_user ELSE r.from_user END
+     JOIN community_profiles p ON p.user_id = CASE WHEN r.from_user = $1 THEN r.to_user ELSE r.from_user END
      WHERE (r.from_user = $1 OR r.to_user = $1) AND r.status <> 'blocked'
        AND NOT (r.status = 'declined' AND r.to_user = $1)
+       -- Only while both people are still on the list (a person who left disappears, with their number).
+       AND EXISTS (SELECT 1 FROM community_profiles me WHERE me.user_id = $1)
      ORDER BY r.id DESC LIMIT 100`,
     [userId]
   );
@@ -132,7 +146,8 @@ async function listRequests(userId) {
       const ct = r[`${side}_phone_ct`];
       if (!ct) return null;
       try {
-        return decrypt({ ciphertext: ct, iv: r[`${side}_phone_iv`], auth_tag: r[`${side}_phone_tag`] }, `contact:${r.id}:${side}`);
+        // normalisePhone also hides anything stored before numbers were checked strictly.
+        return normalisePhone(decrypt({ ciphertext: ct, iv: r[`${side}_phone_iv`], auth_tag: r[`${side}_phone_tag`] }, `contact:${r.id}:${side}`));
       } catch {
         return null;
       }
@@ -142,7 +157,7 @@ async function listRequests(userId) {
       direction: mine ? "sent" : "received",
       status: r.status,
       messageKey: r.message_key,
-      other: { displayName: r.display_name || "—", city: r.city || "", neighborhood: r.neighborhood || "" },
+      other: { displayName: r.display_name, city: r.city, neighborhood: r.neighborhood || "" },
       // Phones only once accepted; "mine" is the number I shared, "theirs" what they shared with me.
       myPhone: r.status === "accepted" ? phone(mine ? "from" : "to") : null,
       theirPhone: r.status === "accepted" ? phone(mine ? "to" : "from") : null,
@@ -160,7 +175,10 @@ async function respond(userId, requestId, action) {
   if (!status) throw userError("Unknown answer.", "badAction");
   const { rowCount } = await db.query(
     status === "blocked"
-      ? `UPDATE contact_requests SET status = 'blocked', responded_at = now()
+      // A block also erases any shared numbers.
+      ? `UPDATE contact_requests SET status = 'blocked', responded_at = now(),
+           from_phone_ct = NULL, from_phone_iv = NULL, from_phone_tag = NULL,
+           to_phone_ct = NULL, to_phone_iv = NULL, to_phone_tag = NULL
          WHERE id = $2 AND (to_user = $1 OR from_user = $1) AND status <> 'blocked'`
       : `UPDATE contact_requests SET status = $3, responded_at = now()
          WHERE id = $2 AND to_user = $1 AND status = 'pending'`,
@@ -171,8 +189,8 @@ async function respond(userId, requestId, action) {
 
 /** After acceptance, either person can share a phone number with the other. */
 async function sharePhone(userId, requestId, phoneInput) {
-  const phone = clean(phoneInput, 20);
-  if (!PHONE_RE.test(phone)) throw userError("Please enter a valid phone number.", "badPhone");
+  const phone = normalisePhone(phoneInput);
+  if (!phone) throw userError("Please enter a phone number with digits only: 10 digits (e.g. 0501234567), or + and the country code.", "badPhone");
   const { rows: [r] } = await db.query(
     "SELECT from_user, to_user FROM contact_requests WHERE id = $1 AND status = 'accepted' AND (from_user = $2 OR to_user = $2)",
     [requestId, userId]

@@ -211,7 +211,6 @@ export const T: Record<LangCode, {
     clinics: string;
     taxis: string;
     atms: string;
-    banks: string;
     actionChat: string;
     actionInfo: string;
     dist100m: string;
@@ -333,8 +332,7 @@ export const T: Record<LangCode, {
         caregivers: "Caregivers",
         clinics: "Clinics",
         taxis: "Taxis",
-        atms: "ATMs",
-        banks: "Banks & cash",
+        atms: "ATMs & banks",
         actionChat: "Chat",
         actionInfo: "Info & Directions",
         dist100m: "100m away",
@@ -458,8 +456,7 @@ export const T: Record<LangCode, {
         caregivers: "Mga Caregiver",
         clinics: "Mga Klinika",
         taxis: "Mga Taksi",
-        atms: "Mga ATM",
-        banks: "Bangko at cash",
+        atms: "ATM at bangko",
         actionChat: "Chat",
         actionInfo: "Impormasyon at Direksyon",
         dist100m: "100m ang layo",
@@ -583,8 +580,7 @@ export const T: Record<LangCode, {
         caregivers: "കെയർഗിവർമാർ",
         clinics: "ക്ലിനിക്കുകൾ",
         taxis: "ടാക്സികൾ",
-        atms: "എടിഎം",
-        banks: "ബാങ്കും പണവും",
+        atms: "എടിഎം / ബാങ്ക്",
         actionChat: "ചാറ്റ്",
         actionInfo: "വിവരവും വഴിയും",
         dist100m: "100 മീറ്റർ അകലെ",
@@ -708,8 +704,7 @@ export const T: Record<LangCode, {
         caregivers: "Сиделки",
         clinics: "Клиники",
         taxis: "Такси",
-        atms: "Банкоматы",
-        banks: "Банки и наличные",
+        atms: "Банкоматы и банки",
         actionChat: "Чат",
         actionInfo: "Инфо и маршрут",
         dist100m: "В 100 м",
@@ -808,7 +803,7 @@ export const INFLUENCERS: Influencer[] = [
     },
 ];
 
-export type MapFilterId = "caregivers" | "clinics" | "taxis" | "atms" | "banks";
+export type MapFilterId = "caregivers" | "clinics" | "taxis" | "atms";
 
 export type MapResultItem = {
     id: string;
@@ -836,10 +831,6 @@ export const MAP_RESULTS: Record<MapFilterId, MapResultItem[]> = {
         { id: "1", name: "ATM – Bank Leumi", distanceKey: "dist100m", actionKey: "actionInfo", color: "#005dac" },
         { id: "2", name: "ATM – Bank Hapoalim", distanceKey: "dist500m", actionKey: "actionInfo", color: "#c62828" },
     ],
-    banks: [
-        { id: "1", name: "Israel Post – cash & transfers", distanceKey: "dist500m", actionKey: "actionInfo", color: "#f57c00" },
-        { id: "2", name: "Bank Mizrahi-Tefahot branch", distanceKey: "dist1km", actionKey: "actionInfo", color: "#2e7d32" },
-    ],
 };
 
 export type ReligiousPlace = {
@@ -847,6 +838,8 @@ export type ReligiousPlace = {
     name: string;
     districtKey: "districtNorthern" | "districtHaifa" | "districtJerusalem";
     desc: Record<LangCode, string>;
+    /** English Wikipedia article whose main photo is shown as the thumbnail. */
+    wiki: string;
 };
 
 export const RELIGIOUS_PLACES: ReligiousPlace[] = [
@@ -854,6 +847,7 @@ export const RELIGIOUS_PLACES: ReligiousPlace[] = [
         id: "1",
         name: "Nazareth (נצרת)",
         districtKey: "districtNorthern",
+        wiki: "Basilica_of_the_Annunciation",
         desc: {
             en: "A major pilgrimage center featuring the Basilica of the Annunciation. Accessible via direct buses from Haifa and Tel Aviv.",
             tl: "Isang malaking sentro ng pilgrimahe na may Basilica of the Annunciation. Madaling marating gamit ang direktang bus mula Haifa at Tel Aviv.",
@@ -865,6 +859,7 @@ export const RELIGIOUS_PLACES: ReligiousPlace[] = [
         id: "2",
         name: "Stella Maris Monastery",
         districtKey: "districtHaifa",
+        wiki: "Stella_Maris_Monastery",
         desc: {
             en: "A 19th-century Carmelite monastery located on the slopes of Mount Carmel in Haifa, offering beautiful panoramic views of the Mediterranean Sea.",
             tl: "Isang monasteryo ng Carmelite noong ika-19 siglo na matatagpuan sa gilid ng Bundok Carmel sa Haifa, na nag-aalok ng magandang panoramic na tanawin ng Dagat Mediteraneo.",
@@ -876,6 +871,7 @@ export const RELIGIOUS_PLACES: ReligiousPlace[] = [
         id: "3",
         name: "Church of the Holy Sepulchre",
         districtKey: "districtJerusalem",
+        wiki: "Church_of_the_Holy_Sepulchre",
         desc: {
             en: "Located in the Christian Quarter of the Old City of Jerusalem, it is considered one of the holiest sites in Christianity.",
             tl: "Matatagpuan sa Christian Quarter ng Lumang Lungsod ng Jerusalem, itinuturing itong isa sa mga pinakabanal na lugar sa Kristiyanismo.",

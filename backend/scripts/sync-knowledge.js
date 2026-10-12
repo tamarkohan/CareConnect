@@ -150,6 +150,13 @@ async function main() {
          WHERE status IN ('pending', 'declined') AND created_at < now() - interval '90 days'`
       );
       if (requests) console.log(`Removed ${requests} old contact request(s).`);
+      // Connections of someone who is no longer on the list (and their shared numbers).
+      const { rowCount: orphans } = await db.query(
+        `DELETE FROM contact_requests r WHERE r.status <> 'blocked' AND (
+           NOT EXISTS (SELECT 1 FROM community_profiles p WHERE p.user_id = r.from_user) OR
+           NOT EXISTS (SELECT 1 FROM community_profiles p WHERE p.user_id = r.to_user))`
+      );
+      if (orphans) console.log(`Removed ${orphans} connection(s) of people who left the list.`);
     }
   } else {
     console.warn("Users tables missing: run db/schema.sql again in Supabase.");

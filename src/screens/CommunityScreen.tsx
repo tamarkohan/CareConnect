@@ -13,6 +13,7 @@ import TopBar from "../components/TopBar";
 import LocationPicker, { useSavedLocation } from "../components/LocationPicker";
 import CommunityMap, { mapsSearchUrl, mapsDirectionsUrl } from "../components/CommunityMap";
 import CaregiversPanel from "../components/CaregiversPanel";
+import PlacePhoto from "../components/PlacePhoto";
 import { COMMUNITY_T } from "../communityStrings";
 import { showAlert } from "../api/platform";
 import { getItem, setItem } from "../api/storage";
@@ -52,7 +53,7 @@ const NAV_ITEMS = [
 ];
 
 // ── Map filter tabs ───────────────────────────────────────────────────
-const MAP_FILTERS: MapFilterId[] = ["caregivers", "clinics", "taxis", "atms", "banks"];
+const MAP_FILTERS: MapFilterId[] = ["caregivers", "clinics", "taxis", "atms"];
 
 // ════════════════════════════════════════════════════════════════════
 type Props = { navigation?: any };
@@ -103,7 +104,8 @@ export default function CommunityScreen({ navigation }: Props) {
                 {/* Near You map – first on the page */}
                 <View style={s.nearYouHeader}>
                     <Text style={s.sectionTitle}>{t.nearYou}</Text>
-                    <View style={s.filterRow}>
+                    {/* One line of chips; on a narrow screen or long labels it scrolls sideways. */}
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filterRow}>
                         {MAP_FILTERS.map((f) => (
                             <Pressable
                                 key={f}
@@ -120,7 +122,7 @@ export default function CommunityScreen({ navigation }: Props) {
                                 </Text>
                             </Pressable>
                         ))}
-                    </View>
+                    </ScrollView>
                 </View>
 
                 {/* Real map (free Google Maps embed) + where the user is */}
@@ -194,9 +196,7 @@ export default function CommunityScreen({ navigation }: Props) {
                     {RELIGIOUS_PLACES.map((place) => (
                         <View key={place.id} style={s.religiousCard}>
                             {/* Image placeholder */}
-                            <View style={s.religiousImage}>
-                                <Text style={s.religiousImageEmoji}>🏛</Text>
-                            </View>
+                            <PlacePhoto wiki={place.wiki} name={place.name} />
                             <View style={s.religiousBody}>
                                 <View style={s.religiousTagRow}>
                                     <View style={[s.religiousTag, { backgroundColor: Color.lightYellow }]}>
@@ -291,9 +291,9 @@ const s = StyleSheet.create({
     playIcon: { fontSize: 14, color: Color.endeavour },
     influencerTitle: { fontSize: 13, fontWeight: "700", color: Color.blackPearl, lineHeight: 17 },
     influencerAuthor: { fontSize: 11, color: Color.mako },
-    nearYouHeader: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
-    filterRow: { flexDirection: "row", gap: 8, flexWrap: "wrap", width: "100%" },
-    filterChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: Color.linkWater, backgroundColor: Color.white, maxWidth: 110 },
+    nearYouHeader: { gap: 8 },
+    filterRow: { flexDirection: "row", gap: 6 },
+    filterChip: { paddingHorizontal: 11, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: Color.linkWater, backgroundColor: Color.white },
     filterChipActive: { backgroundColor: Color.endeavour, borderColor: Color.endeavour },
     filterChipText: { fontSize: 12, color: Color.mako, fontWeight: "500" },
     filterChipTextActive: { color: Color.white, fontWeight: "700" },
