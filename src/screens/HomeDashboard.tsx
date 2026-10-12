@@ -39,11 +39,11 @@ const TOOLS = [
     { id: "8", labelKey: "aboutUs" as const, emoji: "ℹ", screen: "Info", params: { page: "about" } },
 ];
 
-// Tapping one calls the number directly. All numbers (police 100 too) are on the agency page.
+// Tapping one calls the number directly. All numbers are on the agency page.
 const EMERGENCY = [
     { number: "101", emoji: "🚑", label: { en: "Ambulance", tl: "Ambulansya", ml: "ആംബുലൻസ്", ru: "Скорая" } },
+    { number: "100", emoji: "👮", label: { en: "Police", tl: "Pulis", ml: "പോലീസ്", ru: "Полиция" } },
     { number: "102", emoji: "🚒", label: { en: "Fire", tl: "Bumbero", ml: "അഗ്നിശമനം", ru: "Пожарные" } },
-    { number: "104", emoji: "🛡️", label: { en: "Home Front", tl: "Home Front", ml: "ഹോം ഫ്രണ്ട്", ru: "Служба тыла" } },
 ] as const;
 
 // ── Bottom nav items ─────────────────────────────────────────────────
