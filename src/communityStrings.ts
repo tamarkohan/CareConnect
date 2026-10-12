@@ -35,6 +35,7 @@ type Strings = {
     block: string;
     blockConfirm: string;
     contactsTitle: string;
+    closeAll: string;
     sharePhone: string;
     sharePhoneHint: string;
     phonePlaceholder: string;
@@ -81,6 +82,7 @@ export const COMMUNITY_T: Record<LangCode, Strings> = {
         block: "Block",
         blockConfirm: "Block this person? You won't see each other anymore, and any shared phone numbers are deleted.",
         contactsTitle: "My connections",
+        closeAll: "Close all",
         sharePhone: "Share my phone number",
         sharePhoneHint: "Only this person will see it. Digits only, e.g. 0501234567 (or + and the country code).",
         phonePlaceholder: "Your phone number",
@@ -124,6 +126,7 @@ export const COMMUNITY_T: Record<LangCode, Strings> = {
         block: "I-block",
         blockConfirm: "I-block ang taong ito? Hindi na kayo magkikita sa app, at mabubura ang mga ibinahaging phone number.",
         contactsTitle: "Mga connection ko",
+        closeAll: "Isara lahat",
         sharePhone: "Ibahagi ang phone number ko",
         sharePhoneHint: "Siya lang ang makakakita nito. Numero lang, hal. 0501234567 (o + at country code).",
         phonePlaceholder: "Phone number mo",
@@ -167,6 +170,7 @@ export const COMMUNITY_T: Record<LangCode, Strings> = {
         block: "ബ്ലോക്ക് ചെയ്യുക",
         blockConfirm: "ഈ വ്യക്തിയെ ബ്ലോക്ക് ചെയ്യണോ? നിങ്ങൾ ഇനി പരസ്പരം കാണില്ല, പങ്കിട്ട ഫോൺ നമ്പറുകൾ ഇല്ലാതാക്കും.",
         contactsTitle: "എന്റെ ബന്ധങ്ങൾ",
+        closeAll: "എല്ലാം അടയ്ക്കുക",
         sharePhone: "എന്റെ ഫോൺ നമ്പർ പങ്കിടുക",
         sharePhoneHint: "ഈ വ്യക്തിക്ക് മാത്രമേ കാണാനാകൂ. അക്കങ്ങൾ മാത്രം, ഉദാ. 0501234567 (അല്ലെങ്കിൽ +, രാജ്യ കോഡ്).",
         phonePlaceholder: "നിങ്ങളുടെ ഫോൺ നമ്പർ",
@@ -210,6 +214,7 @@ export const COMMUNITY_T: Record<LangCode, Strings> = {
         block: "Заблокировать",
         blockConfirm: "Заблокировать этого человека? Вы больше не будете видеть друг друга, а номера, которыми вы поделились, будут удалены.",
         contactsTitle: "Мои контакты",
+        closeAll: "Свернуть все",
         sharePhone: "Поделиться номером",
         sharePhoneHint: "Его увидит только этот человек. Только цифры, например 0501234567 (или + и код страны).",
         phonePlaceholder: "Ваш номер телефона",

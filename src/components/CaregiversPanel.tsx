@@ -46,6 +46,8 @@ export default function CaregiversPanel({ location }: { location: UserLocation |
     const [name, setName] = React.useState("");
     const [busy, setBusy] = React.useState(false);
     const [asking, setAsking] = React.useState<CommunityPerson | null>(null);
+    // Connections are shown as one line each (name · place); tap to open the details.
+    const [openIds, setOpenIds] = React.useState<string[]>([]);
 
     const loadMe = React.useCallback(async () => {
         try {
@@ -133,8 +135,25 @@ export default function CaregiversPanel({ location }: { location: UserLocation |
 
             {connections.length ? (
                 <View style={s.card}>
-                    <Text style={s.title}>🤝 {t.contactsTitle}</Text>
-                    {connections.map((r) => <Connection key={r.id} request={r} onChanged={loadMe} onBlock={() => answer(r, "block")} />)}
+                    <View style={s.titleRow}>
+                        <Text style={[s.title, { flex: 1 }]}>🤝 {t.contactsTitle} ({connections.length})</Text>
+                        {openIds.length ? (
+                            <Pressable onPress={() => setOpenIds([])} accessibilityRole="button">
+                                <Text style={s.link}>{t.closeAll}</Text>
+                            </Pressable>
+                        ) : null}
+                    </View>
+                    {connections.map((r) => (
+                        <Connection
+                            key={r.id}
+                            request={r}
+                            // With one connection it's open; with more, only the ones the user opened.
+                            open={connections.length === 1 || openIds.includes(r.id)}
+                            onToggle={() => setOpenIds(openIds.includes(r.id) ? openIds.filter((x) => x !== r.id) : [...openIds, r.id])}
+                            onChanged={loadMe}
+                            onBlock={() => answer(r, "block")}
+                        />
+                    ))}
                 </View>
             ) : null}
 
@@ -204,7 +223,9 @@ export default function CaregiversPanel({ location }: { location: UserLocation |
 }
 
 /** One accepted connection: share my number, see theirs (call / WhatsApp), block. */
-function Connection({ request: r, onChanged, onBlock }: { request: ContactRequest; onChanged: () => void; onBlock: () => void }) {
+function Connection({ request: r, open, onToggle, onChanged, onBlock }: {
+    request: ContactRequest; open: boolean; onToggle: () => void; onChanged: () => void; onBlock: () => void;
+}) {
     const { lang } = useLang();
     const t = COMMUNITY_T[lang];
     const [phone, setPhone] = React.useState("");
@@ -225,7 +246,15 @@ function Connection({ request: r, onChanged, onBlock }: { request: ContactReques
 
     return (
         <View style={s.item}>
-            <Text style={s.bold}>{r.other.displayName} <Text style={s.small}>· {place(r.other)}</Text></Text>
+            <Pressable style={s.connHead} onPress={onToggle} accessibilityRole="button" accessibilityState={{ expanded: open }}>
+                <Text style={[s.bold, { flex: 1 }]} numberOfLines={1}>
+                    {r.other.displayName} <Text style={s.small}>· {place(r.other)}</Text>
+                </Text>
+                {!open && r.theirPhone ? <Text style={s.small}>📞</Text> : null}
+                <Text style={s.caret}>{open ? "▴" : "▾"}</Text>
+            </Pressable>
+            {open ? (
+            <>
             {r.theirPhone ? (
                 <View style={s.phoneRow}>
                     <Text style={s.body}>{fillC(t.theirPhone, { name: r.other.displayName })} <Text style={s.bold}>{r.theirPhone}</Text></Text>
@@ -259,6 +288,8 @@ function Connection({ request: r, onChanged, onBlock }: { request: ContactReques
             <Pressable onPress={onBlock} style={{ alignSelf: "flex-end" }}>
                 <Text style={{ color: C.red, fontSize: 12 }}>{t.block}</Text>
             </Pressable>
+            </>
+            ) : null}
         </View>
     );
 }
@@ -280,6 +311,10 @@ const s = StyleSheet.create({
     wrap: { gap: 10 },
     card: { backgroundColor: C.white, borderRadius: 12, borderWidth: 1, borderColor: C.line, padding: 12, gap: 8 },
     title: { fontSize: 15, fontWeight: "700", color: C.ink },
+    titleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+    link: { fontSize: 13, color: C.blue, fontWeight: "600" },
+    connHead: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 2 },
+    caret: { fontSize: 14, color: C.muted, width: 16, textAlign: "center" },
     body: { fontSize: 14, color: C.ink, lineHeight: 20 },
     bold: { fontSize: 14, fontWeight: "700", color: C.ink },
     small: { fontSize: 12, color: C.muted, lineHeight: 17 },
