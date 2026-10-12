@@ -141,6 +141,16 @@ async function main() {
          AND NOT EXISTS (SELECT 1 FROM sessions s WHERE s.user_id = u.id)`
     );
     if (users) console.log(`Removed ${users} account(s) unused for a year.`);
+    const { rows: [{ ok: hasRequests }] } = await db.query("SELECT to_regclass('contact_requests') IS NOT NULL AS ok");
+    if (hasRequests) {
+      // Unanswered or declined contact requests don't need to live forever.
+      // Blocks are kept so a blocked person stays blocked.
+      const { rowCount: requests } = await db.query(
+        `DELETE FROM contact_requests
+         WHERE status IN ('pending', 'declined') AND created_at < now() - interval '90 days'`
+      );
+      if (requests) console.log(`Removed ${requests} old contact request(s).`);
+    }
   } else {
     console.warn("Users tables missing: run db/schema.sql again in Supabase.");
   }

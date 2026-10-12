@@ -138,6 +138,37 @@ CREATE TABLE IF NOT EXISTS payslip_files (
 );
 CREATE INDEX IF NOT EXISTS payslip_files_user_idx ON payslip_files (user_id);
 
+-- ── Community: find caregivers in your city and ask to connect ────────────
+-- Safe by design: no location, no photos, no free text. A user who joins the
+-- list shows only a first name and the city / neighborhood they chose. Contact
+-- requests use fixed messages; a phone number is shared only after the other
+-- person accepts, and only if the user types it in (stored encrypted).
+CREATE TABLE IF NOT EXISTS community_profiles (
+  user_id      UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  public_id    UUID NOT NULL UNIQUE DEFAULT gen_random_uuid(),   -- what other users see, never the user id
+  display_name TEXT NOT NULL CHECK (char_length(display_name) BETWEEN 1 AND 20),
+  city         TEXT NOT NULL CHECK (char_length(city) <= 60),
+  neighborhood TEXT CHECK (char_length(neighborhood) <= 60),
+  language     TEXT CHECK (char_length(language) <= 5),          -- app language: en / tl / ml / ru
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS community_profiles_city_idx ON community_profiles (city);
+
+CREATE TABLE IF NOT EXISTS contact_requests (
+  id              BIGSERIAL PRIMARY KEY,
+  from_user       UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  to_user         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  message_key     TEXT NOT NULL CHECK (char_length(message_key) <= 30),
+  status          TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'declined', 'blocked')),
+  from_phone_ct   BYTEA, from_phone_iv BYTEA, from_phone_tag BYTEA,   -- requester's phone, after acceptance
+  to_phone_ct     BYTEA, to_phone_iv   BYTEA, to_phone_tag   BYTEA,   -- the other person's phone, if they share it
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  responded_at    TIMESTAMPTZ,
+  UNIQUE (from_user, to_user),
+  CHECK (from_user <> to_user)
+);
+CREATE INDEX IF NOT EXISTS contact_requests_to_idx ON contact_requests (to_user, status);
+
 -- ── Lock the tables down for Supabase's API roles ───────────────────────────
 -- Row Level Security on with no policies = anon/authenticated see nothing.
 -- (The backend connects as the database owner, which bypasses RLS.)
@@ -150,6 +181,8 @@ ALTER TABLE legal_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE translations   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payslips       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payslip_files  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE community_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE contact_requests   ENABLE ROW LEVEL SECURITY;
 
 DO $$
 BEGIN

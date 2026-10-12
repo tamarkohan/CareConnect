@@ -17,6 +17,7 @@ const legalRouter = require("./routes/legal");
 const authRouter = require("./routes/auth");
 const ratesRouter = require("./routes/rates");
 const payslipsRouter = require("./routes/payslips");
+const communityRouter = require("./routes/community");
 
 // ── App setup ─────────────────────────────────────────────────────────────────
 const app = express();
@@ -53,6 +54,7 @@ app.use("/api/legal", legalRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/rates", ratesRouter);
 app.use("/api/payslips", payslipsRouter);
+app.use("/api/community", communityRouter);
 
 // ── 404 handler ───────────────────────────────────────────────────────────────
 app.use((_req, res) => {

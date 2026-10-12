@@ -288,3 +288,32 @@ export const getPayslipFiles = (id: string) => apiFetch<{ files: PayslipFile[] }
 export const explainPayslipLine = (id: string, line: string, language: string) =>
     apiFetch<{ text: string }>("/api/payslips/explain-line", { id, line, language });
 export const deletePayslip = (id: string) => apiFetch<{ success: true }>("/api/payslips/delete", { id });
+
+// ── Community: caregivers in your city, contact requests ─────────────────────
+export type CommunityProfile = { id: string; displayName: string; city: string; neighborhood: string; language: string };
+export type CommunityPerson = CommunityProfile & { status: "none" | "sent" | "received" | "accepted" | "declined" };
+export type ContactRequest = {
+    id: string;
+    direction: "sent" | "received";
+    status: "pending" | "accepted" | "declined";
+    messageKey: string;
+    other: { displayName: string; city: string; neighborhood: string };
+    myPhone: string | null;      // the number I shared (after acceptance)
+    theirPhone: string | null;   // the number they shared with me
+    createdAt: string;
+};
+export const getCommunityMe = () =>
+    apiFetch<{ profile: CommunityProfile | null; requests: ContactRequest[] }>("/api/community/me");
+export const saveCommunityProfile = (p: { displayName: string; city: string; neighborhood?: string; language?: string }) =>
+    apiFetch<{ profile: CommunityProfile }>("/api/community/profile", p);
+export const leaveCommunity = () => apiFetch<{ success: true }>("/api/community/leave", {});
+export const getCommunityPeople = (city: string, neighborhood?: string) =>
+    apiFetch<{ people: CommunityPerson[] }>(
+        `/api/community/people?city=${encodeURIComponent(city)}&neighborhood=${encodeURIComponent(neighborhood || "")}`
+    );
+export const sendContactRequest = (to: string, messageKey: string) =>
+    apiFetch<{ success: true }>("/api/community/request", { to, messageKey });
+export const respondContactRequest = (requestId: string, action: "accept" | "decline" | "block") =>
+    apiFetch<{ success: true }>("/api/community/respond", { requestId, action });
+export const shareContactPhone = (requestId: string, phone: string) =>
+    apiFetch<{ success: true }>("/api/community/share-phone", { requestId, phone });

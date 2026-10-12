@@ -6,17 +6,22 @@ import {
     Pressable,
     ScrollView,
     TextInput,
+    Linking,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import TopBar from "../components/TopBar";
 import LocationPicker, { useSavedLocation } from "../components/LocationPicker";
+import CommunityMap, { mapsSearchUrl, mapsDirectionsUrl } from "../components/CommunityMap";
+import CaregiversPanel from "../components/CaregiversPanel";
+import { COMMUNITY_T } from "../communityStrings";
+import { showAlert } from "../api/platform";
+import { getItem, setItem } from "../api/storage";
 import { useLang } from "../AppContext";
 import {
     T,
     MapFilterId,
     SUPPORT_NETWORKS,
     INFLUENCERS,
-    MAP_RESULTS,
     RELIGIOUS_PLACES,
 } from "../translations";
 
@@ -60,12 +65,29 @@ export default function CommunityScreen({ navigation }: Props) {
     const [searchText, setSearchText] = React.useState("");
     const [location, setLocation] = useSavedLocation();
 
-    const results = MAP_RESULTS[activeFilter];
-    const actionLabel =
-        activeFilter === "caregivers" ? t.goToChats :
-            activeFilter === "clinics" ? t.goToClinics :
-                activeFilter === "taxis" ? t.goToTransport :
-                    null;   // ATMs and banks: no "see all" page yet
+    const c = COMMUNITY_T[lang];
+
+    // What the map shows: the chosen place, or e.g. "ATM near Ahuza, Haifa".
+    const where = location?.city ? `${location.neighborhood ? `${location.neighborhood}, ` : ""}${location.city}, Israel` : "";
+    const mapQuery = !where ? null
+        : activeFilter === "caregivers" ? where
+        : `${c.mapCategory[activeFilter]} near ${where}`;
+    const searchMap = () => {
+        const q = searchText.trim();
+        if (q) Linking.openURL(mapsSearchUrl(where ? `${q} near ${where}` : `${q}, Israel`));
+    };
+    const demo = () => showAlert(c.demo, c.demoNoLink);
+
+    // Bookmarked places, kept on this device.
+    const [saved, setSaved] = React.useState<string[]>([]);
+    React.useEffect(() => {
+        getItem("careconnect.savedPlaces").then((v) => { try { if (v) setSaved(JSON.parse(v)); } catch { /* ignore */ } });
+    }, []);
+    const toggleSaved = (id: string) => {
+        const next = saved.includes(id) ? saved.filter((x) => x !== id) : [...saved, id];
+        setSaved(next);
+        setItem("careconnect.savedPlaces", JSON.stringify(next));
+    };
 
     return (
         <View style={[s.root, { paddingTop: insets.top }]}>
@@ -101,42 +123,14 @@ export default function CommunityScreen({ navigation }: Props) {
                     </View>
                 </View>
 
-                {/* Map placeholder */}
+                {/* Real map (free Google Maps embed) + where the user is */}
                 <View style={s.mapContainer}>
-                    <View style={s.mapPlaceholder}>
-                        <Text style={s.mapEmoji}>🗺</Text>
-                        <Text style={s.mapLabel}>
-                            {location?.city ? `${t.mapView} · ${location.neighborhood ? `${location.neighborhood}, ` : ""}${location.city}` : t.mapView}
-                        </Text>
-                    </View>
+                    <CommunityMap query={mapQuery} emptyText={c.pickCityFirst} openLabel={c.openMap} />
                     <LocationPicker value={location} onChange={setLocation} />
                 </View>
 
-                {/* Results list */}
-                <View style={s.resultsList}>
-                    {results.map((r) => {
-                        const displayName = r.nameKey ? t[r.nameKey] : r.name!;
-                        return (
-                            <View key={r.id} style={s.resultItem}>
-                                <View style={[s.resultAvatar, { backgroundColor: r.color }]}>
-                                    <Text style={s.resultAvatarText}>{displayName.charAt(0)}</Text>
-                                </View>
-                                <View style={s.resultInfo}>
-                                    <Text style={s.resultName} numberOfLines={1}>{displayName}</Text>
-                                    <Text style={s.resultDistance}>{t[r.distanceKey]}</Text>
-                                </View>
-                                <Pressable style={s.resultActionBtn}>
-                                    <Text style={s.resultActionText} numberOfLines={1}>{t[r.actionKey]}</Text>
-                                </Pressable>
-                            </View>
-                        );
-                    })}
-                    {actionLabel ? (
-                        <Pressable>
-                            <Text style={s.seeMoreCenter}>{actionLabel}</Text>
-                        </Pressable>
-                    ) : null}
-                </View>
+                {/* Caregivers: join the list, contact requests (no chat, no location) */}
+                {activeFilter === "caregivers" ? <CaregiversPanel location={location} /> : null}
 
                 <Text style={s.subheading}>{t.communityHeading}</Text>
 
@@ -148,8 +142,10 @@ export default function CommunityScreen({ navigation }: Props) {
                         placeholderTextColor={Color.mako}
                         value={searchText}
                         onChangeText={setSearchText}
+                        onSubmitEditing={searchMap}
+                        returnKeyType="search"
                     />
-                    <Pressable style={s.searchBtn}>
+                    <Pressable style={s.searchBtn} onPress={searchMap} accessibilityLabel={c.searchOnMap}>
                         <Text style={s.searchIcon}>🔍</Text>
                     </Pressable>
                 </View>
@@ -158,14 +154,15 @@ export default function CommunityScreen({ navigation }: Props) {
                 <Text style={s.sectionTitle}>{t.localNetworks}</Text>
                 <View style={s.networkRow}>
                     {SUPPORT_NETWORKS.map((n) => (
-                        <Pressable key={n.id} style={[s.networkCard, { backgroundColor: n.bg }]}>
+                        <Pressable key={n.id} style={[s.networkCard, s.demoCard, { backgroundColor: n.bg }]} onPress={demo}>
+                            <Text style={s.demoBadge}>{c.demo}</Text>
                             <Text style={s.networkEmoji}>{n.emoji}</Text>
                             <Text style={s.networkName}>{n.name}</Text>
                             <Text style={s.networkType} numberOfLines={2}>{t[n.typeKey]}</Text>
                         </Pressable>
                     ))}
                 </View>
-                <Pressable>
+                <Pressable onPress={demo}>
                     <Text style={s.seeMore}>{t.seeMore}</Text>
                 </Pressable>
 
@@ -173,7 +170,8 @@ export default function CommunityScreen({ navigation }: Props) {
                 <Text style={s.sectionTitle}>{t.learnInfluencers}</Text>
                 <View style={s.influencerRow}>
                     {INFLUENCERS.map((item) => (
-                        <Pressable key={item.id} style={s.influencerCard}>
+                        <Pressable key={item.id} style={[s.influencerCard, s.demoCard]} onPress={demo}>
+                            <Text style={s.demoBadge}>{c.demo}</Text>
                             <View style={s.influencerThumb}>
                                 <View style={s.playCircle}>
                                     <Text style={s.playIcon}>▶</Text>
@@ -186,7 +184,7 @@ export default function CommunityScreen({ navigation }: Props) {
                         </Pressable>
                     ))}
                 </View>
-                <Pressable>
+                <Pressable onPress={demo}>
                     <Text style={s.seeMore}>{t.seeMore}</Text>
                 </Pressable>
 
@@ -209,15 +207,15 @@ export default function CommunityScreen({ navigation }: Props) {
                                     <Text style={s.religiousDistrict} numberOfLines={1}>
                                         {t[place.districtKey]}
                                     </Text>
-                                    <Pressable style={s.bookmarkBtn}>
-                                        <Text style={s.bookmarkIcon}>🔖</Text>
+                                    <Pressable style={s.bookmarkBtn} onPress={() => toggleSaved(place.id)} accessibilityLabel={saved.includes(place.id) ? c.saved : c.save}>
+                                        <Text style={[s.bookmarkIcon, !saved.includes(place.id) && { opacity: 0.35 }]}>🔖</Text>
                                     </Pressable>
                                 </View>
                                 <Text style={s.religiousName}>{place.name}</Text>
                                 <Text style={s.religiousDesc}>{place.desc[lang]}</Text>
-                                <Pressable style={s.moovitBtn}>
+                                <Pressable style={s.moovitBtn} onPress={() => Linking.openURL(mapsDirectionsUrl(place.name.replace(/\s*\(.*\)$/, "") + ", Israel"))}>
                                     <Text style={s.moovitIcon}>🚌</Text>
-                                    <Text style={s.moovitText}>{t.moovitLabel}</Text>
+                                    <Text style={s.moovitText}>{c.directions}</Text>
                                 </Pressable>
                             </View>
                         </View>
@@ -255,7 +253,7 @@ export default function CommunityScreen({ navigation }: Props) {
 const s = StyleSheet.create({
     root: { flex: 1, backgroundColor: Color.aliceBlue },
     scroll: { flex: 1 },
-    scrollContent: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 24, gap: 12 },
+    scrollContent: { width: "100%", maxWidth: 720, alignSelf: "center", paddingHorizontal: 16, paddingTop: 12, paddingBottom: 24, gap: 12 },
     subheading: { fontSize: 13, color: Color.mako },
     searchRow: { flexDirection: "row", gap: 8, alignItems: "center" },
     searchInput: {
@@ -299,7 +297,13 @@ const s = StyleSheet.create({
     filterChipActive: { backgroundColor: Color.endeavour, borderColor: Color.endeavour },
     filterChipText: { fontSize: 12, color: Color.mako, fontWeight: "500" },
     filterChipTextActive: { color: Color.white, fontWeight: "700" },
-    mapContainer: { borderRadius: 12, overflow: "hidden", borderWidth: 1, borderColor: Color.linkWater },
+    mapContainer: { borderRadius: 12, overflow: "hidden", borderWidth: 1, borderColor: Color.linkWater, backgroundColor: Color.white },
+    // Example cards without a real link yet.
+    demoCard: { opacity: 0.75 },
+    demoBadge: {
+        alignSelf: "flex-start", fontSize: 10, fontWeight: "700", color: "#b45309", backgroundColor: "#fff8e1",
+        borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, overflow: "hidden", textTransform: "uppercase",
+    },
     mapPlaceholder: { height: 160, backgroundColor: "#d4e8c2", alignItems: "center", justifyContent: "center", gap: 8 },
     mapEmoji: { fontSize: 40 },
     mapLabel: { fontSize: 14, color: Color.mako },
