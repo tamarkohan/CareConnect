@@ -39,10 +39,11 @@ const TOOLS = [
     { id: "8", labelKey: "aboutUs" as const, emoji: "ℹ", screen: "Info", params: { page: "about" } },
 ];
 
-// Tapping one calls the number directly. All numbers are on the agency page.
+// Tapping one calls the number directly. Kept in number order (100, 101, 102).
+// All numbers are on the agency page.
 const EMERGENCY = [
-    { number: "101", emoji: "🚑", label: { en: "Ambulance", tl: "Ambulansya", ml: "ആംബുലൻസ്", ru: "Скорая" } },
     { number: "100", emoji: "👮", label: { en: "Police", tl: "Pulis", ml: "പോലീസ്", ru: "Полиция" } },
+    { number: "101", emoji: "🚑", label: { en: "Ambulance", tl: "Ambulansya", ml: "ആംബുലൻസ്", ru: "Скорая" } },
     { number: "102", emoji: "🚒", label: { en: "Fire", tl: "Bumbero", ml: "അഗ്നിശമനം", ru: "Пожарные" } },
 ] as const;
 
@@ -74,46 +75,45 @@ export default function HomeDashboard({ navigation }: any) {
                 contentContainerStyle={s.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
-                {/* Greeting */}
-                <Text style={s.greeting}>{t.goodMorning}</Text>
-
-                {/* Weather pill */}
-                <View style={s.weatherPill}>
-                    <Text style={s.weatherText}>☀  Haifa, 24°C</Text>
-                </View>
-
-                {/* Word of the Day – one compact row */}
-                <View style={s.wordCard}>
-                    <View style={{ flex: 1 }}>
-                        <Text style={s.wordLabel}>🔤 {t.wordOfDay}</Text>
-                        <Text style={s.translation}>{t.thankYou}</Text>
+                {/* Top: greeting + weather (left), word of the day square (right) */}
+                <View style={s.topRow}>
+                    <View style={s.greetingCol}>
+                        <Text style={s.greeting}>{t.goodMorning}</Text>
+                        <View style={s.weatherPill}>
+                            <Text style={s.weatherText}>☀  Haifa, 24°C</Text>
+                        </View>
                     </View>
-                    <View style={s.wordBody}>
+                    <View style={s.wordCard}>
+                        <Text style={s.wordLabel} numberOfLines={2}>{t.wordOfDay}</Text>
                         <Text style={s.hebrewWord}>תודה</Text>
                         <Text style={s.phonetic}>Toda</Text>
+                        <Text style={s.translation} numberOfLines={1}>{t.thankYou}</Text>
+                        <Text style={s.speakerIcon}>🔊</Text>
                     </View>
-                    <Text style={s.speakerIcon}>🔊</Text>
                 </View>
 
                 {/* Essential Tools heading */}
                 <Text style={s.sectionTitle}>{t.essentialTools}</Text>
 
-                {/* My Agency + one-tap emergency calls */}
-                <Pressable style={s.agencyBtn} onPress={() => navigation.navigate("Info", { page: "agency" })}>
-                    <Text style={s.agencyIcon}>🏢</Text>
-                    <Text style={s.agencyLabel}>{t.myAgency}</Text>
-                    <Text style={s.agencyArrow}>›</Text>
-                </Pressable>
-                <View style={s.emergencyRow}>
+                {/* Quick row: My Agency + one-tap emergency calls */}
+                <View style={s.quickRow}>
+                    <Pressable
+                        style={[s.quickBtn, s.agencyBtn]}
+                        onPress={() => navigation.navigate("Info", { page: "agency" })}
+                        accessibilityRole="button"
+                    >
+                        <Text style={s.quickEmoji}>🏢</Text>
+                        <Text style={s.agencyLabel} numberOfLines={2}>{t.myAgency}</Text>
+                    </Pressable>
                     {EMERGENCY.map((e) => (
                         <Pressable
                             key={e.number}
-                            style={s.emergencyBtn}
+                            style={[s.quickBtn, s.emergencyBtn]}
                             onPress={() => Linking.openURL(`tel:${e.number}`)}
                             accessibilityRole="button"
                             accessibilityLabel={`${e.label[lang]} ${e.number}`}
                         >
-                            <Text style={s.emergencyEmoji}>{e.emoji}</Text>
+                            <Text style={s.quickEmoji}>{e.emoji}</Text>
                             <Text style={s.emergencyNumber}>{e.number}</Text>
                             <Text style={s.emergencyLabel} numberOfLines={1}>{e.label[lang]}</Text>
                         </Pressable>
@@ -173,66 +173,51 @@ const s = StyleSheet.create({
         gap: 16,
     },
 
-    // Greeting
+    // Top row
+    topRow: { flexDirection: "row", alignItems: "stretch", gap: 12 },
+    greetingCol: { flex: 1, justifyContent: "center", gap: 10 },
     greeting: {
         fontSize: 24,
         fontWeight: "700",
         color: Color.blackPearl,
     },
-
-    // Weather pill
     weatherPill: {
         alignSelf: "flex-start",
         backgroundColor: Color.linkWater,
         borderRadius: 9999,
-        borderWidth: 1,
-        borderColor: Color.silver,
-        paddingHorizontal: 14,
-        paddingVertical: 6,
+        paddingHorizontal: 12,
+        paddingVertical: 5,
     },
     weatherText: {
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: "500",
         color: Color.blackPearl,
     },
 
-    // Word of the Day (compact)
+    // Word of the Day (square)
     wordCard: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 12,
+        width: 118,
+        aspectRatio: 1,
         backgroundColor: Color.creamBrulee,
-        borderRadius: 12,
+        borderRadius: 14,
         borderWidth: 1,
         borderColor: Color.goldenrod,
-        paddingHorizontal: 14,
-        paddingVertical: 10,
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 8,
     },
     wordLabel: {
-        fontSize: 10,
+        fontSize: 9,
         fontWeight: "700",
         color: Color.cinnamon,
         textTransform: "uppercase",
-        letterSpacing: 0.5,
+        letterSpacing: 0.4,
+        textAlign: "center",
     },
-    speakerIcon: { fontSize: 16 },
-    wordBody: { alignItems: "flex-end" },
-    hebrewWord: {
-        fontSize: 22,
-        fontWeight: "700",
-        color: Color.cinnamon,
-    },
-    phonetic: {
-        fontSize: 13,
-        fontStyle: "italic",
-        color: "rgba(119,88,0,0.8)",
-    },
-    translation: {
-        fontSize: 15,
-        fontWeight: "600",
-        color: Color.cinnamon,
-        marginTop: 2,
-    },
+    hebrewWord: { fontSize: 26, fontWeight: "700", color: Color.cinnamon, marginTop: 2 },
+    phonetic: { fontSize: 12, fontStyle: "italic", color: "rgba(119,88,0,0.8)" },
+    translation: { fontSize: 13, fontWeight: "600", color: Color.cinnamon },
+    speakerIcon: { position: "absolute", bottom: 6, right: 8, fontSize: 12 },
 
     // Section title
     sectionTitle: {
@@ -242,45 +227,23 @@ const s = StyleSheet.create({
         marginTop: 4,
     },
 
-    // My Agency button
-    agencyBtn: {
-        backgroundColor: Color.endeavour,
-        borderRadius: 12,
-        paddingHorizontal: 16,
-        paddingVertical: 18,
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 12,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 2,
-    },
-    agencyIcon: { fontSize: 20 },
-    agencyLabel: {
+    // Quick row (agency + emergency numbers): 4 equal small buttons
+    quickRow: { flexDirection: "row", gap: 8 },
+    quickBtn: {
         flex: 1,
-        fontSize: 16,
-        fontWeight: "700",
-        color: Color.white,
-    },
-    agencyArrow: { fontSize: 24, color: Color.white, fontWeight: "300" },
-
-    // Emergency call buttons
-    emergencyRow: { flexDirection: "row", gap: 10, marginTop: -4 },
-    emergencyBtn: {
-        flex: 1,
-        alignItems: "center",
-        backgroundColor: Color.white,
+        aspectRatio: 0.95,
         borderRadius: 12,
-        borderWidth: 1.5,
-        borderColor: "#f3c4c4",
-        paddingVertical: 10,
+        alignItems: "center",
+        justifyContent: "center",
+        paddingHorizontal: 4,
         gap: 2,
     },
-    emergencyEmoji: { fontSize: 20 },
-    emergencyNumber: { fontSize: 20, fontWeight: "800", color: "#c62828" },
-    emergencyLabel: { fontSize: 12, fontWeight: "600", color: Color.mako },
+    quickEmoji: { fontSize: 20 },
+    agencyBtn: { backgroundColor: Color.endeavour },
+    agencyLabel: { fontSize: 12, fontWeight: "700", color: Color.white, textAlign: "center" },
+    emergencyBtn: { backgroundColor: Color.white, borderWidth: 1, borderColor: "#f3c4c4" },
+    emergencyNumber: { fontSize: 18, fontWeight: "800", color: "#c62828" },
+    emergencyLabel: { fontSize: 11, fontWeight: "600", color: Color.mako },
 
     // Tool grid
     grid: {
