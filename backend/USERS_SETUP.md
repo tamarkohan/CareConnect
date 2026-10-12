@@ -10,7 +10,7 @@ them to keep signing in the same way.
 
 Supabase → **SQL Editor** → **New query** → paste all of [`db/schema.sql`](db/schema.sql)
 → **Run**. It is safe to run again: existing tables and data are kept, and the new
-tables (`users`, `sessions`, `legal_messages`, `translations`, `payslips`) are added.
+tables (`users`, `sessions`, `legal_messages`, `translations`, `payslips`, `payslip_files`) are added.
 **Run it again after updating to the version with the Payslips page**, or uploading a
 payslip fails.
 
@@ -127,5 +127,11 @@ there. Screen texts like buttons are in `src/pageStrings.ts`.
   endpoint (`GET /api/rates`, cached 6 hours, no key). It starts with the currency of
   the app language (Tagalog → PHP, Malayalam → INR), then USD and ILS.
 - **Payslips**: `POST /api/payslips/upload` reads a PDF, Word file or photos (like a
-  contract), Gemini explains every line in all four languages, and only that
-  explanation is stored, encrypted (`payslips` table, max 36 per user).
+  contract), Gemini explains every line in all four languages. The explanation
+  (`payslips`) and the original files (`payslip_files`, so users can download them
+  later) are stored encrypted, max 60 payslips per user. Tapping a line asks Gemini
+  for a longer explanation once, then it is saved.
+- **Popular questions** at the bottom of every page are in `src/infoFaq.ts`.
+- **Database size:** original files are the biggest data we keep (a PDF payslip is
+  usually 50–300 KB, a photo up to ~1 MB). Check `SELECT pg_size_pretty(sum(bytes))
+  FROM careconnect.payslip_files;` now and then; the free plan has 500 MB.

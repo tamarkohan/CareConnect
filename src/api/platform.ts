@@ -3,8 +3,9 @@
  *
  * Small helpers that behave the same on iOS, Android and the web build.
  */
-import { Alert, Platform } from "react-native";
+import { Alert, Linking, Platform } from "react-native";
 import * as FileSystem from "expo-file-system";
+import * as LegacyFileSystem from "expo-file-system/legacy";
 
 /**
  * Shows an alert. React Native's Alert.alert does nothing in the browser,
@@ -60,4 +61,26 @@ export async function uriToBase64(uri: string): Promise<string> {
 export function mimeFromDataUri(uri?: string | null): string | undefined {
     const m = uri?.match(/^data:([^;,]+)[;,]/);
     return m?.[1];
+}
+
+/**
+ * Lets the user save a file they uploaded earlier. In the browser it downloads
+ * the file; in the phone apps it opens it from the app's cache folder.
+ */
+export async function saveFile(name: string, mimeType: string, base64: string): Promise<void> {
+    if (Platform.OS === "web") {
+        const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+        const url = URL.createObjectURL(new Blob([bytes], { type: mimeType }));
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = name;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 60_000);
+        return;
+    }
+    const path = `${LegacyFileSystem.cacheDirectory}${name.replace(/[^\w.\- ]/g, "_")}`;
+    await LegacyFileSystem.writeAsStringAsync(path, base64, { encoding: LegacyFileSystem.EncodingType.Base64 });
+    await Linking.openURL(path);
 }

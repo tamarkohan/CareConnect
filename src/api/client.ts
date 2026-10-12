@@ -277,9 +277,14 @@ export type Payslip = Record<"en" | "tl" | "ml" | "ru", PayslipExplanation> & {
     employer: string | null;
     gross: number | null;
     net: number | null;
+    hasFile: boolean;            // the original file is saved and can be downloaded
     createdAt: string;
 };
 export const getPayslips = () => apiFetch<{ payslips: Payslip[] }>("/api/payslips");
 export const uploadPayslip = (files: ContractFile[]) =>
     apiFetch<{ payslip: Payslip }>("/api/payslips/upload", { files });
+export type PayslipFile = { name: string; mimeType: string; base64: string };
+export const getPayslipFiles = (id: string) => apiFetch<{ files: PayslipFile[] }>(`/api/payslips/${id}/files`);
+export const explainPayslipLine = (id: string, line: string, language: string) =>
+    apiFetch<{ text: string }>("/api/payslips/explain-line", { id, line, language });
 export const deletePayslip = (id: string) => apiFetch<{ success: true }>("/api/payslips/delete", { id });

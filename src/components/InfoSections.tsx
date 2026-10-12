@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import TopBar from "./TopBar";
 import { useLang } from "../AppContext";
 import { InfoSection } from "../infoPages";
+import { Faq } from "../infoFaq";
 import { PAGE_T } from "../pageStrings";
 
 export const PageColor = {
@@ -84,6 +85,27 @@ export function InfoSections({ sections }: { sections: InfoSection[] }) {
     );
 }
 
+/** "Popular questions": tap a question to open its answer. */
+export function FaqList({ items }: { items: Faq[] }) {
+    const { lang } = useLang();
+    const [open, setOpen] = React.useState<number | null>(null);
+    if (!items.length) return null;
+    return (
+        <View style={s.card}>
+            <Text style={s.cardTitle}>❓ {PAGE_T[lang].faqTitle}</Text>
+            {items.map((item, i) => (
+                <Pressable key={i} style={s.faqItem} onPress={() => setOpen(open === i ? null : i)} accessibilityRole="button">
+                    <View style={s.faqHead}>
+                        <Text style={s.faqQ}>{item.q[lang]}</Text>
+                        <Text style={s.faqToggle}>{open === i ? "−" : "+"}</Text>
+                    </View>
+                    {open === i ? <Text style={s.body}>{item.a[lang]}</Text> : null}
+                </Pressable>
+            ))}
+        </View>
+    );
+}
+
 export const s = StyleSheet.create({
     root: { flex: 1, backgroundColor: PageColor.bg },
     content: { paddingHorizontal: 16, paddingTop: 8, gap: 14 },
@@ -123,4 +145,8 @@ export const s = StyleSheet.create({
     button: { backgroundColor: PageColor.blue, borderRadius: 10, paddingVertical: 12, paddingHorizontal: 16, alignItems: "center" },
     buttonText: { color: PageColor.white, fontSize: 15, fontWeight: "700" },
     small: { fontSize: 12, color: PageColor.muted },
+    faqItem: { borderTopWidth: 1, borderTopColor: PageColor.line, paddingVertical: 10, gap: 6 },
+    faqHead: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
+    faqQ: { flex: 1, fontSize: 15, fontWeight: "700", color: PageColor.ink, lineHeight: 21 },
+    faqToggle: { fontSize: 20, fontWeight: "700", color: PageColor.blue, width: 20, textAlign: "center" },
 });

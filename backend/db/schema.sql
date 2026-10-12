@@ -113,17 +113,30 @@ CREATE TABLE IF NOT EXISTS translations (
 );
 CREATE INDEX IF NOT EXISTS translations_user_idx ON translations (user_id, id);
 
--- Payslips, encrypted: only the explanation is kept (month, amounts, the
--- lines explained in every app language), never the file. Max 36 per user.
+-- Payslips, encrypted: the explanation (month, amounts, the lines explained in
+-- every app language) and the text read from it. Max 60 per user.
 CREATE TABLE IF NOT EXISTS payslips (
   id         BIGSERIAL PRIMARY KEY,
   user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  ciphertext BYTEA NOT NULL,      -- {fileName, period, employer, gross, net, en, tl, ml, ru}
+  ciphertext BYTEA NOT NULL,      -- {fileName, text, period, employer, gross, net, en, tl, ml, ru, details}
   iv         BYTEA NOT NULL,
   auth_tag   BYTEA NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS payslips_user_idx ON payslips (user_id, id);
+
+-- The original payslip files (PDF / photos), encrypted, so users can download
+-- them later. Deleted together with their payslip.
+CREATE TABLE IF NOT EXISTS payslip_files (
+  payslip_id BIGINT PRIMARY KEY REFERENCES payslips(id) ON DELETE CASCADE,
+  user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  ciphertext BYTEA NOT NULL,      -- [{name, mimeType, base64}]
+  iv         BYTEA NOT NULL,
+  auth_tag   BYTEA NOT NULL,
+  bytes      INTEGER NOT NULL,    -- original size, to watch the database size
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS payslip_files_user_idx ON payslip_files (user_id);
 
 -- ── Lock the tables down for Supabase's API roles ───────────────────────────
 -- Row Level Security on with no policies = anon/authenticated see nothing.
@@ -136,6 +149,7 @@ ALTER TABLE sessions       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE legal_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE translations   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payslips       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE payslip_files  ENABLE ROW LEVEL SECURITY;
 
 DO $$
 BEGIN

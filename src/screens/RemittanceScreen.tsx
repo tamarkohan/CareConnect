@@ -9,24 +9,36 @@ import { useLang } from "../AppContext";
 import { LangCode, T } from "../translations";
 import { PAGE_T, fill } from "../pageStrings";
 import { REMITTANCE_SECTIONS } from "../infoPages";
-import { PageFrame, InfoSections, s as page, PageColor } from "../components/InfoSections";
+import { FAQ } from "../infoFaq";
+import { PageFrame, InfoSections, FaqList, s as page, PageColor } from "../components/InfoSections";
 import { getRates, Rates } from "../api/client";
 
-const CURRENCIES: { code: string; flag: string; name: string }[] = [
-    { code: "USD", flag: "🇺🇸", name: "US dollar" },
-    { code: "ILS", flag: "🇮🇱", name: "Israeli shekel" },
-    { code: "PHP", flag: "🇵🇭", name: "Philippine peso" },
-    { code: "INR", flag: "🇮🇳", name: "Indian rupee" },
-    { code: "LKR", flag: "🇱🇰", name: "Sri Lankan rupee" },
-    { code: "NPR", flag: "🇳🇵", name: "Nepalese rupee" },
-    { code: "THB", flag: "🇹🇭", name: "Thai baht" },
-    { code: "CNY", flag: "🇨🇳", name: "Chinese yuan" },
-    { code: "UAH", flag: "🇺🇦", name: "Ukrainian hryvnia" },
-    { code: "MDL", flag: "🇲🇩", name: "Moldovan leu" },
-    { code: "UZS", flag: "🇺🇿", name: "Uzbek som" },
-    { code: "GEL", flag: "🇬🇪", name: "Georgian lari" },
-    { code: "RUB", flag: "🇷🇺", name: "Russian ruble" },
-    { code: "EUR", flag: "🇪🇺", name: "Euro" },
+// "country" is shown and searched, so people find their currency by country.
+const CURRENCIES: { code: string; flag: string; name: string; country: string }[] = [
+    { code: "USD", flag: "🇺🇸", name: "US dollar", country: "United States" },
+    { code: "ILS", flag: "🇮🇱", name: "Israeli shekel", country: "Israel" },
+    { code: "PHP", flag: "🇵🇭", name: "Philippine peso", country: "Philippines" },
+    { code: "INR", flag: "🇮🇳", name: "Indian rupee", country: "India" },
+    { code: "LKR", flag: "🇱🇰", name: "Sri Lankan rupee", country: "Sri Lanka" },
+    { code: "NPR", flag: "🇳🇵", name: "Nepalese rupee", country: "Nepal" },
+    { code: "THB", flag: "🇹🇭", name: "Thai baht", country: "Thailand" },
+    { code: "CNY", flag: "🇨🇳", name: "Chinese yuan", country: "China" },
+    { code: "UAH", flag: "🇺🇦", name: "Ukrainian hryvnia", country: "Ukraine" },
+    { code: "MDL", flag: "🇲🇩", name: "Moldovan leu", country: "Moldova" },
+    { code: "BYN", flag: "🇧🇾", name: "Belarusian ruble", country: "Belarus" },
+    { code: "RUB", flag: "🇷🇺", name: "Russian ruble", country: "Russia" },
+    { code: "GEL", flag: "🇬🇪", name: "Georgian lari", country: "Georgia" },
+    { code: "AMD", flag: "🇦🇲", name: "Armenian dram", country: "Armenia" },
+    { code: "AZN", flag: "🇦🇿", name: "Azerbaijani manat", country: "Azerbaijan" },
+    { code: "RSD", flag: "🇷🇸", name: "Serbian dinar", country: "Serbia" },
+    { code: "UZS", flag: "🇺🇿", name: "Uzbek som", country: "Uzbekistan" },
+    { code: "KZT", flag: "🇰🇿", name: "Kazakh tenge", country: "Kazakhstan" },
+    { code: "KGS", flag: "🇰🇬", name: "Kyrgyz som", country: "Kyrgyzstan" },
+    { code: "TJS", flag: "🇹🇯", name: "Tajik somoni", country: "Tajikistan" },
+    { code: "TMT", flag: "🇹🇲", name: "Turkmen manat", country: "Turkmenistan" },
+    { code: "PKR", flag: "🇵🇰", name: "Pakistani rupee", country: "Pakistan" },
+    { code: "AFN", flag: "🇦🇫", name: "Afghan afghani", country: "Afghanistan" },
+    { code: "EUR", flag: "🇪🇺", name: "Euro", country: "Estonia, Latvia, Lithuania, Europe" },
 ];
 const byCode = Object.fromEntries(CURRENCIES.map((c) => [c.code, c]));
 
@@ -165,6 +177,7 @@ export default function RemittanceScreen({ navigation }: any) {
             </View>
 
             <InfoSections sections={REMITTANCE_SECTIONS} />
+            <FaqList items={FAQ.remittance} />
 
             <CurrencyPicker
                 visible={picking !== null}
@@ -172,6 +185,7 @@ export default function RemittanceScreen({ navigation }: any) {
                 searchPlaceholder={p.search}
                 cancel={p.cancel}
                 exclude={picking !== null && picking >= rows.length ? rows : []}
+                available={rates ? Object.keys(rates.rates) : []}
                 onChoose={choose}
                 onClose={() => setPicking(null)}
             />
@@ -179,15 +193,15 @@ export default function RemittanceScreen({ navigation }: any) {
     );
 }
 
-function CurrencyPicker({ visible, title, searchPlaceholder, cancel, exclude, onChoose, onClose }: {
-    visible: boolean; title: string; searchPlaceholder: string; cancel: string; exclude: string[];
+function CurrencyPicker({ visible, title, searchPlaceholder, cancel, exclude, available, onChoose, onClose }: {
+    visible: boolean; title: string; searchPlaceholder: string; cancel: string; exclude: string[]; available: string[];
     onChoose: (code: string) => void; onClose: () => void;
 }) {
     const [query, setQuery] = React.useState("");
     React.useEffect(() => { if (visible) setQuery(""); }, [visible]);
     const q = query.trim().toLowerCase();
-    const items = CURRENCIES.filter((cur) => !exclude.includes(cur.code))
-        .filter((cur) => !q || cur.code.toLowerCase().includes(q) || cur.name.toLowerCase().includes(q));
+    const items = CURRENCIES.filter((cur) => !exclude.includes(cur.code) && available.includes(cur.code))
+        .filter((cur) => !q || [cur.code, cur.name, cur.country].some((v) => v.toLowerCase().includes(q)));
 
     return (
         <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -205,7 +219,10 @@ function CurrencyPicker({ visible, title, searchPlaceholder, cancel, exclude, on
                             <Pressable style={c.option} onPress={() => onChoose(item.code)}>
                                 <Text style={c.flag}>{item.flag}</Text>
                                 <Text style={c.code}>{item.code}</Text>
-                                <Text style={[page.body, { flex: 1 }]}>{item.name}</Text>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={page.body}>{item.name}</Text>
+                                    <Text style={page.small}>{item.country}</Text>
+                                </View>
                             </Pressable>
                         )}
                     />
