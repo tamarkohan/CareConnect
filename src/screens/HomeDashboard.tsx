@@ -136,7 +136,7 @@ export default function HomeDashboard({ navigation }: any) {
                 {NAV_ITEMS.map((item) => (
                     <Pressable
                         key={item.labelKey}
-                        style={s.navItem}
+                        style={[s.navItem, item.active && s.navItemActive]}
                         onPress={() => {
                             if (item.screen && item.screen !== "Home") {
                                 navigation?.navigate(item.screen);
@@ -167,6 +167,11 @@ const s = StyleSheet.create({
     // Scroll
     scroll: { flex: 1 },
     scrollContent: {
+        // On a laptop the page stays phone-width in the middle instead of
+        // stretching the buttons across the whole screen.
+        width: "100%",
+        maxWidth: 640,
+        alignSelf: "center",
         paddingHorizontal: 16,
         paddingTop: 20,
         paddingBottom: 40,
@@ -175,11 +180,13 @@ const s = StyleSheet.create({
 
     // Top row
     topRow: { flexDirection: "row", alignItems: "stretch", gap: 12 },
-    greetingCol: { flex: 1, justifyContent: "center", gap: 10 },
+    greetingCol: { flex: 1, justifyContent: "flex-start", gap: 10 },
     greeting: {
         fontSize: 24,
         fontWeight: "700",
         color: Color.blackPearl,
+        lineHeight: 28,
+        marginTop: -2,   // line the top of the text up with the word-of-the-day card
     },
     weatherPill: {
         alignSelf: "flex-start",
@@ -231,7 +238,7 @@ const s = StyleSheet.create({
     quickRow: { flexDirection: "row", gap: 8 },
     quickBtn: {
         flex: 1,
-        aspectRatio: 0.95,
+        height: 88,
         borderRadius: 12,
         alignItems: "center",
         justifyContent: "center",
@@ -239,8 +246,8 @@ const s = StyleSheet.create({
         gap: 2,
     },
     quickEmoji: { fontSize: 20 },
-    agencyBtn: { backgroundColor: Color.endeavour },
-    agencyLabel: { fontSize: 12, fontWeight: "700", color: Color.white, textAlign: "center" },
+    agencyBtn: { backgroundColor: Color.white, borderWidth: 1, borderColor: Color.linkWater },
+    agencyLabel: { fontSize: 12, fontWeight: "700", color: Color.endeavour, textAlign: "center" },
     emergencyBtn: { backgroundColor: Color.white, borderWidth: 1, borderColor: "#f3c4c4" },
     emergencyNumber: { fontSize: 18, fontWeight: "800", color: "#c62828" },
     emergencyLabel: { fontSize: 11, fontWeight: "600", color: Color.mako },
@@ -252,7 +259,9 @@ const s = StyleSheet.create({
         gap: 12,
     },
     toolCard: {
-        width: "47%",
+        // Two columns that always fill the row exactly (any screen width).
+        flexBasis: "40%",
+        flexGrow: 1,
         backgroundColor: Color.white,
         borderRadius: 12,
         borderWidth: 1,
@@ -286,8 +295,12 @@ const s = StyleSheet.create({
         flex: 1,
         alignItems: "center",
         gap: 2,
+        paddingVertical: 4,
+        marginHorizontal: 2,
     },
     navEmoji: { fontSize: 20 },
+    // The current screen gets a shaded pill, so it's clear where you are.
+    navItemActive: { backgroundColor: "#dcebf7", borderRadius: 12 },
     navEmojiActive: { color: Color.endeavour },
     navLabel: {
         fontSize: 10,

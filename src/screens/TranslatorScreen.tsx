@@ -691,7 +691,7 @@ export default function TranslatorScreen({ navigation }: Props) {
                 {NAV_ITEMS.map((item) => (
                     <Pressable
                         key={item.labelKey}
-                        style={s.navItem}
+                        style={[s.navItem, item.active && s.navItemActive]}
                         onPress={() => {
                             if (!item.active) navigation?.navigate(item.screen);
                         }}
@@ -934,8 +934,10 @@ const s = StyleSheet.create({
         paddingTop: 8,
         paddingHorizontal: 4,
     },
-    navItem: { flex: 1, alignItems: "center", gap: 2 },
+    navItem: { flex: 1, alignItems: "center", gap: 2, paddingVertical: 4, marginHorizontal: 2 },
     navEmoji: { fontSize: 20 },
+    // The current screen gets a shaded pill, so it's clear where you are.
+    navItemActive: { backgroundColor: "#dcebf7", borderRadius: 12 },
     navEmojiActive: { color: Color.endeavour },
     navLabel: { fontSize: 10, color: Color.mako },
     navLabelActive: { color: Color.endeavour, fontWeight: "600" },
