@@ -135,3 +135,17 @@ there. Screen texts like buttons are in `src/pageStrings.ts`.
 - **Database size:** original files are the biggest data we keep (a PDF payslip is
   usually 50–300 KB, a photo up to ~1 MB). Check `SELECT pg_size_pretty(sum(bytes))
   FROM careconnect.payslip_files;` now and then; the free plan has 500 MB.
+
+## Community: caregivers in your city
+
+Run `db/schema.sql` again once to add `community_profiles` and `contact_requests`.
+
+- Joining the list is optional. Others see only a first name (letters only, no numbers or links)
+  and the city / neighborhood the user chose. No location, photos or chat.
+- A contact request carries one of five fixed messages (`MESSAGE_KEYS` in
+  `services/community.js`, texts in `src/communityStrings.ts`). Max 5 new requests a day,
+  one request per pair.
+- After the other person accepts, either side can type a phone number to share it; it is
+  stored encrypted and shown only to the other person. Either side can block at any time.
+- Old pending / declined requests are removed after 90 days by the nightly job.
+- The map is Google's free embed (`google.com/maps?q=…&output=embed`, no API key).
