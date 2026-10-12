@@ -113,6 +113,18 @@ CREATE TABLE IF NOT EXISTS translations (
 );
 CREATE INDEX IF NOT EXISTS translations_user_idx ON translations (user_id, id);
 
+-- Payslips, encrypted: only the explanation is kept (month, amounts, the
+-- lines explained in every app language), never the file. Max 36 per user.
+CREATE TABLE IF NOT EXISTS payslips (
+  id         BIGSERIAL PRIMARY KEY,
+  user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  ciphertext BYTEA NOT NULL,      -- {fileName, period, employer, gross, net, en, tl, ml, ru}
+  iv         BYTEA NOT NULL,
+  auth_tag   BYTEA NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS payslips_user_idx ON payslips (user_id, id);
+
 -- ── Lock the tables down for Supabase's API roles ───────────────────────────
 -- Row Level Security on with no policies = anon/authenticated see nothing.
 -- (The backend connects as the database owner, which bypasses RLS.)
@@ -123,6 +135,7 @@ ALTER TABLE users          ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sessions       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE legal_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE translations   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE payslips       ENABLE ROW LEVEL SECURITY;
 
 DO $$
 BEGIN

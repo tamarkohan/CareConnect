@@ -11,6 +11,9 @@ import AssistantScreen from "./src/screens/AssistantScreen";
 import CommunityScreen from "./src/screens/CommunityScreen";
 import TasksScreen from "./src/screens/TasksScreen";
 import JournalScreen from "./src/screens/JournalScreen";
+import InfoScreen from "./src/screens/InfoScreen";
+import RemittanceScreen from "./src/screens/RemittanceScreen";
+import PayslipsScreen from "./src/screens/PayslipsScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -38,6 +41,9 @@ function Screens() {
             <Stack.Screen name="Community" component={CommunityScreen} />
             <Stack.Screen name="Tasks" component={TasksScreen} />
             <Stack.Screen name="Journal" component={JournalScreen} />
+            <Stack.Screen name="Info" component={InfoScreen} />
+            <Stack.Screen name="Remittance" component={RemittanceScreen} />
+            <Stack.Screen name="Payslips" component={PayslipsScreen} />
           </>
         ) : (
           <Stack.Screen name="Login" component={LoginScreen} />

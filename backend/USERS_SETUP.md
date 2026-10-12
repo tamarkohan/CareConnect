@@ -10,12 +10,14 @@ them to keep signing in the same way.
 
 Supabase → **SQL Editor** → **New query** → paste all of [`db/schema.sql`](db/schema.sql)
 → **Run**. It is safe to run again: existing tables and data are kept, and the new
-tables (`users`, `sessions`, `legal_messages`, `translations`) are added.
+tables (`users`, `sessions`, `legal_messages`, `translations`, `payslips`) are added.
+**Run it again after updating to the version with the Payslips page**, or uploading a
+payslip fails.
 
 Until this is done, sign-in fails with "Internal server error".
 
 To look at the data: **Table Editor** → schema dropdown (top left) → `careconnect`.
-Contracts, chats and translations show as unreadable bytes: they are encrypted
+Contracts, chats, translations and payslips show as unreadable bytes: they are encrypted
 with `CONTRACT_ENCRYPTION_KEY`.
 
 ## 2. Settings (DigitalOcean → backend → Environment Variables)
@@ -114,3 +116,16 @@ and print it (Ctrl+P). Each item has 1–5 rating boxes and a line for a better
 translation; the last page is a summary for the interviewer. Without a URL it uses
 the local backend (`npm run dev`). The inputs are in
 [`data/language-test-tl.json`](data/language-test-tl.json) — edit them freely.
+
+## Home-screen pages
+
+Every card on the home screen opens a page. The texts (in all four languages),
+phone numbers and links are in [`src/infoPages.ts`](../src/infoPages.ts): edit them
+there. Screen texts like buttons are in `src/pageStrings.ts`.
+
+- **Remittance**: currency converter with daily rates from ExchangeRate-API's free
+  endpoint (`GET /api/rates`, cached 6 hours, no key). It starts with the currency of
+  the app language (Tagalog → PHP, Malayalam → INR), then USD and ILS.
+- **Payslips**: `POST /api/payslips/upload` reads a PDF, Word file or photos (like a
+  contract), Gemini explains every line in all four languages, and only that
+  explanation is stored, encrypted (`payslips` table, max 36 per user).

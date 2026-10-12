@@ -139,11 +139,11 @@ export const T: Record<LangCode, {
     arrivalGuides: string;
     safetyShelters: string;
     migrationSupport: string;
-    pibaApp: string;
     publicTransport: string;
     remittanceApps: string;
     faqElderly: string;
     aboutUs: string;
+    payslips: string;
     wordOfDay: string;
     thankYou: string;
 
@@ -269,12 +269,12 @@ export const T: Record<LangCode, {
         myAgency: "My Agency",
         arrivalGuides: "Arrival Guides",
         safetyShelters: "Safety & Shelters",
-        migrationSupport: "Migration Support",
-        pibaApp: "PIBA Application",
+        migrationSupport: "Visa & Migration (PIBA)",
         publicTransport: "Public Transportation Use",
         remittanceApps: "Remittance Applications",
         faqElderly: "FAQs for Caring\nfor Elderly Clients",
         aboutUs: "About Us",
+        payslips: "Payslips",
         wordOfDay: "WORD OF THE DAY",
         thankYou: "Thank you",
         tagline: "Your supportive companion in Israel.",
@@ -389,12 +389,12 @@ export const T: Record<LangCode, {
         myAgency: "Aking Ahensya",
         arrivalGuides: "Gabay sa Pagdating",
         safetyShelters: "Kaligtasan at Tirahan",
-        migrationSupport: "Tulong sa Migrasyon",
-        pibaApp: "Aplikasyon sa PIBA",
+        migrationSupport: "Visa at Migrasyon (PIBA)",
         publicTransport: "Paggamit ng Pampublikong Sasakyan",
         remittanceApps: "Mga App sa Remittance",
         faqElderly: "FAQ para sa Pag-aalaga\nng Matatandang Kliyente",
         aboutUs: "Tungkol sa Amin",
+        payslips: "Mga Payslip",
         wordOfDay: "SALITA NG ARAW",
         thankYou: "Salamat",
         tagline: "Ang iyong maaasahang katulong sa Israel.",
@@ -509,12 +509,12 @@ export const T: Record<LangCode, {
         myAgency: "എന്റെ ഏജൻസി",
         arrivalGuides: "വരവ് ഗൈഡുകൾ",
         safetyShelters: "സുരക്ഷയും അഭയവും",
-        migrationSupport: "കുടിയേറ്റ പിന്തുണ",
-        pibaApp: "PIBA അപ്ലിക്കേഷൻ",
+        migrationSupport: "വിസയും കുടിയേറ്റവും (PIBA)",
         publicTransport: "പൊതു ഗതാഗതം ഉപയോഗം",
         remittanceApps: "റെമിറ്റൻസ് ആപ്ലിക്കേഷനുകൾ",
         faqElderly: "മുതിർന്ന ക്ലയന്റുകളുടെ\nസേവനത്തിനുള്ള FAQ",
         aboutUs: "ഞങ്ങളെ കുറിച്ച്",
+        payslips: "ശമ്പള സ്ലിപ്പുകൾ",
         wordOfDay: "ദിവസത്തിന്റെ വാക്ക്",
         thankYou: "നന്ദി",
         tagline: "ഇസ്രായേലിൽ നിങ്ങളുടെ വിശ്വസ്ത സഹചാരി.",
@@ -629,12 +629,12 @@ export const T: Record<LangCode, {
         myAgency: "Моё агентство",
         arrivalGuides: "Гиды по прибытию",
         safetyShelters: "Безопасность и убежища",
-        migrationSupport: "Поддержка мигрантов",
-        pibaApp: "Заявление PIBA",
+        migrationSupport: "Виза и миграция (PIBA)",
         publicTransport: "Использование общественного транспорта",
         remittanceApps: "Приложения для денежных переводов",
         faqElderly: "FAQ по уходу\nза пожилыми клиентами",
         aboutUs: "О нас",
+        payslips: "Расчётные листы",
         wordOfDay: "СЛОВО ДНЯ",
         thankYou: "Спасибо",
         tagline: "Ваш надёжный спутник в Израиле.",
