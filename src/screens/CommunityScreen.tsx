@@ -18,7 +18,7 @@ import PlaceInterest from "../components/PlaceInterest";
 import { getPlaceSummary } from "../api/client";
 import { COMMUNITY_T } from "../communityStrings";
 import { showAlert } from "../api/platform";
-import { getItem, setItem } from "../api/storage";
+import { getItem, setItem, removeItem } from "../api/storage";
 import { useLang } from "../AppContext";
 import {
     T,
@@ -62,11 +62,11 @@ type Props = { navigation?: any };
 
 export default function CommunityScreen({ navigation }: Props) {
     const insets = useSafeAreaInsets();
-    const { lang } = useLang();
+    const { lang, user } = useLang();
     const t = T[lang];
     const [activeFilter, setActiveFilter] = React.useState<MapFilterId>("caregivers");
     const [searchText, setSearchText] = React.useState("");
-    const [location, setLocation] = useSavedLocation();
+    const [location, setLocation, locationLoaded] = useSavedLocation();
 
     const c = COMMUNITY_T[lang];
 
@@ -106,15 +106,18 @@ export default function CommunityScreen({ navigation }: Props) {
         scrollRef.current?.scrollTo({ y: Math.max(0, panelY.current - 12), animated: true });
     };
 
-    // Bookmarked places, kept on this device.
+    // Bookmarked places, kept on this device for each account.
+    const savedKey = `careconnect.savedPlaces.${user?.id}`;
     const [saved, setSaved] = React.useState<string[]>([]);
     React.useEffect(() => {
-        getItem("careconnect.savedPlaces").then((v) => { try { if (v) setSaved(JSON.parse(v)); } catch { /* ignore */ } });
-    }, []);
+        setSaved([]);
+        removeItem("careconnect.savedPlaces");   // was shared by every account on the device
+        getItem(savedKey).then((v) => { try { if (v) setSaved(JSON.parse(v)); } catch { /* ignore */ } });
+    }, [savedKey]);
     const toggleSaved = (id: string) => {
         const next = saved.includes(id) ? saved.filter((x) => x !== id) : [...saved, id];
         setSaved(next);
-        setItem("careconnect.savedPlaces", JSON.stringify(next));
+        setItem(savedKey, JSON.stringify(next));
     };
 
     return (
@@ -165,6 +168,8 @@ export default function CommunityScreen({ navigation }: Props) {
                         <CaregiversPanel
                             key={requestsVersion}
                             location={location}
+                            // Nothing chosen on this device yet: start from the city on the caregivers list.
+                            onProfileLocation={locationLoaded && !location ? setLocation : undefined}
                             focus={focus}
                             onFocusY={(y) => {
                                 scrollRef.current?.scrollTo({ y: Math.max(0, panelY.current + y - 12), animated: true });

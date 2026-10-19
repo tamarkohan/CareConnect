@@ -3,18 +3,20 @@
 // kibbutz, moshav or village – or just the area – and then a neighborhood from
 // searchable lists (src/data/israelPlaces.ts, israelLocalities.ts), or types
 // the neighborhood when the place has none listed. Search forgives spelling
-// (src/data/placeSearch.ts). The choice is remembered on the device; nothing
-// is sent to the server.
+// (src/data/placeSearch.ts). The choice is remembered on the device for each
+// account (another account on the same phone starts with nothing chosen).
+// Nothing is sent to the server, except the city on the caregivers list.
 import * as React from "react";
 import { View, Text, Pressable, Modal, FlatList, TextInput, StyleSheet } from "react-native";
 import { useLang } from "../AppContext";
 import { LangCode } from "../translations";
 import { ISRAEL_PLACES } from "../data/israelPlaces";
 import { AREAS, searchPlaces } from "../data/placeSearch";
-import { getItem, setItem } from "../api/storage";
+import { getItem, setItem, removeItem } from "../api/storage";
 
 export type UserLocation = { city: string; neighborhood: string };
-const STORAGE_KEY = "careconnect.location";
+// Before, one location was shared by every account on the device; it's dropped.
+const OLD_KEY = "careconnect.location";
 /** "All of Israel – I'd rather not say": the map shows Israel; others see no city. */
 export const ANYWHERE = "Israel";
 /** The city others may see: none for "All of Israel" or when nothing is chosen. */
@@ -30,18 +32,30 @@ const STR: Record<LangCode, Record<"where" | "city" | "neighborhood" | "chooseCi
     ta: { where: "நீங்கள் இப்போது எங்கே இருக்கிறீர்கள்?", city: "நகரம் / ஊர்", neighborhood: "பகுதி", chooseCity: "உங்கள் நகரத்தைத் தேர்வு செய்யுங்கள்", chooseNeighborhood: "உங்கள் பகுதியைத் தேர்வு செய்யுங்கள்", typeNeighborhood: "உங்கள் பகுதியை எழுதுங்கள்", search: "தேடு", cancel: "ரத்து", whole: "முழு நகரம்", area: "பகுதி (மண்டலம்)", noMatch: "இந்தப் பெயரில் இடம் இல்லை. நீங்கள் இருக்கும் பகுதியைத் தேர்வு செய்யுங்கள்:", anywhere: "முழு இஸ்ரேல் – சொல்ல விரும்பவில்லை", anywhereSub: "மற்றவர்கள் உங்கள் பெயரை மட்டுமே பார்ப்பார்கள், நகரம் இல்லை" },
 };
 
+/** The signed-in account's "Where are you now?"; loaded: false until read from the device. */
 export function useSavedLocation() {
+    const { user } = useLang();
+    const key = user ? `careconnect.location.${user.id}` : null;
     const [location, setLocation] = React.useState<UserLocation | null>(null);
+    const [loaded, setLoaded] = React.useState(false);
     React.useEffect(() => {
-        getItem(STORAGE_KEY).then((v) => {
+        setLocation(null);
+        setLoaded(false);
+        removeItem(OLD_KEY);
+        if (!key) return;
+        let current = true;
+        getItem(key).then((v) => {
+            if (!current) return;
             try { if (v) setLocation(JSON.parse(v)); } catch { /* ignore a broken value */ }
+            setLoaded(true);
         });
-    }, []);
-    const save = (loc: UserLocation) => {
+        return () => { current = false; };
+    }, [key]);
+    const save = React.useCallback((loc: UserLocation) => {
         setLocation(loc);
-        setItem(STORAGE_KEY, JSON.stringify(loc));
-    };
-    return [location, save] as const;
+        if (key) setItem(key, JSON.stringify(loc));
+    }, [key]);
+    return [location, save, loaded] as const;
 }
 
 export default function LocationPicker({ value, onChange }: { value: UserLocation | null; onChange: (loc: UserLocation) => void }) {
