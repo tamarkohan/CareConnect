@@ -9,7 +9,7 @@ import { View, Text, Pressable, TextInput, Modal, StyleSheet, ActivityIndicator,
 import { useLang } from "../AppContext";
 import { COMMUNITY_T, MESSAGES, fillC } from "../communityStrings";
 import { LangCode, RELIGIOUS_PLACES } from "../translations";
-import { UserLocation, sharedCity, sharedNeighborhood } from "./LocationPicker";
+import { UserLocation, ANYWHERE, sharedCity, sharedNeighborhood } from "./LocationPicker";
 import NameEditor from "./NameEditor";
 import { NAME_T, NAME_MAX, nameIn, nameInput, nameError } from "../nameStrings";
 import {
@@ -45,8 +45,9 @@ const waNumber = (phone: string) => {
     return d.startsWith("0") ? `972${d.slice(1)}` : d;
 };
 
-export default function CaregiversPanel({ location, focus, onFocusY }: {
+export default function CaregiversPanel({ location, onProfileLocation, focus, onFocusY }: {
     location: UserLocation | null;
+    onProfileLocation?: (loc: UserLocation) => void;   // nothing chosen yet: use the list's city
     focus?: { id: string } | null;      // a connection to open and show ("Open connection" on a place)
     onFocusY?: (y: number) => void;    // where it is in this panel, to scroll there
 }) {
@@ -103,6 +104,13 @@ export default function CaregiversPanel({ location, focus, onFocusY }: {
         }
     }, [city, neighborhood]);
     React.useEffect(() => { if (profile?.listed) loadPeople(); }, [profile, loadPeople]);
+
+    // On the list but nothing chosen on this device (e.g. a new phone): show the list's city.
+    React.useEffect(() => {
+        if (profile?.listed && onProfileLocation) {
+            onProfileLocation(profile.city ? { city: profile.city, neighborhood: profile.neighborhood } : { city: ANYWHERE, neighborhood: "" });
+        }
+    }, [profile, onProfileLocation]);
 
     // Keep the profile's city in step with the place chosen above (also "All of Israel",
     // which hides it). Only once a place was chosen on this device, and only for people
