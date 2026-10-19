@@ -48,6 +48,9 @@ function publicUser(row) {
     email: row.email,
     disclaimerVersion: row.disclaimer_version,
     isDemo: row.is_demo,
+    // First name as typed, and spelled in every app language's letters (see names.js).
+    displayName: row.display_name || null,
+    displayNames: row.display_name_i18n || null,
   };
 }
 
@@ -93,7 +96,8 @@ async function deleteSession(token) {
   if (typeof token === "string") await db.query("DELETE FROM sessions WHERE token_hash = $1", [sha256(token)]);
 }
 
-async function updateUser(userId, { disclaimerVersion }) {
+async function updateUser(userId, { disclaimerVersion, displayName }) {
+  if (displayName !== undefined) await require("./names").setDisplayName(userId, displayName);
   const { rows } = await db.query(
     `UPDATE users SET disclaimer_version = COALESCE($2, disclaimer_version)
      WHERE id = $1 RETURNING *`,

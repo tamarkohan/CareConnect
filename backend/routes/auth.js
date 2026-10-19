@@ -9,7 +9,8 @@
  *                               → { token, user }
  * POST /api/auth/verify-code    { phone | email, code }        → { token, user }
  * GET  /api/auth/me             (signed in)                    → { user }
- * POST /api/auth/me             { disclaimerVersion } → { user }
+ * POST /api/auth/me             { disclaimerVersion?, displayName? } → { user }
+ *                               displayName: first name, spelled in every app language (services/names.js)
  * POST /api/auth/logout         (signed in)                    → { success: true }
  *
  * Environment variables:
@@ -95,13 +96,14 @@ router.get("/me", users.requireAuth, (req, res) => {
 
 router.post("/me", users.requireAuth, async (req, res, next) => {
   try {
-    const { disclaimerVersion } = req.body || {};
+    const { disclaimerVersion, displayName } = req.body || {};
     if (disclaimerVersion !== undefined && !(Number.isInteger(disclaimerVersion) && disclaimerVersion > 0)) {
       return res.status(400).json({ error: "disclaimerVersion must be a positive integer." });
     }
-    const user = await users.updateUser(req.user.id, { disclaimerVersion });
+    const user = await users.updateUser(req.user.id, { disclaimerVersion, displayName });
     res.json({ user: users.publicUser(user) });
   } catch (err) {
+    if (err.expose) return res.status(err.status || 400).json({ error: err.message, code: err.code });
     next(err);
   }
 });

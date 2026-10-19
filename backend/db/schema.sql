@@ -138,6 +138,11 @@ CREATE TABLE IF NOT EXISTS payslip_files (
 );
 CREATE INDEX IF NOT EXISTS payslip_files_user_idx ON payslip_files (user_id);
 
+-- The user's first name (home greeting, caregivers list) and its spelling in
+-- every app language's letters, e.g. {"en":"Rohit","hi":"रोहित","ta":"ரோஹித்",…}.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name TEXT CHECK (char_length(display_name) <= 20);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name_i18n JSONB;
+
 -- ── Community: find caregivers in your city and ask to connect ────────────
 -- Safe by design: no location, no photos, no free text. A user who joins the
 -- list shows only a first name and the city / neighborhood they chose. Contact

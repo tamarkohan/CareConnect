@@ -181,3 +181,20 @@ Run `db/schema.sql` again once: it adds the `place_interests` table and a `place
 on `contact_requests`. A user on the caregivers list can mark a place (e.g. Nazareth); people
 from any city who want to go there see each other (first name + city) and can send the fixed
 "visit together" invitation. Leaving the list removes the user's places.
+
+## The user's name, in every language's letters
+
+Run these two lines once in the Supabase SQL Editor (they are also in `db/schema.sql`):
+
+```sql
+ALTER TABLE careconnect.users ADD COLUMN IF NOT EXISTS display_name TEXT CHECK (char_length(display_name) <= 20);
+ALTER TABLE careconnect.users ADD COLUMN IF NOT EXISTS display_name_i18n JSONB;
+```
+
+- Home: "Good morning, <name>". The **Add your name / Change name** button opens a box that
+  explains that this is also the name other caregivers see if the user joins the caregivers list.
+- One name per account: joining the caregivers list sets it too, and changing it on Home
+  changes it on the list (`services/names.js`).
+- When the name is saved, Gemini spells it once in the letters of every app language
+  (Rohit → रोहित, ரோஹித், Рохит, രോഹിത്). Each person sees names in the letters of their own app
+  language. If Gemini fails, the name is shown as typed. Letters only: no numbers, links or emojis.
