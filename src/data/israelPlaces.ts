@@ -113,3 +113,37 @@ export const ISRAEL_PLACES: Place[] = [
     { city: "Yokneam Illit", neighborhoods: [] },
     { city: "Zichron Ya'akov", neighborhoods: [] },
 ];
+
+/**
+ * Areas of Israel, as [English, Hebrew]: for someone whose village isn't on
+ * the list (or who'd rather not say), the area is close enough.
+ */
+export const ISRAEL_AREAS: [string, string][] = [
+    ["Upper Galilee", "הגליל העליון"],
+    ["Western Galilee", "הגליל המערבי"],
+    ["Lower Galilee", "הגליל התחתון"],
+    ["Golan Heights", "רמת הגולן"],
+    ["Sea of Galilee (Kinneret) area", "אזור הכנרת"],
+    ["Hula Valley", "עמק החולה"],
+    ["Jezreel Valley", "עמק יזרעאל"],
+    ["Beit She'an Valley", "עמק בית שאן"],
+    ["Jordan Valley", "בקעת הירדן"],
+    ["Haifa Bay (Krayot)", "מפרץ חיפה (הקריות)"],
+    ["Carmel Coast", "חוף הכרמל"],
+    ["Wadi Ara", "ואדי עארה"],
+    ["Menashe area", "אזור מנשה"],
+    ["Hefer Valley", "עמק חפר"],
+    ["Sharon", "השרון"],
+    ["Gush Dan (Tel Aviv area)", "גוש דן"],
+    ["Shfela", "השפלה"],
+    ["Jerusalem area", "אזור ירושלים"],
+    ["Judean Hills", "הרי יהודה"],
+    ["Judea and Samaria", "יהודה ושומרון"],
+    ["Lachish area", "חבל לכיש"],
+    ["Western Negev", "הנגב המערבי"],
+    ["Northern Negev (Be'er Sheva area)", "צפון הנגב"],
+    ["Negev Highlands", "הר הנגב"],
+    ["Dead Sea area", "אזור ים המלח"],
+    ["Arava", "הערבה"],
+    ["Eilat area", "אזור אילת"],
+];

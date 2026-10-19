@@ -11,7 +11,7 @@ import { COMMUNITY_T, MESSAGES, fillC } from "../communityStrings";
 import { LangCode, RELIGIOUS_PLACES } from "../translations";
 import { UserLocation } from "./LocationPicker";
 import NameEditor from "./NameEditor";
-import { NAME_T, nameIn } from "../nameStrings";
+import { NAME_T, NAME_MAX, nameIn, nameInput } from "../nameStrings";
 import {
     getMe, getCommunityMe, saveCommunityProfile, leaveCommunity, getCommunityPeople, sendContactRequest,
     respondContactRequest, shareContactPhone, CommunityProfile, CommunityPerson, ContactRequest,
@@ -39,15 +39,17 @@ const phoneInput = (text: string) => {
     return plus ? `+${d.slice(0, 15)}` : d.slice(0, 10);
 };
 const validPhone = (p: string) => /^0\d{8,9}$/.test(p) || /^\+?[1-9]\d{7,14}$/.test(p);
-// First name: letters, spaces and - ' only (no numbers, links or emojis).
-const nameInput = (text: string) => text.replace(/[^\p{L}\p{M} .'-]/gu, "").slice(0, 20);
 // Israeli numbers for WhatsApp links: 050-1234567 → 972501234567
 const waNumber = (phone: string) => {
     const d = digits(phone).replace(/^\+/, "");
     return d.startsWith("0") ? `972${d.slice(1)}` : d;
 };
 
-export default function CaregiversPanel({ location }: { location: UserLocation | null }) {
+export default function CaregiversPanel({ location, focus, onFocusY }: {
+    location: UserLocation | null;
+    focus?: { id: string } | null;      // a connection to open and show ("Open connection" on a place)
+    onFocusY?: (y: number) => void;    // where it is in this panel, to scroll there
+}) {
     const { lang, user, setUser } = useLang();
     const t = COMMUNITY_T[lang];
     const [profile, setProfile] = React.useState<CommunityProfile | null | undefined>(undefined);
@@ -62,6 +64,19 @@ export default function CaregiversPanel({ location }: { location: UserLocation |
     const [asking, setAsking] = React.useState<CommunityPerson | null>(null);
     // Connections are shown as one line each (name · place); tap to open the details.
     const [openIds, setOpenIds] = React.useState<string[]>([]);
+    // The connection opened from a place: shown open and highlighted for a moment.
+    const [highlightId, setHighlightId] = React.useState<string | null>(null);
+    const cardY = React.useRef(0);
+    React.useEffect(() => {
+        if (!focus) return;
+        setOpenIds((ids) => (ids.includes(focus.id) ? ids : [...ids, focus.id]));
+        setHighlightId(focus.id);
+    }, [focus]);
+    React.useEffect(() => {
+        if (!highlightId) return;
+        const timer = setTimeout(() => setHighlightId(null), 2500);
+        return () => clearTimeout(timer);
+    }, [highlightId]);
 
     const loadMe = React.useCallback(async () => {
         try {
@@ -161,7 +176,7 @@ export default function CaregiversPanel({ location }: { location: UserLocation |
             ) : null}
 
             {connections.length ? (
-                <View style={s.card}>
+                <View style={s.card} onLayout={(e) => { cardY.current = e.nativeEvent.layout.y; }}>
                     <View style={s.titleRow}>
                         <Text style={[s.title, { flex: 1 }]}>🤝 {t.contactsTitle} ({connections.length})</Text>
                         {openIds.length ? (
@@ -179,6 +194,9 @@ export default function CaregiversPanel({ location }: { location: UserLocation |
                             onToggle={() => setOpenIds(openIds.includes(r.id) ? openIds.filter((x) => x !== r.id) : [...openIds, r.id])}
                             onChanged={loadMe}
                             onBlock={() => answer(r, "block")}
+                            highlight={highlightId === r.id}
+                            // Scroll to it once it's on screen (after the card's own layout).
+                            onLayoutY={focus?.id === r.id && onFocusY ? (y) => setTimeout(() => onFocusY(cardY.current + y), 50) : undefined}
                         />
                     ))}
                 </View>
@@ -190,7 +208,7 @@ export default function CaregiversPanel({ location }: { location: UserLocation |
                     <Text style={s.small}>{t.joinBody}</Text>
                     {city ? (
                         <>
-                            <TextInput style={s.input} placeholder={t.firstName} value={name} onChangeText={(v) => setName(nameInput(v))} maxLength={20} autoCorrect={false} />
+                            <TextInput style={s.input} placeholder={t.firstName} value={name} onChangeText={(v) => setName(nameInput(v))} maxLength={NAME_MAX} autoCorrect={false} />
                             <Btn label={t.join} onPress={join} primary disabled={busy || !name.trim()} />
                         </>
                     ) : (
@@ -261,8 +279,9 @@ export default function CaregiversPanel({ location }: { location: UserLocation |
 }
 
 /** One accepted connection: share my number, see theirs (call / WhatsApp), block. */
-function Connection({ request: r, open, onToggle, onChanged, onBlock }: {
+function Connection({ request: r, open, onToggle, onChanged, onBlock, highlight, onLayoutY }: {
     request: ContactRequest; open: boolean; onToggle: () => void; onChanged: () => void; onBlock: () => void;
+    highlight?: boolean; onLayoutY?: (y: number) => void;
 }) {
     const { lang } = useLang();
     const t = COMMUNITY_T[lang];
@@ -283,7 +302,7 @@ function Connection({ request: r, open, onToggle, onChanged, onBlock }: {
     };
 
     return (
-        <View style={s.item}>
+        <View style={[s.item, highlight && s.highlight]} onLayout={onLayoutY && ((e) => onLayoutY(e.nativeEvent.layout.y))}>
             <Pressable style={s.connHead} onPress={onToggle} accessibilityRole="button" accessibilityState={{ expanded: open }}>
                 <Text style={[s.bold, { flex: 1 }]} numberOfLines={1}>
                     {nameIn(r.other, lang)} <Text style={s.small}>{atPlace(r.other)}</Text>
@@ -358,6 +377,7 @@ const s = StyleSheet.create({
     small: { fontSize: 12, color: C.muted, lineHeight: 17 },
     quote: { fontSize: 14, color: C.ink, fontStyle: "italic", backgroundColor: C.bg, borderRadius: 8, padding: 8 },
     item: { borderTopWidth: 1, borderTopColor: C.line, paddingTop: 8, gap: 6 },
+    highlight: { backgroundColor: "#fff8e1", borderRadius: 8, paddingHorizontal: 6, paddingBottom: 6 },
     actions: { flexDirection: "row", gap: 8, flexWrap: "wrap", alignItems: "center" },
     person: { flexDirection: "row", alignItems: "center", gap: 10, borderTopWidth: 1, borderTopColor: C.line, paddingTop: 8 },
     avatar: { width: 34, height: 34, borderRadius: 17, backgroundColor: "#7c3aed", alignItems: "center", justifyContent: "center" },

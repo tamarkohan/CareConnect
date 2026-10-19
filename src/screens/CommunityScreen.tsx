@@ -95,6 +95,15 @@ export default function CommunityScreen({ navigation }: Props) {
     };
     // Bumped when an invitation is sent or answered on a place, so the Caregivers tab reloads.
     const [requestsVersion, setRequestsVersion] = React.useState(0);
+    // "Open connection" on a place: the Caregivers tab opens that connection and we scroll to it.
+    const [focus, setFocus] = React.useState<{ id: string } | null>(null);
+    const panelY = React.useRef(0);
+    const openConnection = (requestId: string) => {
+        setActiveFilter("caregivers");
+        setFocus({ id: requestId });
+        // Up to the Caregivers tab right away; the panel then scrolls to the connection itself.
+        scrollRef.current?.scrollTo({ y: Math.max(0, panelY.current - 12), animated: true });
+    };
 
     // Bookmarked places, kept on this device.
     const [saved, setSaved] = React.useState<string[]>([]);
@@ -150,7 +159,19 @@ export default function CommunityScreen({ navigation }: Props) {
                 </View>
 
                 {/* Caregivers: join the list, contact requests (no chat, no location) */}
-                {activeFilter === "caregivers" ? <CaregiversPanel key={requestsVersion} location={location} /> : null}
+                {activeFilter === "caregivers" ? (
+                    <View onLayout={(e) => { panelY.current = e.nativeEvent.layout.y; }}>
+                        <CaregiversPanel
+                            key={requestsVersion}
+                            location={location}
+                            focus={focus}
+                            onFocusY={(y) => {
+                                scrollRef.current?.scrollTo({ y: Math.max(0, panelY.current + y - 12), animated: true });
+                                setFocus(null);
+                            }}
+                        />
+                    </View>
+                ) : null}
 
                 <Text style={s.subheading}>{t.communityHeading}</Text>
 
@@ -239,7 +260,8 @@ export default function CommunityScreen({ navigation }: Props) {
                                     location={location}
                                     onChanged={loadPlaces}
                                     onRequestsChanged={() => setRequestsVersion((v) => v + 1)}
-                                    onOpenConnections={goCaregivers}
+                                    onOpenConnection={openConnection}
+                                    onChooseCity={goCaregivers}
                                 />
                                 <Pressable style={s.moovitBtn} onPress={() => Linking.openURL(mapsDirectionsUrl(place.name.replace(/\s*\(.*\)$/, "") + ", Israel"))}>
                                     <Text style={s.moovitIcon}>🚌</Text>

@@ -1,16 +1,16 @@
 // ── PlaceInterest.tsx ────────────────────────────────────────────────
 // "I want to go" on a place card (e.g. Nazareth): mark the place, see who else
 // wants to go, invite them with the fixed "visit together" message, and
-// accept or decline their invitations right here. This doesn't need the
-// "Near you" caregivers list: others see the first name and the city chosen
-// in the app. Phone numbers only after an invitation is accepted (see
-// backend/services/community.js).
+// accept or decline their invitations right here. Anyone can look; marking
+// and inviting need the caregivers list (name + city), which can be joined
+// right here (JoinListModal). Phone numbers only after an invitation is
+// accepted (see backend/services/community.js).
 import * as React from "react";
 import { View, Text, Pressable, StyleSheet, ActivityIndicator } from "react-native";
 import { useLang } from "../AppContext";
 import { COMMUNITY_T, MESSAGES, fillC } from "../communityStrings";
 import { nameIn } from "../nameStrings";
-import NameEditor from "./NameEditor";
+import JoinListModal from "./JoinListModal";
 import { UserLocation } from "./LocationPicker";
 import {
     setPlaceInterest, getPlacePeople, sendContactRequest, respondContactRequest, CommunityPerson,
@@ -19,15 +19,16 @@ import { showAlert, confirmAction } from "../api/platform";
 
 const C = { blue: "#005dac", ink: "#071e27", muted: "#414752", line: "#cfe6f2", bg: "#f3faff", white: "#fff", green: "#2e7d32" };
 
-export default function PlaceInterest({ placeKey, placeName, count, mine, location, onChanged, onRequestsChanged, onOpenConnections }: {
+export default function PlaceInterest({ placeKey, placeName, count, mine, location, onChanged, onRequestsChanged, onOpenConnection, onChooseCity }: {
     placeKey: string;
     placeName: string;
     count: number;                   // others who want to go (not me, nobody blocked with me)
     mine: boolean;
-    location: UserLocation | null;   // "Where are you now?": the city others see
+    location: UserLocation | null;   // "Where are you now?": the city for joining the list
     onChanged: () => void;           // reload the counts
-    onRequestsChanged: () => void;   // an invitation was sent or answered
-    onOpenConnections: () => void;   // phone numbers etc. are under Near you → Caregivers
+    onRequestsChanged: () => void;   // an invitation was sent or answered, or the user joined
+    onOpenConnection: (requestId: string) => void;   // phone numbers etc. are under Near you → Caregivers
+    onChooseCity: () => void;        // go to "Where are you now?"
 }) {
     const { lang } = useLang();
     const t = COMMUNITY_T[lang];
@@ -35,10 +36,8 @@ export default function PlaceInterest({ placeKey, placeName, count, mine, locati
     // null while loading; "failed" shows an error with Try again (never a silently empty list).
     const [people, setPeople] = React.useState<CommunityPerson[] | null | "failed">(null);
     const [open, setOpen] = React.useState(false);
-    // No first name yet: ask for it, then carry on with what the user tapped.
-    const [afterName, setAfterName] = React.useState<(() => void) | null>(null);
-
-    const where = { city: location?.city, neighborhood: location?.neighborhood, language: lang };
+    // Not on the caregivers list yet: join it here, then carry on with what the user tapped.
+    const [afterJoin, setAfterJoin] = React.useState<(() => void) | null>(null);
 
     const loadPeople = async () => {
         setPeople(null);
@@ -54,7 +53,7 @@ export default function PlaceInterest({ placeKey, placeName, count, mine, locati
         try {
             await fn();
         } catch (err: any) {
-            if (err?.code === "noName") setAfterName(() => retry);
+            if (err?.code === "noProfile") setAfterJoin(() => retry);
             else showAlert(err?.message ?? "Error");
         } finally {
             setBusy(false);
@@ -62,7 +61,7 @@ export default function PlaceInterest({ placeKey, placeName, count, mine, locati
     };
 
     const toggle = () => run(async () => {
-        await setPlaceInterest(placeKey, !mine, where);
+        await setPlaceInterest(placeKey, !mine);
         onChanged();
         if (open) loadPeople();
     }, toggle);
@@ -70,7 +69,7 @@ export default function PlaceInterest({ placeKey, placeName, count, mine, locati
     const invite = async (p: CommunityPerson) => {
         if (!(await confirmAction(fillC(t.inviteConfirm, { name: nameIn(p, lang), place: placeName }), t.invite, t.cancel))) return;
         const send = () => run(async () => {
-            await sendContactRequest(p.id, "visitTogether", placeKey, where);
+            await sendContactRequest(p.id, "visitTogether", placeKey);
             loadPeople();
             onRequestsChanged();
         }, send);
@@ -137,7 +136,7 @@ export default function PlaceInterest({ placeKey, placeName, count, mine, locati
                                 ) : p.status === "accepted" ? (
                                     <View style={s.side}>
                                         <Text style={[s.small, { color: C.green }]}>{t.statusAccepted}</Text>
-                                        <Pressable onPress={onOpenConnections} accessibilityRole="button">
+                                        <Pressable onPress={() => p.requestId && onOpenConnection(p.requestId)} hitSlop={8} accessibilityRole="button">
                                             <Text style={s.link}>{t.openConnection}</Text>
                                         </Pressable>
                                     </View>
@@ -158,11 +157,12 @@ export default function PlaceInterest({ placeKey, placeName, count, mine, locati
                     </View>
                 )
             ) : null}
-            <NameEditor
-                visible={!!afterName}
-                note={t.needName}
-                onClose={() => setAfterName(null)}
-                onSaved={() => afterName?.()}
+            <JoinListModal
+                visible={!!afterJoin}
+                location={location}
+                onClose={() => setAfterJoin(null)}
+                onJoined={() => { onRequestsChanged(); afterJoin?.(); }}
+                onChooseCity={onChooseCity}
             />
         </View>
     );

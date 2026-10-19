@@ -22,11 +22,12 @@ const express = require("express");
 const router = express.Router();
 const users = require("../services/users");
 const otp = require("../services/otp");
+const { ensureName } = require("../services/names");
 
 const demoEnabled = () => process.env.DEMO_LOGIN === "true";
 
 async function signIn(id, res) {
-  const user = await users.findOrCreateUser(id);
+  const user = await ensureName(await users.findOrCreateUser(id));
   const token = await users.createSession(user.id);
   console.log(`[auth] signed in (${id.kind}${user.is_demo ? ", demo" : ""})`);
   return res.json({ token, user: users.publicUser(user) });
@@ -90,8 +91,12 @@ router.post("/verify-code", async (req, res, next) => {
   }
 });
 
-router.get("/me", users.requireAuth, (req, res) => {
-  res.json({ user: users.publicUser(req.user) });
+router.get("/me", users.requireAuth, async (req, res, next) => {
+  try {
+    res.json({ user: users.publicUser(await ensureName(req.user)) });
+  } catch (err) {
+    next(err);
+  }
 });
 
 router.post("/me", users.requireAuth, async (req, res, next) => {
