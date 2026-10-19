@@ -181,7 +181,9 @@ Run `db/schema.sql` again once: it adds the `place_interests` table and a `place
 on `contact_requests`. Anyone can see who wants to go to a place (e.g. Nazareth). Marking
 "I want to go" and sending the fixed "visit together" invitation need the caregivers list
 (a public name others can find): someone not on it gets a small join box right on the place
-card (name + the city from "Where are you now?"), and then the tap goes through. Invitations
+card (name, and the city from "Where are you now?" if they chose one), and then the tap goes
+through. The city is optional everywhere: "All of Israel – I'd rather not say" is the first
+choice in the picker, and without a city others see only the name. Invitations
 can be accepted or declined on the place card; "Open connection" opens that connection
 (phone numbers) in Near you → Caregivers.
 
@@ -210,6 +212,8 @@ ALTER TABLE careconnect.community_profiles ADD CONSTRAINT community_profiles_dis
   explains that this is also the name other caregivers see if the user joins the caregivers list.
 - A first name, full name or nickname, up to 30 letters. No numbers (so nobody can show a phone
   number through their name), links or emojis.
+- Names are unique, ignoring upper/lower case: a name another account already has is refused
+  ("This name is already taken…"). Names that were shared before this rule stay as they are.
 - One name per account: joining the caregivers list sets it too, and changing it on Home
   changes it on the list (`services/names.js`). Accounts that only had a name on the list get
   it as their account name when they next open the app; no name stays blank.

@@ -9,9 +9,9 @@ import { View, Text, Pressable, TextInput, Modal, StyleSheet, ActivityIndicator,
 import { useLang } from "../AppContext";
 import { COMMUNITY_T, MESSAGES, fillC } from "../communityStrings";
 import { LangCode, RELIGIOUS_PLACES } from "../translations";
-import { UserLocation } from "./LocationPicker";
+import { UserLocation, sharedCity, sharedNeighborhood } from "./LocationPicker";
 import NameEditor from "./NameEditor";
-import { NAME_T, NAME_MAX, nameIn, nameInput } from "../nameStrings";
+import { NAME_T, NAME_MAX, nameIn, nameInput, nameError } from "../nameStrings";
 import {
     getMe, getCommunityMe, saveCommunityProfile, leaveCommunity, getCommunityPeople, sendContactRequest,
     respondContactRequest, shareContactPhone, CommunityProfile, CommunityPerson, ContactRequest,
@@ -91,8 +91,9 @@ export default function CaregiversPanel({ location, focus, onFocusY }: {
     }, []);
     React.useEffect(() => { loadMe(); }, [loadMe]);
 
-    const city = location?.city || "";
-    const neighborhood = location?.neighborhood || "";
+    // The city others see: none for "All of Israel – I'd rather not say" or nothing chosen.
+    const city = sharedCity(location);
+    const neighborhood = sharedNeighborhood(location);
     const loadPeople = React.useCallback(async () => {
         if (!city) return setPeople(null);
         try {
@@ -103,22 +104,23 @@ export default function CaregiversPanel({ location, focus, onFocusY }: {
     }, [city, neighborhood]);
     React.useEffect(() => { if (profile?.listed) loadPeople(); }, [profile, loadPeople]);
 
-    // Keep the profile's city in step with the place chosen above. Only for people on
-    // the list ("Near you"); someone who only uses places has a profile that isn't listed.
+    // Keep the profile's city in step with the place chosen above (also "All of Israel",
+    // which hides it). Only once a place was chosen on this device, and only for people
+    // on the list ("Near you").
     React.useEffect(() => {
-        if (profile?.listed && city && (profile.city !== city || profile.neighborhood !== neighborhood)) {
+        if (location && profile?.listed && (profile.city !== city || profile.neighborhood !== neighborhood)) {
             // The account name, in case it was changed on Home since the profile was loaded.
             saveCommunityProfile({ displayName: user?.displayName || profile.displayName, city, neighborhood, language: lang })
                 .then((r) => setProfile(r.profile)).catch(() => {});
         }
-    }, [profile, city, neighborhood, lang, user?.displayName]);
+    }, [location, profile, city, neighborhood, lang, user?.displayName]);
 
     const run = async (fn: () => Promise<unknown>) => {
         setBusy(true);
         try {
             await fn();
         } catch (err: any) {
-            showAlert(err?.message ?? "Error");
+            showAlert(nameError(err, lang));
         } finally {
             setBusy(false);
         }
@@ -206,23 +208,21 @@ export default function CaregiversPanel({ location, focus, onFocusY }: {
                 <View style={s.card}>
                     <Text style={s.title}>{t.joinTitle}</Text>
                     <Text style={s.small}>{t.joinBody}</Text>
-                    {city ? (
-                        <>
-                            <TextInput style={s.input} placeholder={t.firstName} value={name} onChangeText={(v) => setName(nameInput(v))} maxLength={NAME_MAX} autoCorrect={false} />
-                            <Btn label={t.join} onPress={join} primary disabled={busy || !name.trim()} />
-                        </>
-                    ) : (
-                        <Text style={[s.small, { color: C.blue }]}>{t.pickCityFirst}</Text>
-                    )}
+                    <TextInput style={s.input} placeholder={t.firstName} value={name} onChangeText={(v) => setName(nameInput(v))} maxLength={NAME_MAX} autoCorrect={false} />
+                    {/* The city is optional: without one, others see only the name. */}
+                    <Text style={s.small}>{city ? `📍 ${neighborhood ? `${neighborhood}, ` : ""}${city}` : t.noCityJoin}</Text>
+                    <Btn label={t.join} onPress={join} primary disabled={busy || !name.trim()} />
                 </View>
             ) : (
                 <View style={s.card}>
-                    <Text style={s.small}>{fillC(t.youAppearAs, { name: nameIn(user, lang) || profile.displayName, place: place(profile) })}</Text>
+                    <Text style={s.small}>{fillC(t.youAppearAs, { name: nameIn(user, lang) || profile.displayName, place: place(profile) || t.cityHidden })}</Text>
                     <Text style={s.small}>
                         {NAME_T[lang].othersLetters}{" "}
                         <Text style={s.link} onPress={() => setEditingName(true)} accessibilityRole="button">✎ {NAME_T[lang].changeName}</Text>
                     </Text>
-                    {people === null ? null : people === "failed" ? (
+                    {!city ? (
+                        <Text style={s.small}>{t.noCityNote}</Text>
+                    ) : people === null ? null : people === "failed" ? (
                         <View style={s.actions}>
                             <Text style={[s.small, { flex: 1 }]}>{t.loadFailed}</Text>
                             <Btn label={t.retry} onPress={loadPeople} />

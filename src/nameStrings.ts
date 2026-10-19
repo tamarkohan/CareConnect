@@ -14,6 +14,10 @@ export const NAME_MAX = 30;
 /** What a name box accepts while typing: letters, spaces, - and ' (no numbers, links or emojis). */
 export const nameInput = (text: string) => text.replace(/[^\p{L}\p{M} .'-]/gu, "").slice(0, NAME_MAX);
 
+/** An error from saving a name, in the app language when we know it. */
+export const nameError = (err: any, lang: LangCode): string =>
+    err?.code === "nameTaken" ? NAME_T[lang].nameTaken : err?.message ?? "Error";
+
 /** The name in the letters of the app language (falls back to the name as typed). */
 export const nameIn = (p: Named | null | undefined, lang: LangCode): string =>
     p?.displayNames?.[lang] || p?.names?.[lang] || p?.displayName || "";
@@ -27,6 +31,7 @@ type Strings = {
     lettersOnly: string;
     othersSee: string;      // followed by the name in every alphabet
     othersLetters: string;  // caregivers list, under "Others see you as"
+    nameTaken: string;      // another account has this name
     save: string;
     cancel: string;
 };
@@ -41,6 +46,7 @@ export const NAME_T: Record<LangCode, Strings> = {
         lettersOnly: "First name, full name or a nickname – all fine. Letters only: no numbers or emojis.",
         othersSee: "In every app language:",
         othersLetters: "Each person sees your name in the letters of their own app language.",
+        nameTaken: "This name is already taken. Add a letter, your last name or a nickname.",
         save: "Save",
         cancel: "Cancel",
     },
@@ -53,6 +59,7 @@ export const NAME_T: Record<LangCode, Strings> = {
         lettersOnly: "First name, buong pangalan o palayaw – ayos lang lahat. Letra lang: walang numero o emoji.",
         othersSee: "Sa bawat wika ng app:",
         othersLetters: "Nakikita ng bawat isa ang pangalan mo sa mga letra ng wika ng kanilang app.",
+        nameTaken: "May gumagamit na ng pangalang ito. Magdagdag ng letra, apelyido o palayaw.",
         save: "I-save",
         cancel: "Kanselahin",
     },
@@ -65,6 +72,7 @@ export const NAME_T: Record<LangCode, Strings> = {
         lettersOnly: "ആദ്യ പേര്, മുഴുവൻ പേര് അല്ലെങ്കിൽ വിളിപ്പേര് – എല്ലാം ശരി. അക്ഷരങ്ങൾ മാത്രം: അക്കങ്ങളോ ഇമോജികളോ വേണ്ട.",
         othersSee: "ഓരോ ആപ്പ് ഭാഷയിലും:",
         othersLetters: "ഓരോരുത്തരും നിങ്ങളുടെ പേര് അവരുടെ ആപ്പ് ഭാഷയുടെ അക്ഷരങ്ങളിൽ കാണും.",
+        nameTaken: "ഈ പേര് ഇതിനകം മറ്റൊരാൾ ഉപയോഗിക്കുന്നു. ഒരു അക്ഷരമോ കുടുംബപ്പേരോ വിളിപ്പേരോ ചേർക്കുക.",
         save: "സേവ് ചെയ്യുക",
         cancel: "റദ്ദാക്കുക",
     },
@@ -77,6 +85,7 @@ export const NAME_T: Record<LangCode, Strings> = {
         lettersOnly: "Имя, имя и фамилия или прозвище – всё подходит. Только буквы: без цифр и эмодзи.",
         othersSee: "На каждом языке приложения:",
         othersLetters: "Каждый видит ваше имя буквами языка своего приложения.",
+        nameTaken: "Это имя уже занято. Добавьте букву, фамилию или прозвище.",
         save: "Сохранить",
         cancel: "Отмена",
     },
@@ -89,6 +98,7 @@ export const NAME_T: Record<LangCode, Strings> = {
         lettersOnly: "पहला नाम, पूरा नाम या उपनाम – सब ठीक है। सिर्फ़ अक्षर: अंक या इमोजी नहीं।",
         othersSee: "हर ऐप भाषा में:",
         othersLetters: "हर व्यक्ति आपका नाम अपनी ऐप भाषा के अक्षरों में देखता है।",
+        nameTaken: "यह नाम पहले से किसी और का है। कोई अक्षर, अपना सरनेम या कोई उपनाम जोड़ें।",
         save: "सहेजें",
         cancel: "रद्द करें",
     },
@@ -101,6 +111,7 @@ export const NAME_T: Record<LangCode, Strings> = {
         lettersOnly: "முதல் பெயர், முழுப் பெயர் அல்லது புனைப்பெயர் – எல்லாம் சரி. எழுத்துகள் மட்டும்: எண்கள் அல்லது எமோஜி வேண்டாம்.",
         othersSee: "ஒவ்வொரு ஆப் மொழியிலும்:",
         othersLetters: "ஒவ்வொருவரும் உங்கள் பெயரைத் தங்கள் ஆப் மொழியின் எழுத்துகளில் பார்ப்பார்கள்.",
+        nameTaken: "இந்தப் பெயர் ஏற்கனவே பயன்பாட்டில் உள்ளது. ஒரு எழுத்து, உங்கள் குடும்பப் பெயர் அல்லது புனைப்பெயரைச் சேர்க்கவும்.",
         save: "சேமி",
         cancel: "ரத்து",
     },
