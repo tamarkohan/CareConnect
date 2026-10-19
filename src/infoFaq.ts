@@ -4,13 +4,15 @@
 // Russian should be checked by native speakers; facts should be re-checked
 // from time to time (apps and rules change).
 import { LangCode } from "./translations";
+import { more } from "./i18n/moreLanguages";
 import type { InfoPageId } from "./infoPages";
 
 type Txt = Record<LangCode, string>;
 export type Faq = { q: Txt; a: Txt };
+// [English, Tagalog, Malayalam, Russian]; Hindi and Tamil come from src/i18n.
 const qa = (q: [string, string, string, string], a: [string, string, string, string]): Faq => ({
-    q: { en: q[0], tl: q[1], ml: q[2], ru: q[3] },
-    a: { en: a[0], tl: a[1], ml: a[2], ru: a[3] },
+    q: { en: q[0], tl: q[1], ml: q[2], ru: q[3], ...more(q[0]) },
+    a: { en: a[0], tl: a[1], ml: a[2], ru: a[3], ...more(a[0]) },
 });
 
 export const FAQ: Record<InfoPageId | "remittance" | "payslips", Faq[]> = {
@@ -147,6 +149,10 @@ export const FAQ: Record<InfoPageId | "remittance" | "payslips", Faq[]> = {
     ],
 
     payslips: [
+        qa(
+            ["I only get an Excel or a list of my hours, not a payslip. Is that OK?", "Excel o listahan lang ng oras ang natatanggap ko, walang payslip. Okay lang ba?", "എനിക്ക് മണിക്കൂറുകളുടെ എക്സലോ ലിസ്റ്റോ മാത്രമേ ലഭിക്കുന്നുള്ളൂ, ശമ്പള സ്ലിപ്പ് ഇല്ല. അത് ശരിയാണോ?", "Я получаю только Excel или список часов, а не расчётный лист. Это нормально?"],
+            ["Keep it and upload it here – it helps you check your salary. But a list of hours is not enough: your employer must also give you a payslip every month. Ask for it politely, in writing, and if you don't get it, contact your agency or Kav LaOved.", "Itago ito at i-upload dito – makakatulong ito para ma-check ang sahod mo. Pero hindi sapat ang listahan ng oras: dapat ka ring bigyan ng employer ng payslip bawat buwan. Hingin ito nang magalang at nakasulat, at kung hindi mo makuha, kontakin ang ahensya mo o Kav LaOved.", "അത് സൂക്ഷിച്ച് ഇവിടെ അപ്‌ലോഡ് ചെയ്യുക – ശമ്പളം പരിശോധിക്കാൻ സഹായിക്കും. പക്ഷേ മണിക്കൂറുകളുടെ ലിസ്റ്റ് മതിയാകില്ല: തൊഴിലുടമ എല്ലാ മാസവും ശമ്പള സ്ലിപ്പും നൽകണം. മാന്യമായി രേഖാമൂലം ചോദിക്കുക, ലഭിച്ചില്ലെങ്കിൽ ഏജൻസിയെയോ കാവ് ലഓവേദിനെയോ ബന്ധപ്പെടുക.", "Сохраните его и загрузите сюда – это поможет проверить зарплату. Но списка часов недостаточно: работодатель обязан также выдавать расчётный лист каждый месяц. Вежливо попросите его письменно, а если не получите – обратитесь в агентство или Кав ЛаОвед."]
+        ),
         qa(
             ["My employer doesn't give me a payslip. What can I do?", "Hindi ako binibigyan ng payslip ng employer ko. Ano ang magagawa ko?", "തൊഴിലുടമ എനിക്ക് ശമ്പള സ്ലിപ്പ് തരുന്നില്ല. ഞാൻ എന്ത് ചെയ്യും?", "Работодатель не даёт расчётный лист. Что делать?"],
             ["A payslip every month is your right. Ask for it in writing (a WhatsApp message is fine) and keep the message. If you still don't get it, contact your agency or Kav LaOved.", "Karapatan mo ang payslip bawat buwan. Hingin ito nang nakasulat (puwede ang WhatsApp message) at itago ang message. Kung wala pa rin, kontakin ang ahensya o Kav LaOved.", "എല്ലാ മാസവും ശമ്പള സ്ലിപ്പ് നിങ്ങളുടെ അവകാശമാണ്. രേഖാമൂലം ചോദിക്കുക (വാട്ട്സ്ആപ്പ് സന്ദേശം മതി), സന്ദേശം സൂക്ഷിക്കുക. എന്നിട്ടും ലഭിച്ചില്ലെങ്കിൽ ഏജൻസിയെയോ കാവ് ലഓവേദിനെയോ ബന്ധപ്പെടുക.", "Ежемесячный расчётный лист – ваше право. Попросите его письменно (подойдёт сообщение в WhatsApp) и сохраните сообщение. Если не помогло, обратитесь в агентство или Кав ЛаОвед."]

@@ -14,6 +14,8 @@ import LocationPicker, { useSavedLocation } from "../components/LocationPicker";
 import CommunityMap, { mapsSearchUrl, mapsDirectionsUrl } from "../components/CommunityMap";
 import CaregiversPanel from "../components/CaregiversPanel";
 import PlacePhoto from "../components/PlacePhoto";
+import PlaceInterest from "../components/PlaceInterest";
+import { getPlaceSummary } from "../api/client";
 import { COMMUNITY_T } from "../communityStrings";
 import { showAlert } from "../api/platform";
 import { getItem, setItem } from "../api/storage";
@@ -79,6 +81,19 @@ export default function CommunityScreen({ navigation }: Props) {
     };
     const demo = () => showAlert(c.demo, c.demoNoLink);
 
+    // "I want to go" counts per place (one request for all places).
+    const [places, setPlaces] = React.useState<{ counts: Record<string, number>; mine: string[] }>({ counts: {}, mine: [] });
+    const loadPlaces = React.useCallback(() => {
+        getPlaceSummary().then(setPlaces).catch(() => {});
+    }, []);
+    React.useEffect(loadPlaces, [loadPlaces]);
+    // Not on the caregivers list yet: open the Caregivers tab at the top, where they can join.
+    const scrollRef = React.useRef<ScrollView>(null);
+    const goJoin = () => {
+        setActiveFilter("caregivers");
+        scrollRef.current?.scrollTo({ y: 0, animated: true });
+    };
+
     // Bookmarked places, kept on this device.
     const [saved, setSaved] = React.useState<string[]>([]);
     React.useEffect(() => {
@@ -97,6 +112,7 @@ export default function CommunityScreen({ navigation }: Props) {
             <TopBar title={t.navCommunity} navigation={navigation} />
 
             <ScrollView
+                ref={scrollRef}
                 style={s.scroll}
                 contentContainerStyle={s.scrollContent}
                 showsVerticalScrollIndicator={false}
@@ -213,6 +229,14 @@ export default function CommunityScreen({ navigation }: Props) {
                                 </View>
                                 <Text style={s.religiousName}>{place.name}</Text>
                                 <Text style={s.religiousDesc}>{place.desc[lang]}</Text>
+                                <PlaceInterest
+                                    placeKey={place.key}
+                                    placeName={place.name.replace(/\s*\(.*\)$/, "")}
+                                    count={places.counts[place.key] || 0}
+                                    mine={places.mine.includes(place.key)}
+                                    onChanged={loadPlaces}
+                                    onNeedJoin={goJoin}
+                                />
                                 <Pressable style={s.moovitBtn} onPress={() => Linking.openURL(mapsDirectionsUrl(place.name.replace(/\s*\(.*\)$/, "") + ", Israel"))}>
                                     <Text style={s.moovitIcon}>🚌</Text>
                                     <Text style={s.moovitText}>{c.directions}</Text>

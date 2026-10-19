@@ -166,7 +166,9 @@ export const SUMMARY_FIELDS = [
 export type SummaryField = (typeof SUMMARY_FIELDS)[number];
 export type ContractSummaryLang = Record<SummaryField, string | null> & { concerns: string[] };
 /** One summary per app language, so switching language never needs the AI again. */
-export type ContractSummary = Record<"en" | "tl" | "ml" | "ru", ContractSummaryLang>;
+// English is always there; other languages may be missing in summaries made
+// before that language was added (show English then).
+export type ContractSummary = { en: ContractSummaryLang } & Partial<Record<"tl" | "ml" | "ru" | "hi" | "ta", ContractSummaryLang>>;
 
 export type ContractInfo = {
     fileName: string | null;
@@ -270,7 +272,7 @@ export type PayslipExplanation = {
     items: { original: string; meaning: string; amount: string }[];
     checks: string[];
 };
-export type Payslip = Record<"en" | "tl" | "ml" | "ru", PayslipExplanation> & {
+export type Payslip = { en: PayslipExplanation } & Partial<Record<"tl" | "ml" | "ru" | "hi" | "ta", PayslipExplanation>> & {
     id: string;
     fileName: string;
     period: string | null;       // "2026-08"
@@ -278,6 +280,7 @@ export type Payslip = Record<"en" | "tl" | "ml" | "ru", PayslipExplanation> & {
     gross: number | null;
     net: number | null;
     hasFile: boolean;            // the original file is saved and can be downloaded
+    kind?: "payslip" | "hoursSheet" | "other";   // missing on older uploads (= payslip)
     createdAt: string;
 };
 export const getPayslips = () => apiFetch<{ payslips: Payslip[] }>("/api/payslips");
@@ -297,6 +300,7 @@ export type ContactRequest = {
     direction: "sent" | "received";
     status: "pending" | "accepted" | "declined";
     messageKey: string;
+    placeId: string | null;      // for "visitTogether": the place, e.g. "nazareth"
     other: { displayName: string; city: string; neighborhood: string };
     myPhone: string | null;      // the number I shared (after acceptance)
     theirPhone: string | null;   // the number they shared with me
@@ -311,8 +315,14 @@ export const getCommunityPeople = (city: string, neighborhood?: string) =>
     apiFetch<{ people: CommunityPerson[] }>(
         `/api/community/people?city=${encodeURIComponent(city)}&neighborhood=${encodeURIComponent(neighborhood || "")}`
     );
-export const sendContactRequest = (to: string, messageKey: string) =>
-    apiFetch<{ success: true }>("/api/community/request", { to, messageKey });
+export const sendContactRequest = (to: string, messageKey: string, placeId?: string) =>
+    apiFetch<{ success: true }>("/api/community/request", { to, messageKey, placeId });
+export const getPlaceSummary = () =>
+    apiFetch<{ counts: Record<string, number>; mine: string[] }>("/api/community/places");
+export const setPlaceInterest = (placeId: string, interested: boolean) =>
+    apiFetch<{ success: true }>("/api/community/places/interest", { placeId, interested });
+export const getPlacePeople = (placeId: string) =>
+    apiFetch<{ people: CommunityPerson[] }>(`/api/community/places/people?placeId=${encodeURIComponent(placeId)}`);
 export const respondContactRequest = (requestId: string, action: "accept" | "decline" | "block") =>
     apiFetch<{ success: true }>("/api/community/respond", { requestId, action });
 export const shareContactPhone = (requestId: string, phone: string) =>

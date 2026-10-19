@@ -8,6 +8,7 @@ import * as React from "react";
 import { View, Text, Pressable, TextInput, Modal, StyleSheet, ActivityIndicator, Linking } from "react-native";
 import { useLang } from "../AppContext";
 import { COMMUNITY_T, MESSAGES, fillC } from "../communityStrings";
+import { LangCode, RELIGIOUS_PLACES } from "../translations";
 import { UserLocation } from "./LocationPicker";
 import {
     getCommunityMe, saveCommunityProfile, leaveCommunity, getCommunityPeople, sendContactRequest,
@@ -18,6 +19,11 @@ import { showAlert, confirmAction } from "../api/platform";
 const C = {
     blue: "#005dac", ink: "#071e27", muted: "#414752", line: "#cfe6f2", bg: "#f3faff",
     white: "#fff", green: "#2e7d32", lightGreen: "#e8f5e9", red: "#c62828",
+};
+/** A request's fixed message; "visit together" names its place (e.g. Nazareth). */
+const messageText = (key: string, placeId: string | null, lang: LangCode) => {
+    const placeName = RELIGIOUS_PLACES.find((p) => p.key === placeId)?.name.replace(/\s*\(.*\)$/, "") ?? "";
+    return fillC(MESSAGES[key]?.[lang] ?? "", { place: placeName });
 };
 const place = (p: { city: string; neighborhood: string }) => (p.neighborhood ? `${p.neighborhood}, ${p.city}` : p.city);
 const digits = (phone: string) => phone.replace(/[^\d+]/g, "");
@@ -122,7 +128,7 @@ export default function CaregiversPanel({ location }: { location: UserLocation |
                     {incoming.map((r) => (
                         <View key={r.id} style={s.item}>
                             <Text style={s.body}><Text style={s.bold}>{fillC(t.wantsToConnect, { name: r.other.displayName })}</Text> · {place(r.other)}</Text>
-                            <Text style={s.quote}>“{MESSAGES[r.messageKey]?.[lang] ?? ""}”</Text>
+                            <Text style={s.quote}>“{messageText(r.messageKey, r.placeId, lang)}”</Text>
                             <View style={s.actions}>
                                 <Btn label={t.accept} onPress={() => answer(r, "accept")} primary disabled={busy} />
                                 <Btn label={t.decline} onPress={() => answer(r, "decline")} disabled={busy} />
@@ -207,7 +213,7 @@ export default function CaregiversPanel({ location }: { location: UserLocation |
                     <View style={s.sheet}>
                         <Text style={s.title}>{t.chooseMessage}</Text>
                         <Text style={s.small}>{asking?.displayName} · {asking ? place(asking) : ""}</Text>
-                        {Object.keys(MESSAGES).map((key) => (
+                        {Object.keys(MESSAGES).filter((key) => key !== "visitTogether").map((key) => (
                             <Pressable key={key} style={s.option} onPress={() => asking && send(asking, key)} disabled={busy}>
                                 <Text style={s.body}>“{MESSAGES[key][lang]}”</Text>
                             </Pressable>

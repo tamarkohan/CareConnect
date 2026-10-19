@@ -12,7 +12,7 @@
  *     audioBase64?:  string   – base64-encoded audio; Gemini transcribes
  *                               then translates the spoken content
  *     audioMimeType?: string  – MIME type of the audio (e.g. "audio/m4a")
- *     targetLanguage: string  – "Hebrew", "English", "Tagalog", "Malayalam", "Russian"
+ *     targetLanguage: string  – "Hebrew", "English", "Tagalog", "Malayalam", "Russian", "Hindi", "Tamil"
  *     context?:      string   – optional hint: "medical", "transit", "slang"; by
  *                               default the model decides (and returns `category`)
  *     readerLanguage?: string – the app language of the user (e.g. "Tagalog"),
@@ -42,12 +42,12 @@ const { optionalAuth, requireAuth } = require("../services/users");
 
 router.use(optionalAuth);
 
-const LANGUAGES = ["Hebrew", "English", "Tagalog", "Malayalam", "Russian"];
+const LANGUAGES = ["Hebrew", "English", "Tagalog", "Malayalam", "Russian", "Hindi", "Tamil"];
 const MAX_TEXT_CHARS = 5_000;
 
 // ── System prompt ─────────────────────────────────────────────────────────────
 const TRANSLATOR_SYSTEM_PROMPT = `You are a professional translator for foreign live-in caregivers in Israel,
-with deep expertise in Hebrew, English, Tagalog, Malayalam and Russian.
+with deep expertise in Hebrew, English, Tagalog, Malayalam, Russian, Hindi and Tamil.
 The users care for elderly people. They read Israeli medical letters, pill boxes, messages from the family,
 bus signs and official letters, and they need to be understood by Israelis.
 
@@ -85,7 +85,8 @@ For each alternative give its language and its meaning in the target language; f
 Hebrew word in brackets: "<meaning> (<Hebrew word>)". Max 3. If none of the cases applies, "ambiguous" is false and
 "alternatives" is []. Only list readings of the text you were given — never examples or unrelated words.
 
-Scripts: Malayalam in Malayalam script, Russian in Cyrillic, Hebrew in Hebrew letters, Tagalog and English in Latin letters.
+Scripts: Malayalam in Malayalam script, Russian in Cyrillic, Hindi in Devanagari, Tamil in Tamil script,
+Hebrew in Hebrew letters, Tagalog and English in Latin letters.
 
 Respond ONLY with valid JSON in this exact shape (no extra text, no markdown fences):
 {"translatedText":"<translation>",
@@ -108,7 +109,9 @@ const CONTEXT_HINTS = {
   slang: "The user says this is spoken language / slang.",
 };
 
-const READER_LANGS = { en: "English", tl: "Tagalog", ml: "Malayalam", ru: "Russian" };
+const READER_LANGS = { en: "English", tl: "Tagalog", ml: "Malayalam", ru: "Russian", hi: "Hindi", ta: "Tamil" };
+// The alphabet "phonetic" (how to read the Hebrew aloud) is written in, per reader language.
+const READER_SCRIPTS = { Malayalam: "Malayalam script", Russian: "Cyrillic", Hindi: "Devanagari", Tamil: "Tamil script" };
 
 // How caregivers really speak each language (rules + corrected examples from the
 // caregivers' language test). Edit backend/data/translation-style.json to add more.
@@ -154,7 +157,7 @@ function buildInstructions({ targetLanguage, context, readerLanguage, glossary, 
   return [
     `Translate into ${targetLanguage}.`,
     ambiguityHint(text),
-    `The reader's language is ${reader}: write "phonetic" in ${reader === "Malayalam" ? "Malayalam script" : reader === "Russian" ? "Cyrillic" : "Latin letters"} and "note" in ${reader}.`,
+    `The reader's language is ${reader}: write "phonetic" in ${READER_SCRIPTS[reader] || "Latin letters"} and "note" in ${reader}.`,
     CONTEXT_HINTS[context] || "",
     // The translation and the note are both read by the caregiver, so the style
     // applies to the target language and to the reader's language.

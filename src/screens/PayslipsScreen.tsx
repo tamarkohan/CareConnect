@@ -28,9 +28,14 @@ type Upload = { name: string; read: () => Promise<ContractFile[]> };
 const FILE_TYPES = [
     "application/pdf",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",   // Excel (.xlsx)
+    "text/csv",
+    "text/comma-separated-values",
     "text/plain",
     "image/*",
 ];
+// Older uploads have no kind: they were all payslips.
+const KIND_ICON: Record<string, string> = { payslip: "🧾", hoursSheet: "📊", other: "📄" };
 const approxBytes = (base64: string) => Math.floor((base64.length * 3) / 4);
 
 const MONTHS: Record<LangCode, string[]> = {
@@ -38,6 +43,8 @@ const MONTHS: Record<LangCode, string[]> = {
     tl: ["Enero", "Pebrero", "Marso", "Abril", "Mayo", "Hunyo", "Hulyo", "Agosto", "Setyembre", "Oktubre", "Nobyembre", "Disyembre"],
     ml: ["ജനുവരി", "ഫെബ്രുവരി", "മാർച്ച്", "ഏപ്രിൽ", "മേയ്", "ജൂൺ", "ജൂലൈ", "ഓഗസ്റ്റ്", "സെപ്റ്റംബർ", "ഒക്ടോബർ", "നവംബർ", "ഡിസംബർ"],
     ru: ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"],
+    hi: ["जनवरी", "फ़रवरी", "मार्च", "अप्रैल", "मई", "जून", "जुलाई", "अगस्त", "सितंबर", "अक्टूबर", "नवंबर", "दिसंबर"],
+    ta: ["ஜனவரி", "பிப்ரவரி", "மார்ச்", "ஏப்ரல்", "மே", "ஜூன்", "ஜூலை", "ஆகஸ்ட்", "செப்டம்பர்", "அக்டோபர்", "நவம்பர்", "டிசம்பர்"],
 };
 const monthName = (period: string | null, lang: LangCode) => {
     const m = period?.match(/^(\d{4})-(\d{2})$/);
@@ -77,7 +84,7 @@ function PayslipItem({ payslip: ps, expanded, onToggle, onDelete }: {
 }) {
     const { lang } = useLang();
     const p = PAGE_T[lang];
-    const info = ps[lang] || ps.en;
+    const info = ps[lang] ?? ps.en;
     const [downloading, setDownloading] = React.useState(false);
 
     const download = async () => {
@@ -98,7 +105,7 @@ function PayslipItem({ payslip: ps, expanded, onToggle, onDelete }: {
                 <View style={{ flex: 1 }}>
                     <Text style={x.month}>{monthName(ps.period, lang) || p.unknownMonth}</Text>
                     <Text style={[page.small, { textAlign: "left" }]}>
-                        {p.net}: {money(ps.net)}{ps.employer ? `  ·  ${ps.employer}` : ""}
+                        {KIND_ICON[ps.kind || "payslip"] ?? "🧾"} {p.kinds[ps.kind || "payslip"] ?? p.kinds.other}  ·  {p.net}: {money(ps.net)}{ps.employer ? `  ·  ${ps.employer}` : ""}
                     </Text>
                 </View>
                 <Text style={x.caret}>{expanded ? "▴" : "▾"}</Text>
@@ -302,7 +309,7 @@ export default function PayslipsScreen({ navigation }: any) {
 
     return (
         <PageFrame title={T[lang].payslips} navigation={navigation}>
-            <Text style={page.pageTitle}>🧾  {T[lang].payslips}</Text>
+            <Text style={page.pageTitle}>💵  {T[lang].payslips}</Text>
             <Text style={page.intro}>{p.payslipsIntro}</Text>
 
             <Pressable style={[page.button, uploading && { opacity: 0.6 }]} onPress={() => setMenu(true)} disabled={uploading}>

@@ -8,6 +8,11 @@
  * POST /api/community/request            Body: { to: <person id>, messageKey } → { success: true }
  * POST /api/community/respond            Body: { requestId, action: "accept" | "decline" | "block" } → { success: true }
  * POST /api/community/share-phone        Body: { requestId, phone } → { success: true }
+ *
+ * GET  /api/community/places             → { counts: { <place>: n }, mine: [<place>] }
+ * POST /api/community/places/interest    Body: { placeId, interested: boolean } → { success: true }
+ * GET  /api/community/places/people?placeId=  → { people: [...] }   (any city)
+ * POST /api/community/request            also takes placeId with messageKey "visitTogether"
  */
 
 const express = require("express");
@@ -52,9 +57,9 @@ router.get("/people", handle(async (req, res) => {
 }));
 
 router.post("/request", handle(async (req, res) => {
-  const { to, messageKey } = req.body || {};
+  const { to, messageKey, placeId } = req.body || {};
   if (!validUuid(to)) return res.status(400).json({ error: "Missing person." });
-  await community.sendRequest(req.user.id, to, messageKey);
+  await community.sendRequest(req.user.id, to, messageKey, placeId || null);
   res.json({ success: true });
 }));
 
@@ -70,6 +75,20 @@ router.post("/share-phone", handle(async (req, res) => {
   if (!validId(requestId)) return res.status(400).json({ error: "Missing request." });
   await community.sharePhone(req.user.id, String(requestId), phone);
   res.json({ success: true });
+}));
+
+router.get("/places", handle(async (req, res) => {
+  res.json(await community.placeSummary(req.user.id));
+}));
+
+router.post("/places/interest", handle(async (req, res) => {
+  const { placeId, interested } = req.body || {};
+  await community.setPlaceInterest(req.user.id, placeId, interested === true);
+  res.json({ success: true });
+}));
+
+router.get("/places/people", handle(async (req, res) => {
+  res.json({ people: await community.placePeople(req.user.id, req.query.placeId) });
 }));
 
 module.exports = router;

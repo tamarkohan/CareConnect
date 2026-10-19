@@ -1,14 +1,18 @@
 // ── translations.ts ─────────────────────────────────────────────────
 // Central translation file for CareConnect Israel
-// Covers all screens in all 4 supported languages.
+// Covers all screens in all 6 supported languages (English, Tagalog,
+// Malayalam, Russian, Hindi, Tamil). Hindi and Tamil texts should be checked
+// by native speakers.
 
-export type LangCode = "en" | "tl" | "ml" | "ru";
+export type LangCode = "en" | "tl" | "ml" | "ru" | "hi" | "ta";
 
 export const LANGUAGES: { code: LangCode; label: string; nativeLabel: string }[] = [
     { code: "en", label: "English", nativeLabel: "English" },
     { code: "tl", label: "Tagalog", nativeLabel: "Tagalog" },
     { code: "ml", label: "Malayalam", nativeLabel: "മലയാളം" },
     { code: "ru", label: "Russian", nativeLabel: "Русский" },
+    { code: "hi", label: "Hindi", nativeLabel: "हिन्दी" },
+    { code: "ta", label: "Tamil", nativeLabel: "தமிழ்" },
 ];
 
 // ── Manual date/time formatting ────────────────────────────────────
@@ -24,6 +28,8 @@ const MONTHS_SHORT: Record<LangCode, string[]> = {
     tl: ["Ene", "Peb", "Mar", "Abr", "May", "Hun", "Hul", "Ago", "Set", "Okt", "Nob", "Dis"],
     ml: ["ജനു", "ഫെബ്ര", "മാർ", "ഏപ്രി", "മേയ്", "ജൂൺ", "ജൂലൈ", "ഓഗ", "സെപ്റ്റ", "ഒക്ടോ", "നവം", "ഡിസം"],
     ru: ["янв", "февр", "мар", "апр", "мая", "июн", "июл", "авг", "сен", "окт", "нояб", "дек"],
+    hi: ["जन", "फ़र", "मार्च", "अप्रै", "मई", "जून", "जुला", "अग", "सित", "अक्टू", "नव", "दिस"],
+    ta: ["ஜன", "பிப்", "மார்", "ஏப்", "மே", "ஜூன்", "ஜூலை", "ஆக", "செப்", "அக்", "நவ", "டிச"],
 };
 
 const MONTHS_FULL: Record<LangCode, string[]> = {
@@ -31,6 +37,8 @@ const MONTHS_FULL: Record<LangCode, string[]> = {
     tl: ["Enero", "Pebrero", "Marso", "Abril", "Mayo", "Hunyo", "Hulyo", "Agosto", "Setyembre", "Oktubre", "Nobyembre", "Disyembre"],
     ml: ["ജനുവരി", "ഫെബ്രുവരി", "മാർച്ച്", "ഏപ്രിൽ", "മേയ്", "ജൂൺ", "ജൂലൈ", "ഓഗസ്റ്റ്", "സെപ്റ്റംബർ", "ഒക്ടോബർ", "നവംബർ", "ഡിസംബർ"],
     ru: ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"],
+    hi: ["जनवरी", "फ़रवरी", "मार्च", "अप्रैल", "मई", "जून", "जुलाई", "अगस्त", "सितंबर", "अक्टूबर", "नवंबर", "दिसंबर"],
+    ta: ["ஜனவரி", "பிப்ரவரி", "மார்ச்", "ஏப்ரல்", "மே", "ஜூன்", "ஜூலை", "ஆகஸ்ட்", "செப்டம்பர்", "அக்டோபர்", "நவம்பர்", "டிசம்பர்"],
 };
 
 const WEEKDAYS_FULL: Record<LangCode, string[]> = {
@@ -38,6 +46,8 @@ const WEEKDAYS_FULL: Record<LangCode, string[]> = {
     tl: ["Linggo", "Lunes", "Martes", "Miyerkules", "Huwebes", "Biyernes", "Sabado"],
     ml: ["ഞായർ", "തിങ്കൾ", "ചൊവ്വ", "ബുധൻ", "വ്യാഴം", "വെള്ളി", "ശനി"],
     ru: ["Воскресенье", "Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота"],
+    hi: ["रविवार", "सोमवार", "मंगलवार", "बुधवार", "गुरुवार", "शुक्रवार", "शनिवार"],
+    ta: ["ஞாயிறு", "திங்கள்", "செவ்வாய்", "புதன்", "வியாழன்", "வெள்ளி", "சனி"],
 };
 
 function pluralRu(n: number, one: string, few: string, many: string): string {
@@ -61,26 +71,32 @@ export function formatRelativeTime(date: Date, lang: LangCode): string {
     const diffDay = Math.round(diffHour / 24);
 
     if (diffSec < 60) {
-        return { en: "Just now", tl: "Ngayon lang", ml: "ഇപ്പോൾ", ru: "Только что" }[lang];
+        return { en: "Just now", tl: "Ngayon lang", ml: "ഇപ്പോൾ", ru: "Только что", hi: "अभी", ta: "இப்போது" }[lang];
     }
     if (diffMin < 60) {
         if (lang === "en") return `${diffMin} minute${diffMin === 1 ? "" : "s"} ago`;
         if (lang === "tl") return `${diffMin} minuto ang nakalipas`;
         if (lang === "ml") return `${diffMin} മിനിറ്റ് മുമ്പ്`;
+        if (lang === "hi") return `${diffMin} मिनट पहले`;
+        if (lang === "ta") return `${diffMin} நிமிடங்களுக்கு முன்`;
         return `${diffMin} ${pluralRu(diffMin, "минуту", "минуты", "минут")} назад`;
     }
     if (diffHour < 24) {
         if (lang === "en") return `${diffHour} hour${diffHour === 1 ? "" : "s"} ago`;
         if (lang === "tl") return `${diffHour} oras ang nakalipas`;
         if (lang === "ml") return `${diffHour} മണിക്കൂർ മുമ്പ്`;
+        if (lang === "hi") return `${diffHour} घंटे पहले`;
+        if (lang === "ta") return `${diffHour} மணி நேரத்திற்கு முன்`;
         return `${diffHour} ${pluralRu(diffHour, "час", "часа", "часов")} назад`;
     }
     if (diffDay === 1) {
-        return { en: "Yesterday", tl: "Kahapon", ml: "ഇന്നലെ", ru: "Вчера" }[lang];
+        return { en: "Yesterday", tl: "Kahapon", ml: "ഇന്നലെ", ru: "Вчера", hi: "कल", ta: "நேற்று" }[lang];
     }
     if (lang === "en") return `${diffDay} days ago`;
     if (lang === "tl") return `${diffDay} araw ang nakalipas`;
     if (lang === "ml") return `${diffDay} ദിവസം മുമ്പ്`;
+    if (lang === "hi") return `${diffDay} दिन पहले`;
+    if (lang === "ta") return `${diffDay} நாட்களுக்கு முன்`;
     return `${diffDay} ${pluralRu(diffDay, "день", "дня", "дней")} назад`;
 }
 
@@ -278,7 +294,7 @@ export const T: Record<LangCode, {
         remittanceApps: "Remittance Applications",
         faqElderly: "FAQs for Caring\nfor Elderly Clients",
         aboutUs: "About Us",
-        payslips: "Payslips",
+        payslips: "Payments",
         wordOfDay: "WORD OF THE DAY",
         thankYou: "Thank you",
         tagline: "Your supportive companion in Israel.",
@@ -402,7 +418,7 @@ export const T: Record<LangCode, {
         remittanceApps: "Mga App sa Remittance",
         faqElderly: "FAQ para sa Pag-aalaga\nng Matatandang Kliyente",
         aboutUs: "Tungkol sa Amin",
-        payslips: "Mga Payslip",
+        payslips: "Sahod at Bayad",
         wordOfDay: "SALITA NG ARAW",
         thankYou: "Salamat",
         tagline: "Ang iyong maaasahang katulong sa Israel.",
@@ -526,7 +542,7 @@ export const T: Record<LangCode, {
         remittanceApps: "റെമിറ്റൻസ് ആപ്ലിക്കേഷനുകൾ",
         faqElderly: "മുതിർന്ന ക്ലയന്റുകളുടെ\nസേവനത്തിനുള്ള FAQ",
         aboutUs: "ഞങ്ങളെ കുറിച്ച്",
-        payslips: "ശമ്പള സ്ലിപ്പുകൾ",
+        payslips: "പേയ്‌മെന്റുകൾ",
         wordOfDay: "ദിവസത്തിന്റെ വാക്ക്",
         thankYou: "നന്ദി",
         tagline: "ഇസ്രായേലിൽ നിങ്ങളുടെ വിശ്വസ്ത സഹചാരി.",
@@ -650,7 +666,7 @@ export const T: Record<LangCode, {
         remittanceApps: "Приложения для денежных переводов",
         faqElderly: "FAQ по уходу\nза пожилыми клиентами",
         aboutUs: "О нас",
-        payslips: "Расчётные листы",
+        payslips: "Оплата",
         wordOfDay: "СЛОВО ДНЯ",
         thankYou: "Спасибо",
         tagline: "Ваш надёжный спутник в Израиле.",
@@ -750,6 +766,252 @@ export const T: Record<LangCode, {
         task4: "Прогуляться",
         task5: "Принять дневные лекарства",
     },
+    hi: {
+        menu: "मेनू",
+        settings: "सेटिंग्स",
+        profile: "प्रोफ़ाइल",
+        helpCenter: "सहायता केंद्र",
+        logout: "लॉग आउट",
+        appTitle: "CareConnect Israel",
+        navHome: "होम",
+        navTranslator: "अनुवादक",
+        navAssistant: "सहायक",
+        navCommunity: "समुदाय",
+        navTasks: "काम",
+        navJournal: "डायरी",
+        goodMorning: "सुप्रभात, Rohit",
+        essentialTools: "ज़रूरी टूल",
+        myAgency: "मेरी एजेंसी",
+        arrivalGuides: "आगमन गाइड",
+        safetyShelters: "सुरक्षा और शेल्टर",
+        migrationSupport: "वीज़ा और प्रवासन (PIBA)",
+        publicTransport: "सार्वजनिक परिवहन",
+        remittanceApps: "पैसे भेजने के ऐप",
+        faqElderly: "बुज़ुर्गों की देखभाल\nके सवाल-जवाब",
+        aboutUs: "हमारे बारे में",
+        payslips: "भुगतान",
+        wordOfDay: "आज का शब्द",
+        thankYou: "धन्यवाद",
+        tagline: "इज़राइल में आपका सहायक साथी।",
+        phone: "फ़ोन",
+        email: "ईमेल",
+        phoneLabel: "फ़ोन नंबर",
+        emailLabel: "ईमेल",
+        phonePh: "50-123-4567",
+        emailPh: "account@example.com",
+        hint: "आपकी पहचान की पुष्टि के लिए हम एक सुरक्षित कोड भेजेंगे। पासवर्ड की ज़रूरत नहीं।",
+        cta: "जारी रखें →",
+        terms: "जारी रखकर आप हमारी ",
+        termsLink: "सेवा की शर्तों",
+        and: " और ",
+        privLink: "गोपनीयता नीति",
+        translatorHeading: "संदर्भ समझने वाला अनुवादक",
+        translatorSub: "खास आपके लिए बनाया गया।",
+        infoCardText: "आम ऐप्स के विपरीत, हमारा AI संदर्भ समझता है। इज़राइली बोलचाल, कठिन मेडिकल शब्दों और हाथ से लिखे नोट्स के लिए बढ़िया।",
+        infoCardHighlight: "मलयालम, हिंदी और तगालोग के लिए अच्छी आवाज़",
+        speakTranslate: "बोलकर अनुवाद करें",
+        writeAny: "किसी भी भाषा में लिखें",
+        scanPhoto: "स्कैन करें या फ़ोटो लें",
+        speakShort: "बोलें",
+        writeShort: "लिखें",
+        scanShort: "स्कैन / फ़ोटो",
+        recentTranslations: "हाल के अनुवाद",
+        catMedical: "मेडिकल",
+        catSlang: "बोलचाल",
+        catTransit: "परिवहन",
+        assistantHeading: "कानूनी और अनुबंध सहायक",
+        assistantSub: "अपने अधिकारों के बारे में कुछ भी पूछें।",
+        uploadTitle: "अपना रोज़गार अनुबंध\nअपलोड या स्कैन करें",
+        uploadDesc: "अपने अनुबंध को निजी रूप से स्कैन करें और AI से अपने कानूनी अधिकारों, साप्ताहिक छुट्टी और नियोक्ता क्या मांग सकता है या नहीं, इसके बारे में पूछें। आपका डेटा पूरी तरह गोपनीय है।",
+        contractUploaded: "✓ अनुबंध अपलोड हो गया",
+        contractStoredNote: "🔒 आपका अनुबंध एन्क्रिप्ट करके रखा जाता है और 90 दिन बाद अपने-आप मिट जाता है।",
+        removeContract: "मेरा अनुबंध हटाएँ",
+        sourcesLabel: "स्रोत",
+        typeMessage: "संदेश लिखें...",
+        communityHeading: "दूसरों से जुड़ें और ज़रूरी जगहें खोजें।",
+        communitySearch: "जगहें खोजें (धार्मिक स्थल, परिवहन)...",
+        localNetworks: "स्थानीय सहायता समूह",
+        learnInfluencers: "इन्फ्लुएंसर से सीखें",
+        nearYou: "आपके पास:",
+        seeMore: "और देखें...",
+        popularReligious: "लोकप्रिय धार्मिक स्थल",
+        locationEnabled: "आस-पास के केयरगिवर, इलाज, टैक्सी स्टॉप आदि देखने के लिए लोकेशन शेयरिंग चालू है।",
+        goToChats: "सभी चैट देखें",
+        goToClinics: "सभी क्लिनिक देखें",
+        goToTransport: "सारी परिवहन जानकारी देखें",
+        mapView: "नक्शा",
+        caregivers: "केयरगिवर",
+        clinics: "क्लिनिक",
+        taxis: "टैक्सी",
+        atms: "ATM और बैंक",
+        actionChat: "चैट",
+        actionInfo: "जानकारी और रास्ता",
+        dist100m: "100 मी दूर",
+        dist500m: "500 मी दूर",
+        dist1km: "1 किमी दूर",
+        religiousSiteTag: "धार्मिक स्थल",
+        moovitLabel: "Moovit/Google Maps",
+        networkTypeWhatsapp: "WhatsApp ग्रुप",
+        networkTypeCommunity: "सामुदायिक केंद्र",
+        districtNorthern: "उत्तरी ज़िला",
+        districtHaifa: "हाइफ़ा ज़िला",
+        districtJerusalem: "यरूशलम ज़िला",
+        taxiStopLabel: "टैक्सी स्टॉप",
+        tasksHeading: "आज के काम",
+        tasksSub: "मंगलवार, 5 मई",
+        reminder: "याद दिलाना: ",
+        reminderBody: "आप 4 घंटे से काम कर रहे हैं। अगर आपका मरीज़ आराम कर रहा है, तो 10 मिनट आराम करें या थोड़ा टहल लें।",
+        manageTasks: "काम संभालें",
+        pending: "बाकी",
+        journalHeading: "डिजिटल डायरी",
+        journalSub: "तनाव निकालने और आभार के पल लिखने की एक निजी जगह।",
+        burdenBook: "बोझ की किताब",
+        burdenBookSub: "(मन हल्का करें)",
+        gratitudeBook: "आभार की किताब",
+        gratitudeBookSub: "(अच्छे पल)",
+        howFeeling: "आप कैसा महसूस कर रहे हैं?",
+        wantRelease: "मैं मन हल्का करना चाहती हूँ...",
+        gratefulFor: "मैं आभारी हूँ...",
+        saveEntry: "सहेजें",
+        recentEntries: "हाल की बातें",
+        burdenBookLabel: "बोझ की किताब",
+        gratitudeBookLabel: "आभार की किताब",
+        initUserMsg: "क्या मेरा नियोक्ता मुझसे पूरे परिवार का घर साफ़ करवा सकता है?",
+        initBotText: "इज़राइली श्रम कानूनों और आपके अपलोड किए अनुबंध के अनुसार, आपको ",
+        initBotHighlight: "सिर्फ़ अपने मरीज़ से जुड़ी सफ़ाई करनी है",
+        initBotSuffix: ", पूरे घर की नहीं।",
+        botReply: "मैं इज़राइली श्रम कानूनों के आधार पर आपका सवाल देख रहा हूँ। ध्यान दें कि मैं एक AI सहायक हूँ और यह कानूनी सलाह नहीं है। अपनी स्थिति के लिए किसी लाइसेंसधारी श्रम वकील से सलाह लें।",
+        journalEntry1: "आज बहुत मुश्किल दिन था। भाषा की दिक्कत की वजह से डॉक्टर के पास जाना बहुत तनाव भरा रहा।",
+        journalEntry2: "मैं शांत सुबह के लिए और Mr. Cohen की फ़िज़ियोथेरेपी बिना दर्द के पूरी होने के लिए आभारी हूँ।",
+        task1: "सुबह की दवा देना",
+        task2: "नाश्ता",
+        task3: "नियोक्ता को फ़ोन – समय बदलना",
+        task4: "टहलने जाना",
+        task5: "दोपहर की दवा देना",
+    },
+    ta: {
+        menu: "மெனு",
+        settings: "அமைப்புகள்",
+        profile: "சுயவிவரம்",
+        helpCenter: "உதவி மையம்",
+        logout: "வெளியேறு",
+        appTitle: "CareConnect Israel",
+        navHome: "முகப்பு",
+        navTranslator: "மொழிபெயர்ப்பு",
+        navAssistant: "உதவியாளர்",
+        navCommunity: "சமூகம்",
+        navTasks: "பணிகள்",
+        navJournal: "நாட்குறிப்பு",
+        goodMorning: "காலை வணக்கம், Rohit",
+        essentialTools: "முக்கிய கருவிகள்",
+        myAgency: "என் ஏஜென்சி",
+        arrivalGuides: "வருகை வழிகாட்டி",
+        safetyShelters: "பாதுகாப்பு & தங்குமிடங்கள்",
+        migrationSupport: "விசா & குடியேற்றம் (PIBA)",
+        publicTransport: "பொதுப் போக்குவரத்து",
+        remittanceApps: "பணம் அனுப்பும் ஆப்கள்",
+        faqElderly: "முதியோர் பராமரிப்பு\nகேள்வி-பதில்",
+        aboutUs: "எங்களைப் பற்றி",
+        payslips: "கட்டணங்கள்",
+        wordOfDay: "இன்றைய சொல்",
+        thankYou: "நன்றி",
+        tagline: "இஸ்ரேலில் உங்கள் துணை.",
+        phone: "தொலைபேசி",
+        email: "மின்னஞ்சல்",
+        phoneLabel: "தொலைபேசி எண்",
+        emailLabel: "மின்னஞ்சல்",
+        phonePh: "50-123-4567",
+        emailPh: "account@example.com",
+        hint: "நீங்கள் தான் என்பதை உறுதிப்படுத்த பாதுகாப்பான குறியீட்டை அனுப்புவோம். கடவுச்சொல் தேவையில்லை.",
+        cta: "தொடரவும் →",
+        terms: "தொடர்வதன் மூலம், எங்கள் ",
+        termsLink: "சேவை விதிமுறைகள்",
+        and: " மற்றும் ",
+        privLink: "தனியுரிமைக் கொள்கை",
+        translatorHeading: "சூழலைப் புரிந்துகொள்ளும் மொழிபெயர்ப்பாளர்",
+        translatorSub: "உங்களுக்காகவே உருவாக்கப்பட்டது.",
+        infoCardText: "சாதாரண ஆப்களைப் போலல்லாமல், எங்கள் AI சூழலைப் புரிந்துகொள்கிறது. இஸ்ரேலிய பேச்சுவழக்கு, கடினமான மருத்துவச் சொற்கள் மற்றும் கையால் எழுதிய குறிப்புகளுக்கு ஏற்றது.",
+        infoCardHighlight: "மலையாளம், இந்தி, தகலாக் மொழிகளுக்கு தரமான ஒலி",
+        speakTranslate: "பேசி மொழிபெயர்க்கவும்",
+        writeAny: "எந்த மொழியிலும் எழுதவும்",
+        scanPhoto: "ஸ்கேன் செய்யவும் / புகைப்படம்",
+        speakShort: "பேசு",
+        writeShort: "எழுது",
+        scanShort: "ஸ்கேன் / புகைப்படம்",
+        recentTranslations: "சமீபத்திய மொழிபெயர்ப்புகள்",
+        catMedical: "மருத்துவம்",
+        catSlang: "பேச்சுவழக்கு",
+        catTransit: "போக்குவரத்து",
+        assistantHeading: "சட்ட & ஒப்பந்த உதவியாளர்",
+        assistantSub: "உங்கள் உரிமைகள் பற்றி எதையும் கேளுங்கள்.",
+        uploadTitle: "உங்கள் வேலை ஒப்பந்தத்தை\nபதிவேற்றவும் அல்லது ஸ்கேன் செய்யவும்",
+        uploadDesc: "உங்கள் ஒப்பந்தத்தைத் தனிப்பட்ட முறையில் ஸ்கேன் செய்து, உங்கள் சட்ட உரிமைகள், வார விடுமுறை, முதலாளி எதைக் கேட்கலாம் அல்லது கேட்கக்கூடாது என்பது பற்றி AI-யிடம் கேளுங்கள். உங்கள் தகவல்கள் முற்றிலும் ரகசியமானவை.",
+        contractUploaded: "✓ ஒப்பந்தம் பதிவேற்றப்பட்டது",
+        contractStoredNote: "🔒 உங்கள் ஒப்பந்தம் மறைகுறியாக்கம் செய்து சேமிக்கப்பட்டு, 90 நாட்களுக்குப் பிறகு தானாக நீக்கப்படும்.",
+        removeContract: "என் ஒப்பந்தத்தை நீக்கு",
+        sourcesLabel: "ஆதாரங்கள்",
+        typeMessage: "செய்தியை எழுதுங்கள்...",
+        communityHeading: "மற்றவர்களுடன் இணைந்து முக்கிய இடங்களைக் கண்டறியுங்கள்.",
+        communitySearch: "இடங்களைத் தேடுங்கள் (வழிபாட்டுத் தலங்கள், போக்குவரத்து)...",
+        localNetworks: "உள்ளூர் ஆதரவுக் குழுக்கள்",
+        learnInfluencers: "இன்ஃப்ளுயன்சர்களிடம் கற்றுக்கொள்ளுங்கள்",
+        nearYou: "உங்கள் அருகில்:",
+        seeMore: "மேலும் பார்க்க...",
+        popularReligious: "பிரபல வழிபாட்டுத் தலங்கள்",
+        locationEnabled: "அருகிலுள்ள பராமரிப்பாளர்கள், மருத்துவ வசதி, டாக்ஸி நிறுத்தங்கள் போன்றவற்றைப் பார்க்க இருப்பிடப் பகிர்வு இயக்கத்தில் உள்ளது.",
+        goToChats: "எல்லா உரையாடல்களும்",
+        goToClinics: "எல்லா கிளினிக்குகளும்",
+        goToTransport: "எல்லா போக்குவரத்துத் தகவல்களும்",
+        mapView: "வரைபடம்",
+        caregivers: "பராமரிப்பாளர்கள்",
+        clinics: "கிளினிக்குகள்",
+        taxis: "டாக்ஸி",
+        atms: "ATM & வங்கிகள்",
+        actionChat: "உரையாடல்",
+        actionInfo: "தகவல் & வழி",
+        dist100m: "100 மீ தூரம்",
+        dist500m: "500 மீ தூரம்",
+        dist1km: "1 கி.மீ தூரம்",
+        religiousSiteTag: "வழிபாட்டுத் தலம்",
+        moovitLabel: "Moovit/Google Maps",
+        networkTypeWhatsapp: "WhatsApp குழு",
+        networkTypeCommunity: "சமூக மையம்",
+        districtNorthern: "வடக்கு மாவட்டம்",
+        districtHaifa: "ஹைஃபா மாவட்டம்",
+        districtJerusalem: "ஜெருசலேம் மாவட்டம்",
+        taxiStopLabel: "டாக்ஸி நிறுத்தம்",
+        tasksHeading: "இன்றைய பணிகள்",
+        tasksSub: "செவ்வாய், மே 5",
+        reminder: "நினைவூட்டல்: ",
+        reminderBody: "நீங்கள் 4 மணி நேரமாக வேலை செய்கிறீர்கள். நோயாளி ஓய்வெடுத்தால், 10 நிமிடம் ஓய்வு எடுங்கள் அல்லது சிறிது நடந்து வாருங்கள்.",
+        manageTasks: "பணிகளை நிர்வகி",
+        pending: "நிலுவையில்",
+        journalHeading: "டிஜிட்டல் நாட்குறிப்பு",
+        journalSub: "மன அழுத்தத்தை வெளியிடவும் நன்றியுணர்வு தருணங்களைப் பதிவு செய்யவும் ஒரு தனிப்பட்ட இடம்.",
+        burdenBook: "சுமை புத்தகம்",
+        burdenBookSub: "(மனதை இறக்கி வையுங்கள்)",
+        gratitudeBook: "நன்றி புத்தகம்",
+        gratitudeBookSub: "(நல்ல தருணங்கள்)",
+        howFeeling: "நீங்கள் எப்படி உணர்கிறீர்கள்?",
+        wantRelease: "நான் மனதை இறக்கி வைக்க விரும்புகிறேன்...",
+        gratefulFor: "நான் நன்றியுடன் இருக்கிறேன்...",
+        saveEntry: "சேமி",
+        recentEntries: "சமீபத்திய பதிவுகள்",
+        burdenBookLabel: "சுமை புத்தகம்",
+        gratitudeBookLabel: "நன்றி புத்தகம்",
+        initUserMsg: "முதலாளி குடும்பத்தின் முழு வீட்டையும் சுத்தம் செய்யச் சொல்லலாமா?",
+        initBotText: "இஸ்ரேலிய தொழிலாளர் சட்டங்கள் மற்றும் நீங்கள் பதிவேற்றிய ஒப்பந்தத்தின்படி, நீங்கள் ",
+        initBotHighlight: "உங்கள் நோயாளி தொடர்பான சுத்தம் மட்டுமே செய்ய வேண்டும்",
+        initBotSuffix: ", முழு வீட்டையும் அல்ல.",
+        botReply: "இஸ்ரேலிய தொழிலாளர் சட்டங்களின் அடிப்படையில் உங்கள் கேள்வியைப் பார்க்கிறேன். நான் ஒரு AI உதவியாளர், இது சட்ட ஆலோசனை அல்ல. உங்கள் நிலைமைக்கு உரிமம் பெற்ற தொழிலாளர் வழக்கறிஞரை அணுகுங்கள்.",
+        journalEntry1: "இன்று மிகவும் கடினமான நாள். மொழித் தடையால் ஒரு சாதாரண மருத்துவர் சந்திப்பு கூட மிகுந்த மன அழுத்தமாக இருந்தது.",
+        journalEntry2: "அமைதியான காலைக்காகவும், Mr. Cohen-இன் பிசியோதெரபி வலியில்லாமல் முடிந்ததற்காகவும் நன்றியுடன் இருக்கிறேன்.",
+        task1: "காலை மருந்து கொடுக்க",
+        task2: "காலை உணவு",
+        task3: "முதலாளியை அழைத்து நேரம் மாற்ற",
+        task4: "நடைப்பயிற்சி",
+        task5: "மதிய மருந்து கொடுக்க",
+    },
 };
 
 // ── Community catalog content ──────────────────────────────────────
@@ -786,6 +1048,8 @@ export const INFLUENCERS: Influencer[] = [
             tl: "Mga Batayang Hebreo\npara sa Caregiver",
             ml: "കെയർഗിവർമാർക്കുള്ള\nഹീബ്രു അടിസ്ഥാനങ്ങൾ",
             ru: "Основы иврита\nдля сиделок",
+            hi: "केयरगिवर के लिए\nहिब्रू की शुरुआत",
+            ta: "பராமரிப்பாளர்களுக்கான\nஹீப்ரு அடிப்படைகள்",
         },
         author: "Shyni Babu",
         platform: "YouTube",
@@ -797,6 +1061,8 @@ export const INFLUENCERS: Influencer[] = [
             tl: "Pag-navigate sa Transportasyon",
             ml: "ഗതാഗതം കൈകാര്യം ചെയ്യൽ",
             ru: "Ориентация в транспорте",
+            hi: "परिवहन का इस्तेमाल",
+            ta: "போக்குவரத்தைப் பயன்படுத்துதல்",
         },
         author: "Maria Santos",
         platform: "TikTok",
@@ -840,6 +1106,8 @@ export type ReligiousPlace = {
     desc: Record<LangCode, string>;
     /** English Wikipedia article whose main photo is shown as the thumbnail. */
     wiki: string;
+    /** Stable key for "I want to go" (stored on the server, never change it). */
+    key: string;
 };
 
 export const RELIGIOUS_PLACES: ReligiousPlace[] = [
@@ -848,11 +1116,14 @@ export const RELIGIOUS_PLACES: ReligiousPlace[] = [
         name: "Nazareth (נצרת)",
         districtKey: "districtNorthern",
         wiki: "Basilica_of_the_Annunciation",
+        key: "nazareth",
         desc: {
             en: "A major pilgrimage center featuring the Basilica of the Annunciation. Accessible via direct buses from Haifa and Tel Aviv.",
             tl: "Isang malaking sentro ng pilgrimahe na may Basilica of the Annunciation. Madaling marating gamit ang direktang bus mula Haifa at Tel Aviv.",
             ml: "അന്നൗൺസിയേഷൻ ബസിലിക്ക ഉൾപ്പെടുന്ന ഒരു പ്രധാന തീർത്ഥാടന കേന്ദ്രം. ഹൈഫയിൽ നിന്നും ടെൽ അവീവിൽ നിന്നും നേരിട്ടുള്ള ബസുകൾ വഴി എത്തിച്ചേരാം.",
             ru: "Крупный центр паломничества с базиликой Благовещения. Доступен на прямых автобусах из Хайфы и Тель-Авива.",
+            hi: "बड़ा तीर्थ स्थल, जहाँ बेसिलिका ऑफ़ द एनाउंसिएशन है। हाइफ़ा और तेल अवीव से सीधी बसें जाती हैं।",
+            ta: "அறிவிப்புப் பேராலயம் (Basilica of the Annunciation) உள்ள முக்கிய புனிதப் பயணத் தலம். ஹைஃபா மற்றும் டெல் அவிவிலிருந்து நேரடிப் பேருந்துகள் உள்ளன.",
         },
     },
     {
@@ -860,11 +1131,14 @@ export const RELIGIOUS_PLACES: ReligiousPlace[] = [
         name: "Stella Maris Monastery",
         districtKey: "districtHaifa",
         wiki: "Stella_Maris_Monastery",
+        key: "stella-maris",
         desc: {
             en: "A 19th-century Carmelite monastery located on the slopes of Mount Carmel in Haifa, offering beautiful panoramic views of the Mediterranean Sea.",
             tl: "Isang monasteryo ng Carmelite noong ika-19 siglo na matatagpuan sa gilid ng Bundok Carmel sa Haifa, na nag-aalok ng magandang panoramic na tanawin ng Dagat Mediteraneo.",
             ml: "ഹൈഫയിലെ കാർമൽ പർവതത്തിന്റെ ചരിവിൽ സ്ഥിതി ചെയ്യുന്ന 19-ാം നൂറ്റാണ്ടിലെ കാർമലൈറ്റ് ആശ്രമം, മെഡിറ്ററേനിയൻ കടലിന്റെ മനോഹരമായ പനോരമിക് ദൃശ്യങ്ങൾ വാഗ്ദാനം ചെയ്യുന്നു.",
             ru: "Кармелитский монастырь XIX века, расположенный на склонах горы Кармель в Хайфе, с прекрасным панорамным видом на Средиземное море.",
+            hi: "हाइफ़ा में कार्मेल पर्वत की ढलान पर 19वीं सदी का कार्मेलाइट मठ, जहाँ से भूमध्य सागर का सुंदर नज़ारा दिखता है।",
+            ta: "ஹைஃபாவில் கார்மேல் மலைச் சரிவில் உள்ள 19ஆம் நூற்றாண்டு கார்மலைட் மடம்; மத்தியதரைக் கடலின் அழகிய காட்சி தெரியும்.",
         },
     },
     {
@@ -872,11 +1146,14 @@ export const RELIGIOUS_PLACES: ReligiousPlace[] = [
         name: "Church of the Holy Sepulchre",
         districtKey: "districtJerusalem",
         wiki: "Church_of_the_Holy_Sepulchre",
+        key: "holy-sepulchre",
         desc: {
             en: "Located in the Christian Quarter of the Old City of Jerusalem, it is considered one of the holiest sites in Christianity.",
             tl: "Matatagpuan sa Christian Quarter ng Lumang Lungsod ng Jerusalem, itinuturing itong isa sa mga pinakabanal na lugar sa Kristiyanismo.",
             ml: "ജറുസലേമിലെ പഴയ നഗരത്തിലെ ക്രിസ്ത്യൻ ക്വാർട്ടറിൽ സ്ഥിതി ചെയ്യുന്ന ഇത് ക്രിസ്തുമതത്തിലെ ഏറ്റവും പുണ്യമായ സ്ഥലങ്ങളിലൊന്നായി കണക്കാക്കപ്പെടുന്നു.",
             ru: "Расположена в Христианском квартале Старого города Иерусалима и считается одним из самых святых мест христианства.",
+            hi: "यरूशलम के पुराने शहर के ईसाई क्वार्टर में स्थित, इसे ईसाई धर्म के सबसे पवित्र स्थानों में से एक माना जाता है।",
+            ta: "ஜெருசலேம் பழைய நகரின் கிறிஸ்தவப் பகுதியில் உள்ளது; கிறிஸ்தவத்தின் மிகப் புனிதமான தலங்களில் ஒன்றாகக் கருதப்படுகிறது.",
         },
     },
 ];

@@ -11,15 +11,20 @@
  *    the other person of that request.
  *  - Limits: a few new requests a day, one request per pair (either way),
  *    and a block hides both people from each other for good.
+ *  - Places: a user on the list can mark "I want to go" on a place (e.g.
+ *    Nazareth); others who want to go there – from any city – can invite
+ *    them with the fixed "visit together" message.
  */
 
 const db = require("./db");
 const { encrypt, decrypt } = require("./crypto");
 
-const MESSAGE_KEYS = ["hello", "newInArea", "dayOff", "sameLanguage", "advice"];
+const MESSAGE_KEYS = ["hello", "newInArea", "dayOff", "sameLanguage", "advice", "visitTogether"];
+const PLACE_RE = /^[a-z0-9-]{2,40}$/;   // place keys from the app, e.g. "nazareth"
+const validPlace = (id) => typeof id === "string" && PLACE_RE.test(id);
 const MAX_REQUESTS_PER_DAY = 5;
 const MAX_PEOPLE = 40;
-const LANGS = ["en", "tl", "ml", "ru"];
+const LANGS = ["en", "tl", "ml", "ru", "hi", "ta"];
 
 /** An error whose message is safe to show to the user. */
 const userError = (message, code, status = 400) => Object.assign(new Error(message), { expose: true, status, code });
@@ -69,6 +74,7 @@ async function leave(userId) {
   await db.withTransaction(async (client) => {
     await client.query("DELETE FROM community_profiles WHERE user_id = $1", [userId]);
     await client.query("DELETE FROM contact_requests WHERE (from_user = $1 OR to_user = $1) AND status <> 'blocked'", [userId]);
+    await client.query("DELETE FROM place_interests WHERE user_id = $1", [userId]);
   });
 }
 
@@ -88,21 +94,75 @@ async function listPeople(userId, city, neighborhood) {
      LIMIT $4`,
     [userId, c, clean(neighborhood, 60) || null, MAX_PEOPLE]
   );
-  return rows.map((r) => ({
-    id: r.public_id,
-    displayName: r.display_name,
-    city: r.city,
-    neighborhood: r.neighborhood || "",
-    language: r.language || "",
-    // none | sent | received | accepted | declined
-    status: !r.request_status ? "none"
-      : r.request_status === "pending" ? (r.sent_by_me ? "sent" : "received")
-      : r.request_status,
-  }));
+  return rows.map(personRow);
 }
 
-async function sendRequest(userId, toPublicId, messageKey) {
+const personRow = (r) => ({
+  id: r.public_id,
+  displayName: r.display_name,
+  city: r.city,
+  neighborhood: r.neighborhood || "",
+  language: r.language || "",
+  // none | sent | received | accepted | declined
+  status: !r.request_status ? "none"
+    : r.request_status === "pending" ? (r.sent_by_me ? "sent" : "received")
+    : r.request_status,
+});
+
+// ── "I want to go" to a place ───────────────────────────────────────────────
+
+/** For each place: how many people want to go; and the places I marked. */
+async function placeSummary(userId) {
+  const { rows } = await db.query(
+    `SELECT i.place_id, count(*)::int AS n, bool_or(i.user_id = $1) AS mine
+     FROM place_interests i JOIN community_profiles p ON p.user_id = i.user_id
+     GROUP BY i.place_id`,
+    [userId]
+  );
+  return {
+    counts: Object.fromEntries(rows.map((r) => [r.place_id, r.n])),
+    mine: rows.filter((r) => r.mine).map((r) => r.place_id),
+  };
+}
+
+async function setPlaceInterest(userId, placeId, interested) {
+  if (!validPlace(placeId)) throw userError("Unknown place.", "badPlace");
+  if (interested) {
+    if (!(await getProfile(userId))) throw userError("Join the caregivers list first.", "noProfile");
+    await db.query(
+      "INSERT INTO place_interests (user_id, place_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+      [userId, placeId]
+    );
+  } else {
+    await db.query("DELETE FROM place_interests WHERE user_id = $1 AND place_id = $2", [userId, placeId]);
+  }
+}
+
+/** People (from any city) who want to go to a place, without blocked people and yourself. */
+async function placePeople(userId, placeId) {
+  if (!validPlace(placeId)) return [];
+  const { rows } = await db.query(
+    `SELECT p.public_id, p.display_name, p.city, p.neighborhood, p.language,
+            r.status AS request_status, (r.from_user = $1) AS sent_by_me
+     FROM place_interests i
+     JOIN community_profiles p ON p.user_id = i.user_id
+     LEFT JOIN contact_requests r
+       ON (r.from_user = $1 AND r.to_user = p.user_id) OR (r.to_user = $1 AND r.from_user = p.user_id)
+     WHERE i.place_id = $2 AND i.user_id <> $1
+       AND (r.status IS NULL OR r.status <> 'blocked')
+     ORDER BY i.created_at DESC
+     LIMIT $3`,
+    [userId, placeId, MAX_PEOPLE]
+  );
+  return rows.map(personRow);
+}
+
+async function sendRequest(userId, toPublicId, messageKey, placeId = null) {
   if (!MESSAGE_KEYS.includes(messageKey)) throw userError("Please choose a message.", "badMessage");
+  // "Visit together" always names the place it's about.
+  if (messageKey === "visitTogether" ? !validPlace(placeId) : placeId) {
+    throw userError("Please choose a message.", "badMessage");
+  }
   if (!(await getProfile(userId))) throw userError("Join the caregivers list first.", "noProfile");
 
   const { rows: [target] } = await db.query("SELECT user_id FROM community_profiles WHERE public_id = $1", [toPublicId]);
@@ -122,8 +182,8 @@ async function sendRequest(userId, toPublicId, messageKey) {
   if (existing.length) throw userError("You already have a request with this person.", "exists", 409);
 
   await db.query(
-    "INSERT INTO contact_requests (from_user, to_user, message_key) VALUES ($1, $2, $3)",
-    [userId, target.user_id, messageKey]
+    "INSERT INTO contact_requests (from_user, to_user, message_key, place_id) VALUES ($1, $2, $3, $4)",
+    [userId, target.user_id, messageKey, placeId || null]
   );
 }
 
@@ -157,6 +217,7 @@ async function listRequests(userId) {
       direction: mine ? "sent" : "received",
       status: r.status,
       messageKey: r.message_key,
+      placeId: r.place_id || null,
       other: { displayName: r.display_name, city: r.city, neighborhood: r.neighborhood || "" },
       // Phones only once accepted; "mine" is the number I shared, "theirs" what they shared with me.
       myPhone: r.status === "accepted" ? phone(mine ? "from" : "to") : null,
@@ -206,4 +267,5 @@ async function sharePhone(userId, requestId, phoneInput) {
 
 module.exports = {
   MESSAGE_KEYS, getProfile, saveProfile, leave, listPeople, sendRequest, listRequests, respond, sharePhone,
+  placeSummary, setPlaceInterest, placePeople,
 };

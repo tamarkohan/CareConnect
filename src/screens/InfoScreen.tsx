@@ -39,7 +39,7 @@ function AgencyCard({ navigation }: { navigation: any }) {
     }, []);
 
     if (summary === undefined) return null;
-    const info = summary?.[lang];
+    const info = summary?.[lang] ?? summary?.en;
     const agency = info?.agency;
     const employer = info?.employer;
 

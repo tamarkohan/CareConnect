@@ -36,6 +36,8 @@ const LANGUAGES = [
     { code: "tl", label: "Tagalog", nativeLabel: "Tagalog" },
     { code: "ml", label: "Malayalam", nativeLabel: "മലയാളം" },
     { code: "ru", label: "Russian", nativeLabel: "Русский" },
+    { code: "hi", label: "Hindi", nativeLabel: "हिन्दी" },
+    { code: "ta", label: "Tamil", nativeLabel: "தமிழ்" },
 ];
 
 // ── Translations ─────────────────────────────────────────────────────
@@ -103,6 +105,38 @@ const T: Record<string, Record<string, string>> = {
         termsLink: "Условиями обслуживания",
         and: " и ",
         privLink: "Политикой конфиденциальности",
+    },
+    hi: {
+        appName: "CareConnect Israel",
+        tagline: "इज़राइल में आपका सहायक साथी।",
+        phone: "फ़ोन",
+        email: "ईमेल",
+        phoneLabel: "फ़ोन नंबर",
+        emailLabel: "ईमेल",
+        phonePh: "50-123-4567",
+        emailPh: "account@example.com",
+        hint: "आपकी पहचान की पुष्टि के लिए हम एक सुरक्षित कोड भेजेंगे। पासवर्ड की ज़रूरत नहीं।",
+        cta: "जारी रखें →",
+        terms: "जारी रखकर आप हमारी ",
+        termsLink: "सेवा की शर्तों",
+        and: " और ",
+        privLink: "गोपनीयता नीति",
+    },
+    ta: {
+        appName: "CareConnect Israel",
+        tagline: "இஸ்ரேலில் உங்கள் துணை.",
+        phone: "தொலைபேசி",
+        email: "மின்னஞ்சல்",
+        phoneLabel: "தொலைபேசி எண்",
+        emailLabel: "மின்னஞ்சல்",
+        phonePh: "50-123-4567",
+        emailPh: "account@example.com",
+        hint: "நீங்கள் தான் என்பதை உறுதிப்படுத்த பாதுகாப்பான குறியீட்டை அனுப்புவோம். கடவுச்சொல் தேவையில்லை.",
+        cta: "தொடரவும் →",
+        terms: "தொடர்வதன் மூலம், எங்கள் ",
+        termsLink: "சேவை விதிமுறைகள்",
+        and: " மற்றும் ",
+        privLink: "தனியுரிமைக் கொள்கை",
     },
 };
 

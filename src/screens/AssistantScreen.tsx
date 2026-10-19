@@ -119,6 +119,8 @@ const LANG_NAMES: Record<string, string> = {
     tl: "Tagalog",
     ml: "Malayalam",
     ru: "Russian",
+    hi: "Hindi",
+    ta: "Tamil",
 };
 
 // Chat messages already sent for translation, `${id}|${language}`. Kept outside
@@ -722,7 +724,7 @@ export default function AssistantScreen({ navigation }: Props) {
         if (src) Linking.openURL(src.url);
     };
 
-    const summary = contract?.summary?.[lang] ?? null;
+    const summary = contract?.summary?.[lang] ?? contract?.summary?.en ?? null;   // older summaries have no Hindi / Tamil
     const summaryRows = summary ? SUMMARY_FIELDS.filter((f) => summary[f]) : [];
 
     return (
