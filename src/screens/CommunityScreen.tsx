@@ -87,12 +87,14 @@ export default function CommunityScreen({ navigation }: Props) {
         getPlaceSummary().then(setPlaces).catch(() => {});
     }, []);
     React.useEffect(loadPlaces, [loadPlaces]);
-    // Not on the caregivers list yet: open the Caregivers tab at the top, where they can join.
+    // Requests and connections (phone numbers) are in the Caregivers tab at the top.
     const scrollRef = React.useRef<ScrollView>(null);
-    const goJoin = () => {
+    const goCaregivers = () => {
         setActiveFilter("caregivers");
         scrollRef.current?.scrollTo({ y: 0, animated: true });
     };
+    // Bumped when an invitation is sent or answered on a place, so the Caregivers tab reloads.
+    const [requestsVersion, setRequestsVersion] = React.useState(0);
 
     // Bookmarked places, kept on this device.
     const [saved, setSaved] = React.useState<string[]>([]);
@@ -148,7 +150,7 @@ export default function CommunityScreen({ navigation }: Props) {
                 </View>
 
                 {/* Caregivers: join the list, contact requests (no chat, no location) */}
-                {activeFilter === "caregivers" ? <CaregiversPanel location={location} /> : null}
+                {activeFilter === "caregivers" ? <CaregiversPanel key={requestsVersion} location={location} /> : null}
 
                 <Text style={s.subheading}>{t.communityHeading}</Text>
 
@@ -234,8 +236,10 @@ export default function CommunityScreen({ navigation }: Props) {
                                     placeName={place.name.replace(/\s*\(.*\)$/, "")}
                                     count={places.counts[place.key] || 0}
                                     mine={places.mine.includes(place.key)}
+                                    location={location}
                                     onChanged={loadPlaces}
-                                    onNeedJoin={goJoin}
+                                    onRequestsChanged={() => setRequestsVersion((v) => v + 1)}
+                                    onOpenConnections={goCaregivers}
                                 />
                                 <Pressable style={s.moovitBtn} onPress={() => Linking.openURL(mapsDirectionsUrl(place.name.replace(/\s*\(.*\)$/, "") + ", Israel"))}>
                                     <Text style={s.moovitIcon}>🚌</Text>

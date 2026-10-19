@@ -61,7 +61,9 @@ type Strings = {
     hideWho: string;
     invite: string;
     inviteConfirm: string;         // {name} {place}
-    joinFirst: string;
+    placeVisible: string;          // under "I want to go": what others see
+    needName: string;              // asks for a name before "I want to go" / invite
+    openConnection: string;
     inviteSays: string;            // {invite}: the Invite button; before the fixed "visit together" message
     loadFailed: string;
     retry: string;
@@ -120,7 +122,9 @@ export const COMMUNITY_T: Record<LangCode, Strings> = {
         hideWho: "Hide",
         invite: "Invite",
         inviteConfirm: "Invite {name} to visit {place} together?",
-        joinFirst: "To show others you want to go, first join the caregivers list above (Near you → Caregivers).",
+        placeVisible: "Others who want to go will see your first name and city.",
+        needName: "Add your first name – others who want to go will see it.",
+        openConnection: "Open connection ›",
         inviteSays: "Tap “{invite}” to send them:",
         loadFailed: "Couldn't load this list. Check your internet and try again.",
         retry: "Try again",
@@ -177,7 +181,9 @@ export const COMMUNITY_T: Record<LangCode, Strings> = {
         hideWho: "Itago",
         invite: "Imbitahan",
         inviteConfirm: "Imbitahan si {name} na pumunta sa {place} nang magkasama?",
-        joinFirst: "Para makita ng iba na gusto mong pumunta, sumali muna sa listahan ng caregivers sa itaas (Near you → Caregivers).",
+        placeVisible: "Makikita ng ibang gustong pumunta ang first name at lungsod mo.",
+        needName: "Ilagay ang first name mo – makikita ito ng ibang gustong pumunta.",
+        openConnection: "Buksan ang connection ›",
         inviteSays: "I-tap ang “{invite}” para ipadala sa kanila:",
         loadFailed: "Hindi ma-load ang listahan. I-check ang internet mo at subukan ulit.",
         retry: "Subukan ulit",
@@ -234,7 +240,9 @@ export const COMMUNITY_T: Record<LangCode, Strings> = {
         hideWho: "മറയ്ക്കുക",
         invite: "ക്ഷണിക്കുക",
         inviteConfirm: "{name}-നെ ഒരുമിച്ച് {place} സന്ദർശിക്കാൻ ക്ഷണിക്കണോ?",
-        joinFirst: "നിങ്ങൾക്ക് പോകണമെന്ന് മറ്റുള്ളവർ കാണാൻ, ആദ്യം മുകളിലെ പരിചാരകരുടെ ലിസ്റ്റിൽ ചേരുക (Near you → Caregivers).",
+        placeVisible: "പോകാൻ ആഗ്രഹിക്കുന്ന മറ്റുള്ളവർ നിങ്ങളുടെ ആദ്യ പേരും നഗരവും കാണും.",
+        needName: "നിങ്ങളുടെ ആദ്യ പേര് ചേർക്കുക – പോകാൻ ആഗ്രഹിക്കുന്ന മറ്റുള്ളവർ അത് കാണും.",
+        openConnection: "കണക്ഷൻ തുറക്കുക ›",
         inviteSays: "അവർക്ക് ഇത് അയക്കാൻ “{invite}” അമർത്തുക:",
         loadFailed: "ഈ ലിസ്റ്റ് ലോഡ് ചെയ്യാനായില്ല. ഇന്റർനെറ്റ് പരിശോധിച്ച് വീണ്ടും ശ്രമിക്കുക.",
         retry: "വീണ്ടും ശ്രമിക്കുക",
@@ -291,7 +299,9 @@ export const COMMUNITY_T: Record<LangCode, Strings> = {
         hideWho: "Скрыть",
         invite: "Пригласить",
         inviteConfirm: "Пригласить {name} вместе посетить {place}?",
-        joinFirst: "Чтобы другие видели, что вы хотите поехать, сначала присоединитесь к списку сиделок выше (Рядом с вами → Сиделки).",
+        placeVisible: "Другие, кто хочет поехать, увидят ваше имя и город.",
+        needName: "Добавьте своё имя – его увидят другие, кто хочет поехать.",
+        openConnection: "Открыть контакт ›",
         inviteSays: "Нажмите «{invite}», чтобы отправить:",
         loadFailed: "Не удалось загрузить список. Проверьте интернет и попробуйте снова.",
         retry: "Попробовать снова",
@@ -348,7 +358,9 @@ export const COMMUNITY_T: Record<LangCode, Strings> = {
         hideWho: "छिपाएँ",
         invite: "आमंत्रित करें",
         inviteConfirm: "{name} को साथ में {place} चलने के लिए आमंत्रित करें?",
-        joinFirst: "दूसरों को दिखाने के लिए कि आप जाना चाहते हैं, पहले ऊपर केयरगिवर सूची में शामिल हों (आपके पास → केयरगिवर)।",
+        placeVisible: "जाना चाहने वाले दूसरे लोग आपका पहला नाम और शहर देखेंगे।",
+        needName: "अपना पहला नाम जोड़ें – जाना चाहने वाले दूसरे लोग इसे देखेंगे।",
+        openConnection: "कनेक्शन खोलें ›",
         inviteSays: "उन्हें यह भेजने के लिए “{invite}” दबाएँ:",
         loadFailed: "यह सूची लोड नहीं हो सकी। अपना इंटरनेट जाँचें और फिर से कोशिश करें।",
         retry: "फिर से कोशिश करें",
@@ -405,7 +417,9 @@ export const COMMUNITY_T: Record<LangCode, Strings> = {
         hideWho: "மறை",
         invite: "அழைப்பு அனுப்பு",
         inviteConfirm: "{name}-ஐ சேர்ந்து {place} செல்ல அழைக்கவா?",
-        joinFirst: "நீங்கள் போக விரும்புவதை மற்றவர்கள் பார்க்க, முதலில் மேலே உள்ள பராமரிப்பாளர் பட்டியலில் சேருங்கள் (உங்கள் அருகில் → பராமரிப்பாளர்கள்).",
+        placeVisible: "போக விரும்பும் மற்றவர்கள் உங்கள் முதல் பெயரையும் நகரத்தையும் பார்ப்பார்கள்.",
+        needName: "உங்கள் முதல் பெயரைச் சேர்க்கவும் – போக விரும்பும் மற்றவர்கள் அதைப் பார்ப்பார்கள்.",
+        openConnection: "இணைப்பைத் திற ›",
         inviteSays: "அவர்களுக்கு இதை அனுப்ப “{invite}” என்பதைத் தட்டவும்:",
         loadFailed: "இந்தப் பட்டியலை ஏற்ற முடியவில்லை. இணையத்தைச் சரிபார்த்து மீண்டும் முயற்சிக்கவும்.",
         retry: "மீண்டும் முயற்சி",

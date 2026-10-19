@@ -13,7 +13,12 @@ const C = { blue: "#005dac", ink: "#071e27", muted: "#414752", line: "#cfe6f2", 
 // Letters, spaces and - ' only (no numbers, links or emojis), as on the server.
 const nameInput = (text: string) => text.replace(/[^\p{L}\p{M} .'-]/gu, "").slice(0, 20);
 
-export default function NameEditor({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+export default function NameEditor({ visible, onClose, onSaved, note }: {
+    visible: boolean;
+    onClose: () => void;
+    onSaved?: () => void;   // e.g. go on with "I want to go" once there is a name
+    note?: string;          // why the name is needed now
+}) {
     const { lang, user, setUser } = useLang();
     const t = NAME_T[lang];
     const [name, setName] = React.useState("");
@@ -33,6 +38,7 @@ export default function NameEditor({ visible, onClose }: { visible: boolean; onC
         try {
             setUser((await updateMe({ displayName: name.trim() })).user);
             onClose();
+            onSaved?.();
         } catch (err: any) {
             setError(err?.message ?? "Error");
         } finally {
@@ -51,6 +57,7 @@ export default function NameEditor({ visible, onClose }: { visible: boolean; onC
                 <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
                 <View style={s.sheet}>
                     <Text style={s.title}>{t.title}</Text>
+                    {note ? <Text style={s.note}>{note}</Text> : null}
                     <Text style={s.small}>{t.explain.replace("{community}", T[lang].navCommunity)}</Text>
                     <TextInput
                         style={s.input}
@@ -93,6 +100,7 @@ const s = StyleSheet.create({
     small: { fontSize: 13, color: C.muted, lineHeight: 19 },
     bold: { fontWeight: "700", color: C.ink },
     hint: { fontSize: 11, color: C.muted },
+    note: { fontSize: 13, color: C.blue, fontWeight: "600", lineHeight: 19 },
     input: { borderWidth: 1, borderColor: C.line, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16, color: C.ink, backgroundColor: C.white },
     actions: { flexDirection: "row", justifyContent: "flex-end", gap: 8 },
     btn: { borderRadius: 8, paddingHorizontal: 16, paddingVertical: 9, borderWidth: 1, borderColor: C.line, backgroundColor: C.bg, alignItems: "center", minWidth: 80 },

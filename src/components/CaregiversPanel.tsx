@@ -28,6 +28,8 @@ const messageText = (key: string, placeId: string | null, lang: LangCode) => {
     return fillC(MESSAGES[key]?.[lang] ?? "", { place: placeName });
 };
 const place = (p: { city: string; neighborhood: string }) => (p.neighborhood ? `${p.neighborhood}, ${p.city}` : p.city);
+// " · Haifa" after a name; nothing for someone (places only) who chose no city.
+const atPlace = (p: { city: string; neighborhood: string }) => (p.city ? ` · ${place(p)}` : "");
 const digits = (phone: string) => phone.replace(/[^\d+]/g, "");
 // What the phone box accepts while typing: digits only, with an optional + at
 // the start for a foreign number. Israeli numbers: up to 10 digits; with +: up to 15.
@@ -84,11 +86,12 @@ export default function CaregiversPanel({ location }: { location: UserLocation |
             setPeople("failed");
         }
     }, [city, neighborhood]);
-    React.useEffect(() => { if (profile) loadPeople(); }, [profile, loadPeople]);
+    React.useEffect(() => { if (profile?.listed) loadPeople(); }, [profile, loadPeople]);
 
-    // Keep the profile's city in step with the place chosen above.
+    // Keep the profile's city in step with the place chosen above. Only for people on
+    // the list ("Near you"); someone who only uses places has a profile that isn't listed.
     React.useEffect(() => {
-        if (profile && city && (profile.city !== city || profile.neighborhood !== neighborhood)) {
+        if (profile?.listed && city && (profile.city !== city || profile.neighborhood !== neighborhood)) {
             // The account name, in case it was changed on Home since the profile was loaded.
             saveCommunityProfile({ displayName: user?.displayName || profile.displayName, city, neighborhood, language: lang })
                 .then((r) => setProfile(r.profile)).catch(() => {});
@@ -145,7 +148,7 @@ export default function CaregiversPanel({ location }: { location: UserLocation |
                     <Text style={s.title}>🔔 {t.requestsTitle} ({incoming.length})</Text>
                     {incoming.map((r) => (
                         <View key={r.id} style={s.item}>
-                            <Text style={s.body}><Text style={s.bold}>{fillC(t.wantsToConnect, { name: nameIn(r.other, lang) })}</Text> · {place(r.other)}</Text>
+                            <Text style={s.body}><Text style={s.bold}>{fillC(t.wantsToConnect, { name: nameIn(r.other, lang) })}</Text>{atPlace(r.other)}</Text>
                             <Text style={s.quote}>“{messageText(r.messageKey, r.placeId, lang)}”</Text>
                             <View style={s.actions}>
                                 <Btn label={t.accept} onPress={() => answer(r, "accept")} primary disabled={busy} />
@@ -181,7 +184,7 @@ export default function CaregiversPanel({ location }: { location: UserLocation |
                 </View>
             ) : null}
 
-            {!profile ? (
+            {!profile?.listed ? (
                 <View style={s.card}>
                     <Text style={s.title}>{t.joinTitle}</Text>
                     <Text style={s.small}>{t.joinBody}</Text>
@@ -283,7 +286,7 @@ function Connection({ request: r, open, onToggle, onChanged, onBlock }: {
         <View style={s.item}>
             <Pressable style={s.connHead} onPress={onToggle} accessibilityRole="button" accessibilityState={{ expanded: open }}>
                 <Text style={[s.bold, { flex: 1 }]} numberOfLines={1}>
-                    {nameIn(r.other, lang)} <Text style={s.small}>· {place(r.other)}</Text>
+                    {nameIn(r.other, lang)} <Text style={s.small}>{atPlace(r.other)}</Text>
                 </Text>
                 {!open && r.theirPhone ? <Text style={s.small}>📞</Text> : null}
                 <Text style={s.caret}>{open ? "▴" : "▾"}</Text>

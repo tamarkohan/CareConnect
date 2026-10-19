@@ -158,6 +158,10 @@ CREATE TABLE IF NOT EXISTS community_profiles (
   updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS community_profiles_city_idx ON community_profiles (city);
+-- listed = on the "Near you → Caregivers" list. People who only use places
+-- ("I want to go", invites) without joining the list have listed = false and
+-- may have no city ('').
+ALTER TABLE community_profiles ADD COLUMN IF NOT EXISTS listed BOOLEAN NOT NULL DEFAULT true;
 
 CREATE TABLE IF NOT EXISTS contact_requests (
   id              BIGSERIAL PRIMARY KEY,
