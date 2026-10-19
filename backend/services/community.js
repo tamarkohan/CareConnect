@@ -2,8 +2,9 @@
  * community.js
  *
  * "Caregivers near you" without sharing location or chatting with strangers:
- *  - A user may join the list with a first name and the city / neighborhood
- *    they choose. Others see only that (and the app language).
+ *  - A user may join the list with a name and, if they want, the city /
+ *    neighborhood they choose. Others see only that (and the app language).
+ *    Without a city they're not on any city's list, only on places.
  *  - Contact requests carry one of a few fixed messages (MESSAGE_KEYS); no
  *    free text, no photos, so nothing to harass with.
  *  - Only after the other person accepts can either side share a phone
@@ -56,17 +57,19 @@ async function getProfile(userId) {
   } : null;
 }
 
-/** The list name is the account name (one name, spelled in every alphabet: see names.js). */
+/**
+ * The list name is the account name (one name, spelled in every alphabet: see
+ * names.js). The city is optional ('' = not shown).
+ */
 async function saveProfile(userId, { displayName, city, neighborhood, language }) {
   const name = names.cleanName(displayName);
   const c = clean(city, 60);
-  if (!c) throw userError("Please choose your city.", "noCity");
   await names.setDisplayName(userId, name);
   await db.query(
     `INSERT INTO community_profiles (user_id, display_name, city, neighborhood, language, listed, updated_at)
      VALUES ($1, $2, $3, $4, $5, true, now())
      ON CONFLICT (user_id) DO UPDATE SET display_name = $2, city = $3, neighborhood = $4, language = $5, listed = true, updated_at = now()`,
-    [userId, name, c, clean(neighborhood, 60) || null, LANGS.includes(language) ? language : null]
+    [userId, name, c, (c && clean(neighborhood, 60)) || null, LANGS.includes(language) ? language : null]
   );
   return getProfile(userId);
 }

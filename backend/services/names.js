@@ -83,6 +83,8 @@ async function spellInEveryAlphabet(name) {
 /**
  * Sets the user's name (and its spellings) on the account and on their
  * caregivers-list profile, if they have one. Unchanged names cost no Gemini call.
+ * Names are unique (ignoring upper/lower case): a new name someone else
+ * already has is refused. Names that were shared before this rule stay.
  * @returns {Promise<{ displayName: string, displayNames: object }>}
  */
 async function setDisplayName(userId, name) {
@@ -91,6 +93,16 @@ async function setDisplayName(userId, name) {
     "SELECT display_name, display_name_i18n FROM users WHERE id = $1",
     [userId]
   );
+  if (n.toLowerCase() !== current?.display_name?.toLowerCase()) {
+    const { rows: taken } = await db.query(
+      `SELECT 1 FROM users WHERE id <> $1 AND lower(display_name) = lower($2)
+       UNION ALL
+       SELECT 1 FROM community_profiles WHERE user_id <> $1 AND lower(display_name) = lower($2)
+       LIMIT 1`,
+      [userId, n]
+    );
+    if (taken.length) throw userError("This name is already taken. Add a letter, your last name or a nickname.", "nameTaken", 409);
+  }
   const spellings = current?.display_name === n && !needsSpelling(n, current.display_name_i18n)
     ? current.display_name_i18n
     : await spellInEveryAlphabet(n);

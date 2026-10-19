@@ -6,7 +6,7 @@ import * as React from "react";
 import { View, Text, Pressable, TextInput, Modal, StyleSheet, ActivityIndicator } from "react-native";
 import { useLang } from "../AppContext";
 import { LANGUAGES, T } from "../translations";
-import { NAME_T, NAME_MAX, nameInput } from "../nameStrings";
+import { NAME_T, NAME_MAX, nameInput, nameError } from "../nameStrings";
 import { updateMe } from "../api/client";
 
 const C = { blue: "#005dac", ink: "#071e27", muted: "#414752", line: "#cfe6f2", bg: "#f3faff", white: "#fff", red: "#c62828" };
@@ -32,7 +32,7 @@ export default function NameEditor({ visible, onClose }: { visible: boolean; onC
             setUser((await updateMe({ displayName: name.trim() })).user);
             onClose();
         } catch (err: any) {
-            setError(err?.message ?? "Error");
+            setError(nameError(err, lang));
         } finally {
             setSaving(false);
         }

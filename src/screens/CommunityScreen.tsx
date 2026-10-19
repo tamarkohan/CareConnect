@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import TopBar from "../components/TopBar";
-import LocationPicker, { useSavedLocation } from "../components/LocationPicker";
+import LocationPicker, { useSavedLocation, ANYWHERE } from "../components/LocationPicker";
 import CommunityMap, { mapsSearchUrl, mapsDirectionsUrl } from "../components/CommunityMap";
 import CaregiversPanel from "../components/CaregiversPanel";
 import PlacePhoto from "../components/PlacePhoto";
@@ -71,7 +71,8 @@ export default function CommunityScreen({ navigation }: Props) {
     const c = COMMUNITY_T[lang];
 
     // What the map shows: the chosen place, or e.g. "ATM near Ahuza, Haifa".
-    const where = location?.city ? `${location.neighborhood ? `${location.neighborhood}, ` : ""}${location.city}, Israel` : "";
+    const where = location?.city === ANYWHERE ? "Israel"
+        : location?.city ? `${location.neighborhood ? `${location.neighborhood}, ` : ""}${location.city}, Israel` : "";
     const mapQuery = !where ? null
         : activeFilter === "caregivers" ? where
         : `${c.mapCategory[activeFilter]} near ${where}`;
