@@ -297,7 +297,7 @@ export const explainPayslipLine = (id: string, line: string, language: string) =
 export const deletePayslip = (id: string) => apiFetch<{ success: true }>("/api/payslips/delete", { id });
 
 // ── Community: caregivers in your city, contact requests ─────────────────────
-/** listed false: uses places only ("I want to go", invites), not on the "Near you" list. */
+/** listed false: not on the "Near you" list (left from when places didn't need it). */
 export type CommunityProfile = { id: string; displayName: string; city: string; neighborhood: string; language: string; listed: boolean };
 /** names: the name in every app language's letters (null for people who joined before names were spelled). */
 export type CommunityPerson = CommunityProfile & {
@@ -305,8 +305,6 @@ export type CommunityPerson = CommunityProfile & {
     status: "none" | "sent" | "received" | "accepted" | "declined";
     requestId: string | null;    // the request between us, to accept / decline it right there
 };
-/** Where the user said they are (shown to others on places when not on the list). */
-export type PlaceLocation = { city?: string; neighborhood?: string; language?: string };
 export type ContactRequest = {
     id: string;
     direction: "sent" | "received";
@@ -327,12 +325,12 @@ export const getCommunityPeople = (city: string, neighborhood?: string) =>
     apiFetch<{ people: CommunityPerson[] }>(
         `/api/community/people?city=${encodeURIComponent(city)}&neighborhood=${encodeURIComponent(neighborhood || "")}`
     );
-export const sendContactRequest = (to: string, messageKey: string, placeId?: string, location?: PlaceLocation) =>
-    apiFetch<{ success: true }>("/api/community/request", { to, messageKey, placeId, ...location });
+export const sendContactRequest = (to: string, messageKey: string, placeId?: string) =>
+    apiFetch<{ success: true }>("/api/community/request", { to, messageKey, placeId });
 export const getPlaceSummary = () =>
     apiFetch<{ counts: Record<string, number>; mine: string[] }>("/api/community/places");
-export const setPlaceInterest = (placeId: string, interested: boolean, location?: PlaceLocation) =>
-    apiFetch<{ success: true }>("/api/community/places/interest", { placeId, interested, ...location });
+export const setPlaceInterest = (placeId: string, interested: boolean) =>
+    apiFetch<{ success: true }>("/api/community/places/interest", { placeId, interested });
 export const getPlacePeople = (placeId: string) =>
     apiFetch<{ people: CommunityPerson[] }>(`/api/community/places/people?placeId=${encodeURIComponent(placeId)}`);
 export const respondContactRequest = (requestId: string, action: "accept" | "decline" | "block") =>

@@ -1,25 +1,28 @@
 // ── LocationPicker.tsx ───────────────────────────────────────────────
-// "Where are you now?" on the community map: the user picks a city and then a
-// neighborhood from searchable lists (src/data/israelPlaces.ts), or types the
-// neighborhood when the city has none listed. The choice is remembered on the
-// device; nothing is sent to the server.
+// "Where are you now?" on the community map: the user picks a city, town,
+// kibbutz, moshav or village – or just the area – and then a neighborhood from
+// searchable lists (src/data/israelPlaces.ts, israelLocalities.ts), or types
+// the neighborhood when the place has none listed. Search forgives spelling
+// (src/data/placeSearch.ts). The choice is remembered on the device; nothing
+// is sent to the server.
 import * as React from "react";
 import { View, Text, Pressable, Modal, FlatList, TextInput, StyleSheet } from "react-native";
 import { useLang } from "../AppContext";
 import { LangCode } from "../translations";
 import { ISRAEL_PLACES } from "../data/israelPlaces";
+import { AREAS, searchPlaces } from "../data/placeSearch";
 import { getItem, setItem } from "../api/storage";
 
 export type UserLocation = { city: string; neighborhood: string };
 const STORAGE_KEY = "careconnect.location";
 
-const STR: Record<LangCode, Record<"where" | "city" | "neighborhood" | "chooseCity" | "chooseNeighborhood" | "typeNeighborhood" | "search" | "cancel" | "whole", string>> = {
-    en: { where: "Where are you now?", city: "City / town", neighborhood: "Neighborhood", chooseCity: "Choose your city", chooseNeighborhood: "Choose your neighborhood", typeNeighborhood: "Type your neighborhood", search: "Search", cancel: "Cancel", whole: "Whole city" },
-    tl: { where: "Nasaan ka ngayon?", city: "Lungsod / bayan", neighborhood: "Lugar (neighborhood)", chooseCity: "Piliin ang lungsod mo", chooseNeighborhood: "Piliin ang lugar mo", typeNeighborhood: "I-type ang lugar mo", search: "Hanapin", cancel: "Kanselahin", whole: "Buong lungsod" },
-    ml: { where: "നിങ്ങൾ ഇപ്പോൾ എവിടെയാണ്?", city: "നഗരം / പട്ടണം", neighborhood: "പ്രദേശം", chooseCity: "നിങ്ങളുടെ നഗരം തിരഞ്ഞെടുക്കുക", chooseNeighborhood: "നിങ്ങളുടെ പ്രദേശം തിരഞ്ഞെടുക്കുക", typeNeighborhood: "നിങ്ങളുടെ പ്രദേശം ടൈപ്പ് ചെയ്യുക", search: "തിരയുക", cancel: "റദ്ദാക്കുക", whole: "മുഴുവൻ നഗരം" },
-    ru: { where: "Где вы сейчас?", city: "Город", neighborhood: "Район", chooseCity: "Выберите город", chooseNeighborhood: "Выберите район", typeNeighborhood: "Введите район", search: "Поиск", cancel: "Отмена", whole: "Весь город" },
-    hi: { where: "आप अभी कहाँ हैं?", city: "शहर / कस्बा", neighborhood: "इलाका", chooseCity: "अपना शहर चुनें", chooseNeighborhood: "अपना इलाका चुनें", typeNeighborhood: "अपना इलाका लिखें", search: "खोजें", cancel: "रद्द करें", whole: "पूरा शहर" },
-    ta: { where: "நீங்கள் இப்போது எங்கே இருக்கிறீர்கள்?", city: "நகரம் / ஊர்", neighborhood: "பகுதி", chooseCity: "உங்கள் நகரத்தைத் தேர்வு செய்யுங்கள்", chooseNeighborhood: "உங்கள் பகுதியைத் தேர்வு செய்யுங்கள்", typeNeighborhood: "உங்கள் பகுதியை எழுதுங்கள்", search: "தேடு", cancel: "ரத்து", whole: "முழு நகரம்" },
+const STR: Record<LangCode, Record<"where" | "city" | "neighborhood" | "chooseCity" | "chooseNeighborhood" | "typeNeighborhood" | "search" | "cancel" | "whole" | "area" | "noMatch", string>> = {
+    en: { where: "Where are you now?", city: "City / town", neighborhood: "Neighborhood", chooseCity: "Choose your city", chooseNeighborhood: "Choose your neighborhood", typeNeighborhood: "Type your neighborhood", search: "Search", cancel: "Cancel", whole: "Whole city", area: "Area", noMatch: "No place with this name. Choose the area you are in:" },
+    tl: { where: "Nasaan ka ngayon?", city: "Lungsod / bayan", neighborhood: "Lugar (neighborhood)", chooseCity: "Piliin ang lungsod mo", chooseNeighborhood: "Piliin ang lugar mo", typeNeighborhood: "I-type ang lugar mo", search: "Hanapin", cancel: "Kanselahin", whole: "Buong lungsod", area: "Rehiyon", noMatch: "Walang lugar na ganitong pangalan. Piliin ang rehiyon kung nasaan ka:" },
+    ml: { where: "നിങ്ങൾ ഇപ്പോൾ എവിടെയാണ്?", city: "നഗരം / പട്ടണം", neighborhood: "പ്രദേശം", chooseCity: "നിങ്ങളുടെ നഗരം തിരഞ്ഞെടുക്കുക", chooseNeighborhood: "നിങ്ങളുടെ പ്രദേശം തിരഞ്ഞെടുക്കുക", typeNeighborhood: "നിങ്ങളുടെ പ്രദേശം ടൈപ്പ് ചെയ്യുക", search: "തിരയുക", cancel: "റദ്ദാക്കുക", whole: "മുഴുവൻ നഗരം", area: "മേഖല", noMatch: "ഈ പേരിൽ സ്ഥലമില്ല. നിങ്ങൾ ഉള്ള മേഖല തിരഞ്ഞെടുക്കുക:" },
+    ru: { where: "Где вы сейчас?", city: "Город", neighborhood: "Район", chooseCity: "Выберите город", chooseNeighborhood: "Выберите район", typeNeighborhood: "Введите район", search: "Поиск", cancel: "Отмена", whole: "Весь город", area: "Район страны", noMatch: "Места с таким названием нет. Выберите район, где вы находитесь:" },
+    hi: { where: "आप अभी कहाँ हैं?", city: "शहर / कस्बा", neighborhood: "इलाका", chooseCity: "अपना शहर चुनें", chooseNeighborhood: "अपना इलाका चुनें", typeNeighborhood: "अपना इलाका लिखें", search: "खोजें", cancel: "रद्द करें", whole: "पूरा शहर", area: "क्षेत्र", noMatch: "इस नाम की कोई जगह नहीं है। वह क्षेत्र चुनें जहाँ आप हैं:" },
+    ta: { where: "நீங்கள் இப்போது எங்கே இருக்கிறீர்கள்?", city: "நகரம் / ஊர்", neighborhood: "பகுதி", chooseCity: "உங்கள் நகரத்தைத் தேர்வு செய்யுங்கள்", chooseNeighborhood: "உங்கள் பகுதியைத் தேர்வு செய்யுங்கள்", typeNeighborhood: "உங்கள் பகுதியை எழுதுங்கள்", search: "தேடு", cancel: "ரத்து", whole: "முழு நகரம்", area: "பகுதி (மண்டலம்)", noMatch: "இந்தப் பெயரில் இடம் இல்லை. நீங்கள் இருக்கும் பகுதியைத் தேர்வு செய்யுங்கள்:" },
 };
 
 export function useSavedLocation() {
@@ -84,7 +87,9 @@ export default function LocationPicker({ value, onChange }: { value: UserLocatio
                 title={t.chooseCity}
                 search={t.search}
                 cancel={t.cancel}
-                items={ISRAEL_PLACES.map((p) => p.city)}
+                find={(q) => searchPlaces(q).map((o) => ({ label: o.label, sub: o.kind === "area" ? `${t.area} · ${o.hebrew}` : o.hebrew }))}
+                noMatch={t.noMatch}
+                fallback={AREAS.map((o) => ({ label: o.label, sub: `${t.area} · ${o.hebrew}` }))}
                 onChoose={(city) => { onChange({ city, neighborhood: "" }); setPicking(null); }}
                 onClose={() => setPicking(null)}
             />
@@ -93,7 +98,7 @@ export default function LocationPicker({ value, onChange }: { value: UserLocatio
                 title={t.chooseNeighborhood}
                 search={t.search}
                 cancel={t.cancel}
-                items={[t.whole, ...neighborhoods]}
+                find={(q) => [t.whole, ...neighborhoods].filter((n) => n.toLowerCase().includes(q.toLowerCase())).map((label) => ({ label }))}
                 onChoose={(n) => { onChange({ city: value!.city, neighborhood: n === t.whole ? "" : n }); setPicking(null); }}
                 onClose={() => setPicking(null)}
             />
@@ -101,14 +106,19 @@ export default function LocationPicker({ value, onChange }: { value: UserLocatio
     );
 }
 
-function ListPicker({ visible, title, search, cancel, items, onChoose, onClose }: {
-    visible: boolean; title: string; search: string; cancel: string; items: string[];
+type PickItem = { label: string; sub?: string };
+
+/** A searchable list; when nothing matches, shows noMatch and the fallback items (e.g. areas). */
+function ListPicker({ visible, title, search, cancel, find, noMatch, fallback, onChoose, onClose }: {
+    visible: boolean; title: string; search: string; cancel: string;
+    find: (query: string) => PickItem[];
+    noMatch?: string; fallback?: PickItem[];
     onChoose: (item: string) => void; onClose: () => void;
 }) {
     const [query, setQuery] = React.useState("");
     React.useEffect(() => { if (visible) setQuery(""); }, [visible]);
-    const q = query.trim().toLowerCase();
-    const shown = q ? items.filter((i) => i.toLowerCase().includes(q)) : items;
+    const found = visible ? find(query.trim()) : [];
+    const none = !found.length && !!fallback;
     return (
         <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
             <View style={s.backdrop}>
@@ -116,14 +126,17 @@ function ListPicker({ visible, title, search, cancel, items, onChoose, onClose }
                 <View style={s.sheet}>
                     <Text style={s.sheetTitle}>{title}</Text>
                     <TextInput style={s.search} placeholder={search} value={query} onChangeText={setQuery} autoCorrect={false} />
+                    {none && noMatch ? <Text style={s.noMatch}>{noMatch}</Text> : null}
                     <FlatList
-                        data={shown}
-                        keyExtractor={(i) => i}
+                        data={none ? fallback : found}
+                        keyExtractor={(i) => i.label}
                         style={{ maxHeight: 380 }}
                         keyboardShouldPersistTaps="handled"
+                        initialNumToRender={20}
                         renderItem={({ item }) => (
-                            <Pressable style={s.option} onPress={() => onChoose(item)}>
-                                <Text style={s.optionText}>{item}</Text>
+                            <Pressable style={s.option} onPress={() => onChoose(item.label)}>
+                                <Text style={s.optionText}>{item.label}</Text>
+                                {item.sub ? <Text style={s.optionSub}>{item.sub}</Text> : null}
                             </Pressable>
                         )}
                     />
@@ -155,5 +168,7 @@ const s = StyleSheet.create({
     search: { borderWidth: 1, borderColor: "#cfe6f2", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 15 },
     option: { paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: "#cfe6f2" },
     optionText: { fontSize: 15, color: "#071e27" },
+    optionSub: { fontSize: 12, color: "#414752", marginTop: 1, textAlign: "left" },
+    noMatch: { fontSize: 13, color: "#005dac", fontWeight: "600" },
     cancel: { fontSize: 15, color: "#005dac", fontWeight: "600" },
 });

@@ -140,8 +140,11 @@ CREATE INDEX IF NOT EXISTS payslip_files_user_idx ON payslip_files (user_id);
 
 -- The user's first name (home greeting, caregivers list) and its spelling in
 -- every app language's letters, e.g. {"en":"Rohit","hi":"रोहित","ta":"ரோஹித்",…}.
-ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name TEXT CHECK (char_length(display_name) <= 20);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name TEXT CHECK (char_length(display_name) <= 30);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name_i18n JSONB;
+-- Names may be a full name or a nickname: up to 30 characters (was 20).
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_display_name_check;
+ALTER TABLE users ADD CONSTRAINT users_display_name_check CHECK (char_length(display_name) <= 30);
 
 -- ── Community: find caregivers in your city and ask to connect ────────────
 -- Safe by design: no location, no photos, no free text. A user who joins the
@@ -151,16 +154,18 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name_i18n JSONB;
 CREATE TABLE IF NOT EXISTS community_profiles (
   user_id      UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
   public_id    UUID NOT NULL UNIQUE DEFAULT gen_random_uuid(),   -- what other users see, never the user id
-  display_name TEXT NOT NULL CHECK (char_length(display_name) BETWEEN 1 AND 20),
+  display_name TEXT NOT NULL CHECK (char_length(display_name) BETWEEN 1 AND 30),
   city         TEXT NOT NULL CHECK (char_length(city) <= 60),
   neighborhood TEXT CHECK (char_length(neighborhood) <= 60),
   language     TEXT CHECK (char_length(language) <= 5),          -- app language: en / tl / ml / ru
   updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS community_profiles_city_idx ON community_profiles (city);
--- listed = on the "Near you → Caregivers" list. People who only use places
--- ("I want to go", invites) without joining the list have listed = false and
--- may have no city ('').
+ALTER TABLE community_profiles DROP CONSTRAINT IF EXISTS community_profiles_display_name_check;
+ALTER TABLE community_profiles ADD CONSTRAINT community_profiles_display_name_check CHECK (char_length(display_name) BETWEEN 1 AND 30);
+-- listed = on the "Near you → Caregivers" list. Places ("I want to go",
+-- invites) need the list; listed = false is left from a short time when they
+-- didn't (such people join the list to use places again; they may have no city '').
 ALTER TABLE community_profiles ADD COLUMN IF NOT EXISTS listed BOOLEAN NOT NULL DEFAULT true;
 
 CREATE TABLE IF NOT EXISTS contact_requests (
