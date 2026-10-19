@@ -9,7 +9,7 @@
  * POST /api/community/respond            Body: { requestId, action: "accept" | "decline" | "block" } → { success: true }
  * POST /api/community/share-phone        Body: { requestId, phone } → { success: true }
  *
- * GET  /api/community/places             → { counts: { <place>: n }, mine: [<place>] }
+ * GET  /api/community/places             → { counts: { <place>: n others }, mine: [<place>] }
  * POST /api/community/places/interest    Body: { placeId, interested: boolean } → { success: true }
  * GET  /api/community/places/people?placeId=  → { people: [...] }   (any city)
  * POST /api/community/request            also takes placeId with messageKey "visitTogether"

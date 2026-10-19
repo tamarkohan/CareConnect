@@ -49,8 +49,10 @@ export default function CaregiversPanel({ location }: { location: UserLocation |
     const { lang, user, setUser } = useLang();
     const t = COMMUNITY_T[lang];
     const [profile, setProfile] = React.useState<CommunityProfile | null | undefined>(undefined);
+    const [loadFailed, setLoadFailed] = React.useState(false);
     const [requests, setRequests] = React.useState<ContactRequest[]>([]);
-    const [people, setPeople] = React.useState<CommunityPerson[] | null>(null);
+    // "failed" shows an error with Try again, never a misleading "nobody here".
+    const [people, setPeople] = React.useState<CommunityPerson[] | null | "failed">(null);
     // One name for the whole app: joining starts from the account's name (Home → "Change name").
     const [name, setName] = React.useState(user?.displayName ?? "");
     const [editingName, setEditingName] = React.useState(false);
@@ -64,8 +66,10 @@ export default function CaregiversPanel({ location }: { location: UserLocation |
             const me = await getCommunityMe();
             setProfile(me.profile);
             setRequests(me.requests);
+            setLoadFailed(false);
         } catch {
-            setProfile(null);
+            // Not "join the list": the user may well be on it already.
+            setLoadFailed(true);
         }
     }, []);
     React.useEffect(() => { loadMe(); }, [loadMe]);
@@ -77,7 +81,7 @@ export default function CaregiversPanel({ location }: { location: UserLocation |
         try {
             setPeople((await getCommunityPeople(city, neighborhood)).people);
         } catch {
-            setPeople([]);
+            setPeople("failed");
         }
     }, [city, neighborhood]);
     React.useEffect(() => { if (profile) loadPeople(); }, [profile, loadPeople]);
@@ -122,7 +126,14 @@ export default function CaregiversPanel({ location }: { location: UserLocation |
         run(async () => { await respondContactRequest(r.id, action); await Promise.all([loadMe(), loadPeople()]); });
     };
 
-    if (profile === undefined) return <ActivityIndicator color={C.blue} style={{ marginVertical: 16 }} />;
+    if (profile === undefined) {
+        return loadFailed ? (
+            <View style={s.card}>
+                <Text style={s.body}>{t.loadFailed}</Text>
+                <Btn label={t.retry} onPress={() => { setLoadFailed(false); loadMe(); }} primary />
+            </View>
+        ) : <ActivityIndicator color={C.blue} style={{ marginVertical: 16 }} />;
+    }
 
     const incoming = requests.filter((r) => r.direction === "received" && r.status === "pending");
     const connections = requests.filter((r) => r.status === "accepted");
@@ -190,7 +201,12 @@ export default function CaregiversPanel({ location }: { location: UserLocation |
                         {NAME_T[lang].othersLetters}{" "}
                         <Text style={s.link} onPress={() => setEditingName(true)} accessibilityRole="button">✎ {NAME_T[lang].changeName}</Text>
                     </Text>
-                    {people === null ? null : people.length === 0 ? (
+                    {people === null ? null : people === "failed" ? (
+                        <View style={s.actions}>
+                            <Text style={[s.small, { flex: 1 }]}>{t.loadFailed}</Text>
+                            <Btn label={t.retry} onPress={loadPeople} />
+                        </View>
+                    ) : people.length === 0 ? (
                         <Text style={s.body}>{t.noPeople}</Text>
                     ) : (
                         people.map((p) => (
