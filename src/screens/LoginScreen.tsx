@@ -15,6 +15,7 @@ import {
     KeyboardAvoidingView,
     Platform,
     ActivityIndicator,
+    Modal,
 } from "react-native";
 
 // ── Tokens ───────────────────────────────────────────────────────────
@@ -230,8 +231,10 @@ export default function LoginScreen({ navigation }: Props) {
                     <Text style={s.langPillText}>{currentLang.nativeLabel} ▾</Text>
                 </Pressable>
 
-                {/* Language dropdown */}
-                {showLangs && (
+                {/* Language dropdown: in a Modal so it shows above the whole page,
+                    not cut off by the banner; tapping outside closes it. */}
+                <Modal visible={showLangs} transparent animationType="fade" onRequestClose={() => setShowLangs(false)}>
+                    <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowLangs(false)} />
                     <View style={s.langDropdown}>
                         {LANGUAGES.map(l => (
                             <Pressable
@@ -249,7 +252,7 @@ export default function LoginScreen({ navigation }: Props) {
                             </Pressable>
                         ))}
                     </View>
-                )}
+                </Modal>
             </View>
 
             {/* ── Card ── */}
