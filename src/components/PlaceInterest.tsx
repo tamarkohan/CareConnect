@@ -1,26 +1,33 @@
 // ── PlaceInterest.tsx ────────────────────────────────────────────────
-// "I want to go" on a place card (e.g. Nazareth): mark the place, see how many
-// caregivers want to go, and invite one of them with the fixed "visit
-// together" message. Same privacy as the caregivers list: first name and city
-// only; phone numbers only after the invitation is accepted (see
+// "I want to go" on a place card (e.g. Nazareth): mark the place, see who else
+// wants to go, invite them with the fixed "visit together" message, and
+// accept or decline their invitations right here. This doesn't need the
+// "Near you" caregivers list: others see the first name and the city chosen
+// in the app. Phone numbers only after an invitation is accepted (see
 // backend/services/community.js).
 import * as React from "react";
 import { View, Text, Pressable, StyleSheet, ActivityIndicator } from "react-native";
 import { useLang } from "../AppContext";
 import { COMMUNITY_T, MESSAGES, fillC } from "../communityStrings";
 import { nameIn } from "../nameStrings";
-import { setPlaceInterest, getPlacePeople, sendContactRequest, CommunityPerson } from "../api/client";
+import NameEditor from "./NameEditor";
+import { UserLocation } from "./LocationPicker";
+import {
+    setPlaceInterest, getPlacePeople, sendContactRequest, respondContactRequest, CommunityPerson,
+} from "../api/client";
 import { showAlert, confirmAction } from "../api/platform";
 
 const C = { blue: "#005dac", ink: "#071e27", muted: "#414752", line: "#cfe6f2", bg: "#f3faff", white: "#fff", green: "#2e7d32" };
 
-export default function PlaceInterest({ placeKey, placeName, count, mine, onChanged, onNeedJoin }: {
+export default function PlaceInterest({ placeKey, placeName, count, mine, location, onChanged, onRequestsChanged, onOpenConnections }: {
     placeKey: string;
     placeName: string;
-    count: number;           // others who want to go (not me, nobody blocked with me)
+    count: number;                   // others who want to go (not me, nobody blocked with me)
     mine: boolean;
-    onChanged: () => void;   // reload the counts
-    onNeedJoin: () => void;  // the user isn't on the caregivers list yet
+    location: UserLocation | null;   // "Where are you now?": the city others see
+    onChanged: () => void;           // reload the counts
+    onRequestsChanged: () => void;   // an invitation was sent or answered
+    onOpenConnections: () => void;   // phone numbers etc. are under Near you → Caregivers
 }) {
     const { lang } = useLang();
     const t = COMMUNITY_T[lang];
@@ -28,6 +35,10 @@ export default function PlaceInterest({ placeKey, placeName, count, mine, onChan
     // null while loading; "failed" shows an error with Try again (never a silently empty list).
     const [people, setPeople] = React.useState<CommunityPerson[] | null | "failed">(null);
     const [open, setOpen] = React.useState(false);
+    // No first name yet: ask for it, then carry on with what the user tapped.
+    const [afterName, setAfterName] = React.useState<(() => void) | null>(null);
+
+    const where = { city: location?.city, neighborhood: location?.neighborhood, language: lang };
 
     const loadPeople = async () => {
         setPeople(null);
@@ -38,40 +49,47 @@ export default function PlaceInterest({ placeKey, placeName, count, mine, onChan
         }
     };
 
-    const toggle = async () => {
+    const run = async (fn: () => Promise<unknown>, retry: () => void) => {
         setBusy(true);
         try {
-            await setPlaceInterest(placeKey, !mine);
-            onChanged();
-            if (open) loadPeople();
+            await fn();
         } catch (err: any) {
-            if (err?.code === "noProfile") {
-                showAlert(t.joinFirst);
-                onNeedJoin();
-            } else {
-                showAlert(err?.message ?? "Error");
-            }
+            if (err?.code === "noName") setAfterName(() => retry);
+            else showAlert(err?.message ?? "Error");
         } finally {
             setBusy(false);
         }
     };
 
+    const toggle = () => run(async () => {
+        await setPlaceInterest(placeKey, !mine, where);
+        onChanged();
+        if (open) loadPeople();
+    }, toggle);
+
     const invite = async (p: CommunityPerson) => {
         if (!(await confirmAction(fillC(t.inviteConfirm, { name: nameIn(p, lang), place: placeName }), t.invite, t.cancel))) return;
-        try {
-            await sendContactRequest(p.id, "visitTogether", placeKey);
+        const send = () => run(async () => {
+            await sendContactRequest(p.id, "visitTogether", placeKey, where);
             loadPeople();
-        } catch (err: any) {
-            if (err?.code === "noProfile") onNeedJoin();
-            showAlert(err?.message ?? "Error");
-        }
+            onRequestsChanged();
+        }, send);
+        send();
     };
+
+    const answer = (p: CommunityPerson, action: "accept" | "decline") => run(async () => {
+        if (p.requestId) await respondContactRequest(p.requestId, action);
+        loadPeople();
+        onRequestsChanged();
+    }, () => {});
 
     const showWho = () => {
         const next = !open;
         setOpen(next);
         if (next) loadPeople();
     };
+
+    const list = Array.isArray(people) ? people : [];
 
     return (
         <View style={s.wrap}>
@@ -80,6 +98,7 @@ export default function PlaceInterest({ placeKey, placeName, count, mine, onChan
                     <Text style={[s.wantText, mine && { color: C.green }]}>{mine ? t.youWantToGo : t.wantToGo}</Text>
                 </Pressable>
             </View>
+            {!mine ? <Text style={s.small}>{t.placeVisible}</Text> : null}
             <View style={s.row}>
                 <Text style={s.count}>{count === 1 ? t.oneWantsToGo : count > 1 ? fillC(t.peopleWantToGo, { n: String(count) }) : t.nobodyYet}</Text>
                 {count > 0 ? (
@@ -97,50 +116,87 @@ export default function PlaceInterest({ placeKey, placeName, count, mine, onChan
                         </Pressable>
                     </View>
                 ) : (
-                    <View style={{ gap: 6 }}>
-                        {people.map((p) => (
+                    <View style={{ gap: 8 }}>
+                        {list.map((p) => (
                             <View key={p.id} style={s.person}>
                                 <View style={s.avatar}><Text style={s.avatarText}>{nameIn(p, lang).charAt(0).toUpperCase()}</Text></View>
                                 <View style={{ flex: 1 }}>
                                     <Text style={s.name}>{nameIn(p, lang)}</Text>
-                                    <Text style={s.small}>{p.neighborhood ? `${p.neighborhood}, ` : ""}{p.city}</Text>
+                                    {p.city ? <Text style={s.small}>{p.neighborhood ? `${p.neighborhood}, ` : ""}{p.city}</Text> : null}
                                 </View>
                                 {p.status === "none" ? (
-                                    <Pressable style={s.inviteBtn} onPress={() => invite(p)} accessibilityRole="button">
-                                        <Text style={s.inviteText}>{t.invite}</Text>
-                                    </Pressable>
+                                    <Btn label={t.invite} onPress={() => invite(p)} primary disabled={busy} />
+                                ) : p.status === "received" ? (
+                                    <View style={s.side}>
+                                        <Text style={s.small}>{t.statusReceived}</Text>
+                                        <View style={s.row}>
+                                            <Btn label={t.accept} onPress={() => answer(p, "accept")} primary disabled={busy} />
+                                            <Btn label={t.decline} onPress={() => answer(p, "decline")} disabled={busy} />
+                                        </View>
+                                    </View>
+                                ) : p.status === "accepted" ? (
+                                    <View style={s.side}>
+                                        <Text style={[s.small, { color: C.green }]}>{t.statusAccepted}</Text>
+                                        <Pressable onPress={onOpenConnections} accessibilityRole="button">
+                                            <Text style={s.link}>{t.openConnection}</Text>
+                                        </Pressable>
+                                    </View>
                                 ) : (
-                                    <Text style={[s.small, { maxWidth: 110, textAlign: "right" }, p.status === "accepted" && { color: C.green }]}>
-                                        {{ sent: t.statusSent, accepted: t.statusAccepted, declined: t.statusDeclined, received: t.statusReceived }[p.status]}
+                                    <Text style={[s.small, { maxWidth: 110, textAlign: "right" }]}>
+                                        {p.status === "sent" ? t.statusSent : t.statusDeclined}
                                     </Text>
                                 )}
                             </View>
                         ))}
-                        <Text style={s.small}>
-                            {fillC(t.inviteSays, { invite: t.invite })}{" "}
-                            <Text style={s.quote}>“{fillC(MESSAGES.visitTogether[lang], { place: placeName })}”</Text>
-                        </Text>
+                        {/* What Invite sends – only when someone here can be invited. */}
+                        {list.some((p) => p.status === "none") ? (
+                            <Text style={s.small}>
+                                {fillC(t.inviteSays, { invite: t.invite })}{" "}
+                                <Text style={s.quote}>“{fillC(MESSAGES.visitTogether[lang], { place: placeName })}”</Text>
+                            </Text>
+                        ) : null}
                     </View>
                 )
             ) : null}
+            <NameEditor
+                visible={!!afterName}
+                note={t.needName}
+                onClose={() => setAfterName(null)}
+                onSaved={() => afterName?.()}
+            />
         </View>
+    );
+}
+
+function Btn({ label, onPress, primary, disabled }: { label: string; onPress: () => void; primary?: boolean; disabled?: boolean }) {
+    return (
+        <Pressable
+            onPress={onPress}
+            disabled={disabled}
+            style={[s.btn, primary && s.btnPrimary, disabled && { opacity: 0.5 }]}
+            accessibilityRole="button"
+        >
+            <Text style={[s.btnText, primary && { color: C.white }]}>{label}</Text>
+        </Pressable>
     );
 }
 
 const s = StyleSheet.create({
     wrap: { gap: 6, borderTopWidth: 1, borderTopColor: C.line, paddingTop: 8 },
-    row: { flexDirection: "row", alignItems: "center", gap: 10, flexWrap: "wrap" },
+    row: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
     want: { borderRadius: 20, borderWidth: 1, borderColor: C.line, backgroundColor: C.bg, paddingHorizontal: 14, paddingVertical: 8 },
     wantOn: { borderColor: "#a5d6a7", backgroundColor: "#e8f5e9" },
     wantText: { fontSize: 14, fontWeight: "600", color: C.blue },
     count: { fontSize: 13, color: C.muted, flex: 1 },
     link: { fontSize: 13, color: C.blue, fontWeight: "600" },
     person: { flexDirection: "row", alignItems: "center", gap: 10 },
+    side: { alignItems: "flex-end", gap: 4 },
     avatar: { width: 30, height: 30, borderRadius: 15, backgroundColor: "#7c3aed", alignItems: "center", justifyContent: "center" },
     avatarText: { color: C.white, fontWeight: "700", fontSize: 13 },
     name: { fontSize: 14, fontWeight: "700", color: C.ink },
     small: { fontSize: 12, color: C.muted },
     quote: { fontStyle: "italic", color: C.ink },
-    inviteBtn: { backgroundColor: C.blue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7 },
-    inviteText: { color: C.white, fontSize: 13, fontWeight: "600" },
+    btn: { borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1, borderColor: C.line, backgroundColor: C.bg },
+    btnPrimary: { backgroundColor: C.blue, borderColor: C.blue },
+    btnText: { fontSize: 13, fontWeight: "600", color: C.blue },
 });

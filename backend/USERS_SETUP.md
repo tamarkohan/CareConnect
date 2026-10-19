@@ -178,9 +178,24 @@ Summaries and payment explanations made before a language was added show in Engl
 ## "I want to go" (community places)
 
 Run `db/schema.sql` again once: it adds the `place_interests` table and a `place_id` column
-on `contact_requests`. A user on the caregivers list can mark a place (e.g. Nazareth); people
-from any city who want to go there see each other (first name + city) and can send the fixed
-"visit together" invitation. Leaving the list removes the user's places.
+on `contact_requests`. Anyone can mark a place (e.g. Nazareth); people from any city who want
+to go there see each other (first name + city) and can send the fixed "visit together"
+invitation, and accept or decline invitations right on the place card.
+
+Places don't need the "Near you → Caregivers" list. Run this once in the Supabase SQL Editor
+(also in `db/schema.sql`):
+
+```sql
+ALTER TABLE careconnect.community_profiles ADD COLUMN IF NOT EXISTS listed BOOLEAN NOT NULL DEFAULT true;
+```
+
+- Someone not on the list who marks a place or invites gets a profile with `listed = false`:
+  their account name (they're asked for it first) and the city chosen in "Where are you now?",
+  or no city. They don't appear on the Near-you list and can't be sent its messages; they can
+  only be invited to places they marked.
+- Their requests and connections (phone numbers) are in Near you → Caregivers, like everyone's.
+  Joining the list there makes the profile listed.
+- Leaving the list removes the user's places and connections, as before.
 
 ## The user's name, in every language's letters
 

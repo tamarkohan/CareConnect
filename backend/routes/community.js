@@ -2,17 +2,19 @@
  * routes/community.js   (all routes need a signed-in user; see services/community.js)
  *
  * GET  /api/community/me                 → { profile | null, requests: [...] }
+ *                                          profile.listed false: uses places only, not on the "Near you" list
  * POST /api/community/profile            Body: { displayName, city, neighborhood?, language? } → { profile }
  * POST /api/community/leave              → { success: true }   (removes you from the list)
- * GET  /api/community/people?city=&neighborhood=  → { people: [{ id, displayName, city, neighborhood, language, status }] }
+ * GET  /api/community/people?city=&neighborhood=  → { people: [{ id, displayName, names, city, neighborhood, language, status, requestId }] }
  * POST /api/community/request            Body: { to: <person id>, messageKey } → { success: true }
  * POST /api/community/respond            Body: { requestId, action: "accept" | "decline" | "block" } → { success: true }
  * POST /api/community/share-phone        Body: { requestId, phone } → { success: true }
  *
  * GET  /api/community/places             → { counts: { <place>: n others }, mine: [<place>] }
- * POST /api/community/places/interest    Body: { placeId, interested: boolean } → { success: true }
+ * POST /api/community/places/interest    Body: { placeId, interested: boolean, city?, neighborhood?, language? } → { success: true }
+ *                                          (no list needed: city etc. is what others see, see ensureMember)
  * GET  /api/community/places/people?placeId=  → { people: [...] }   (any city)
- * POST /api/community/request            also takes placeId with messageKey "visitTogether"
+ * POST /api/community/request            also takes placeId (+ city?, neighborhood?, language?) with messageKey "visitTogether"
  */
 
 const express = require("express");
@@ -57,9 +59,9 @@ router.get("/people", handle(async (req, res) => {
 }));
 
 router.post("/request", handle(async (req, res) => {
-  const { to, messageKey, placeId } = req.body || {};
+  const { to, messageKey, placeId, city, neighborhood, language } = req.body || {};
   if (!validUuid(to)) return res.status(400).json({ error: "Missing person." });
-  await community.sendRequest(req.user.id, to, messageKey, placeId || null);
+  await community.sendRequest(req.user.id, to, messageKey, placeId || null, { city, neighborhood, language });
   res.json({ success: true });
 }));
 
@@ -82,8 +84,8 @@ router.get("/places", handle(async (req, res) => {
 }));
 
 router.post("/places/interest", handle(async (req, res) => {
-  const { placeId, interested } = req.body || {};
-  await community.setPlaceInterest(req.user.id, placeId, interested === true);
+  const { placeId, interested, city, neighborhood, language } = req.body || {};
+  await community.setPlaceInterest(req.user.id, placeId, interested === true, { city, neighborhood, language });
   res.json({ success: true });
 }));
 

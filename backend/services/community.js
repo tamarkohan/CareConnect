@@ -11,9 +11,10 @@
  *    the other person of that request.
  *  - Limits: a few new requests a day, one request per pair (either way),
  *    and a block hides both people from each other for good.
- *  - Places: a user on the list can mark "I want to go" on a place (e.g.
- *    Nazareth); others who want to go there – from any city – can invite
- *    them with the fixed "visit together" message.
+ *  - Places: anyone can mark "I want to go" on a place (e.g. Nazareth);
+ *    others who want to go there – from any city – can invite them with the
+ *    fixed "visit together" message. This doesn't need the list: such a user
+ *    gets a profile that is not listed (not on "Near you"), see ensureMember.
  */
 
 const db = require("./db");
@@ -44,11 +45,14 @@ const clean = (v, max) => (typeof v === "string" ? v.trim().replace(/\s+/g, " ")
 
 async function getProfile(userId) {
   const { rows } = await db.query(
-    "SELECT public_id, display_name, city, neighborhood, language FROM community_profiles WHERE user_id = $1",
+    "SELECT public_id, display_name, city, neighborhood, language, listed FROM community_profiles WHERE user_id = $1",
     [userId]
   );
   const r = rows[0];
-  return r ? { id: r.public_id, displayName: r.display_name, city: r.city, neighborhood: r.neighborhood || "", language: r.language || "" } : null;
+  return r ? {
+    id: r.public_id, displayName: r.display_name, city: r.city, neighborhood: r.neighborhood || "", language: r.language || "",
+    listed: r.listed,   // false: uses places only, not on the "Near you" list
+  } : null;
 }
 
 /** The list name is the account name (one name, spelled in every alphabet: see names.js). */
@@ -58,12 +62,41 @@ async function saveProfile(userId, { displayName, city, neighborhood, language }
   if (!c) throw userError("Please choose your city.", "noCity");
   await names.setDisplayName(userId, name);
   await db.query(
-    `INSERT INTO community_profiles (user_id, display_name, city, neighborhood, language, updated_at)
-     VALUES ($1, $2, $3, $4, $5, now())
-     ON CONFLICT (user_id) DO UPDATE SET display_name = $2, city = $3, neighborhood = $4, language = $5, updated_at = now()`,
+    `INSERT INTO community_profiles (user_id, display_name, city, neighborhood, language, listed, updated_at)
+     VALUES ($1, $2, $3, $4, $5, true, now())
+     ON CONFLICT (user_id) DO UPDATE SET display_name = $2, city = $3, neighborhood = $4, language = $5, listed = true, updated_at = now()`,
     [userId, name, c, clean(neighborhood, 60) || null, LANGS.includes(language) ? language : null]
   );
   return getProfile(userId);
+}
+
+/**
+ * Places without joining the list: marking "I want to go" or sending a
+ * "visit together" invite gives the user a profile that is not listed, with
+ * their account name and the city chosen in the app ('' if none). Others see
+ * them only on the places they marked and in their requests.
+ */
+async function ensureMember(userId, { city, neighborhood, language } = {}) {
+  const c = clean(city, 60);
+  const loc = [c, (c && clean(neighborhood, 60)) || null, LANGS.includes(language) ? language : null];
+  const { rows: [p] } = await db.query("SELECT listed FROM community_profiles WHERE user_id = $1", [userId]);
+  if (p) {
+    // Not listed: the city follows the place chosen in the app.
+    if (!p.listed && c) {
+      await db.query(
+        "UPDATE community_profiles SET city = $2, neighborhood = $3, language = COALESCE($4, language), updated_at = now() WHERE user_id = $1",
+        [userId, ...loc]
+      );
+    }
+    return;
+  }
+  const { rows: [u] } = await db.query("SELECT display_name FROM users WHERE id = $1", [userId]);
+  if (!u?.display_name) throw userError("Please add your first name first.", "noName");
+  await db.query(
+    `INSERT INTO community_profiles (user_id, display_name, city, neighborhood, language, listed)
+     VALUES ($1, $2, $3, $4, $5, false) ON CONFLICT (user_id) DO NOTHING`,
+    [userId, u.display_name, ...loc]
+  );
 }
 
 /**
@@ -85,13 +118,13 @@ async function listPeople(userId, city, neighborhood) {
   if (!c) return [];
   const { rows } = await db.query(
     `SELECT p.public_id, p.display_name, p.city, p.neighborhood, p.language,
-            r.status AS request_status, (r.from_user = $1) AS sent_by_me,
+            r.id AS request_id, r.status AS request_status, (r.from_user = $1) AS sent_by_me,
             CASE WHEN u.display_name = p.display_name THEN u.display_name_i18n END AS names   -- spellings of this very name
      FROM community_profiles p
      JOIN users u ON u.id = p.user_id
      LEFT JOIN contact_requests r
        ON (r.from_user = $1 AND r.to_user = p.user_id) OR (r.to_user = $1 AND r.from_user = p.user_id)
-     WHERE p.city = $2 AND p.user_id <> $1
+     WHERE p.city = $2 AND p.user_id <> $1 AND p.listed
        AND (r.status IS NULL OR r.status <> 'blocked')
      ORDER BY (p.neighborhood IS NOT DISTINCT FROM $3) DESC, p.updated_at DESC
      LIMIT $4`,
@@ -107,6 +140,7 @@ const personRow = (r) => ({
   city: r.city,
   neighborhood: r.neighborhood || "",
   language: r.language || "",
+  requestId: r.request_id ? String(r.request_id) : null,   // to accept / decline right here
   // none | sent | received | accepted | declined
   status: !r.request_status ? "none"
     : r.request_status === "pending" ? (r.sent_by_me ? "sent" : "received")
@@ -137,10 +171,10 @@ async function placeSummary(userId) {
   };
 }
 
-async function setPlaceInterest(userId, placeId, interested) {
+async function setPlaceInterest(userId, placeId, interested, location) {
   if (!validPlace(placeId)) throw userError("Unknown place.", "badPlace");
   if (interested) {
-    if (!(await getProfile(userId))) throw userError("Join the caregivers list first.", "noProfile");
+    await ensureMember(userId, location);
     await db.query(
       "INSERT INTO place_interests (user_id, place_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
       [userId, placeId]
@@ -155,7 +189,7 @@ async function placePeople(userId, placeId) {
   if (!validPlace(placeId)) return [];
   const { rows } = await db.query(
     `SELECT p.public_id, p.display_name, p.city, p.neighborhood, p.language,
-            r.status AS request_status, (r.from_user = $1) AS sent_by_me,
+            r.id AS request_id, r.status AS request_status, (r.from_user = $1) AS sent_by_me,
             CASE WHEN u.display_name = p.display_name THEN u.display_name_i18n END AS names   -- spellings of this very name
      FROM place_interests i
      JOIN community_profiles p ON p.user_id = i.user_id
@@ -171,15 +205,24 @@ async function placePeople(userId, placeId) {
   return rows.map(personRow);
 }
 
-async function sendRequest(userId, toPublicId, messageKey, placeId = null) {
+async function sendRequest(userId, toPublicId, messageKey, placeId = null, location = {}) {
   if (!MESSAGE_KEYS.includes(messageKey)) throw userError("Please choose a message.", "badMessage");
+  const visit = messageKey === "visitTogether";
   // "Visit together" always names the place it's about.
-  if (messageKey === "visitTogether" ? !validPlace(placeId) : placeId) {
+  if (visit ? !validPlace(placeId) : placeId) {
     throw userError("Please choose a message.", "badMessage");
   }
-  if (!(await getProfile(userId))) throw userError("Join the caregivers list first.", "noProfile");
+  // Invites from a place need no list; the other messages are for the "Near you" list.
+  if (visit) await ensureMember(userId, location);
+  else if (!(await getProfile(userId))?.listed) throw userError("Join the caregivers list first.", "noProfile");
 
-  const { rows: [target] } = await db.query("SELECT user_id FROM community_profiles WHERE public_id = $1", [toPublicId]);
+  // Someone not on the list can be invited only to a place they want to go to.
+  const { rows: [target] } = await db.query(
+    `SELECT p.user_id FROM community_profiles p
+     WHERE p.public_id = $1 AND (p.listed OR ($2::text IS NOT NULL AND EXISTS (
+       SELECT 1 FROM place_interests i WHERE i.user_id = p.user_id AND i.place_id = $2)))`,
+    [toPublicId, visit ? placeId : null]
+  );
   if (!target || target.user_id === userId) throw userError("This person is no longer on the list.", "notFound", 404);
 
   const { rows: [{ n }] } = await db.query(
