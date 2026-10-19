@@ -1,7 +1,7 @@
 // ── communityStrings.ts ──────────────────────────────────────────────
 // Texts of the community page (map, caregivers list, contact requests) in
-// every app language. Tagalog, Malayalam and Russian should be checked by
-// native speakers. The fixed contact messages are in MESSAGES: people can
+// every app language. Tagalog, Malayalam, Russian, Hindi and Tamil should be
+// checked by native speakers. The fixed contact messages are in MESSAGES: people can
 // only send one of these, never their own text.
 import { LangCode } from "./translations";
 
@@ -51,6 +51,16 @@ type Strings = {
     saved: string;
     save: string;
     privacy: string;
+    // "I want to go" on places
+    wantToGo: string;
+    youWantToGo: string;
+    peopleWantToGo: string;        // {n}
+    nobodyYet: string;
+    showWho: string;
+    hideWho: string;
+    invite: string;
+    inviteConfirm: string;         // {name} {place}
+    joinFirst: string;
 };
 
 export const COMMUNITY_T: Record<LangCode, Strings> = {
@@ -97,6 +107,15 @@ export const COMMUNITY_T: Record<LangCode, Strings> = {
         saved: "Saved",
         save: "Save",
         privacy: "For your safety there is no chat and no photos: only fixed messages, and a phone number only if you choose to share it after accepting.",
+        wantToGo: "🙋 I want to go",
+        youWantToGo: "✓ You want to go (tap to remove)",
+        peopleWantToGo: "{n} caregivers want to go",
+        nobodyYet: "Nobody yet – be the first.",
+        showWho: "Show who",
+        hideWho: "Hide",
+        invite: "Invite",
+        inviteConfirm: "Invite {name} to visit {place} together?",
+        joinFirst: "To show others you want to go, first join the caregivers list above (Near you → Caregivers).",
     },
     tl: {
         openMap: "Buksan sa Google Maps",
@@ -141,6 +160,15 @@ export const COMMUNITY_T: Record<LangCode, Strings> = {
         saved: "Naka-save",
         save: "I-save",
         privacy: "Para sa kaligtasan mo, walang chat at walang picture: mga nakatakdang message lang, at phone number lang kung pipiliin mong ibahagi pagkatapos tanggapin.",
+        wantToGo: "🙋 Gusto kong pumunta",
+        youWantToGo: "✓ Gusto mong pumunta (i-tap para alisin)",
+        peopleWantToGo: "{n} caregiver ang gustong pumunta",
+        nobodyYet: "Wala pa – ikaw ang mauna.",
+        showWho: "Ipakita kung sino",
+        hideWho: "Itago",
+        invite: "Imbitahan",
+        inviteConfirm: "Imbitahan si {name} na pumunta sa {place} nang magkasama?",
+        joinFirst: "Para makita ng iba na gusto mong pumunta, sumali muna sa listahan ng caregivers sa itaas (Near you → Caregivers).",
     },
     ml: {
         openMap: "ഗൂഗിൾ മാപ്സിൽ തുറക്കുക",
@@ -185,6 +213,15 @@ export const COMMUNITY_T: Record<LangCode, Strings> = {
         saved: "സേവ് ചെയ്തു",
         save: "സേവ് ചെയ്യുക",
         privacy: "നിങ്ങളുടെ സുരക്ഷയ്ക്കായി ചാറ്റും ഫോട്ടോകളും ഇല്ല: നിശ്ചിത സന്ദേശങ്ങൾ മാത്രം, സ്വീകരിച്ചതിന് ശേഷം നിങ്ങൾ തീരുമാനിച്ചാൽ മാത്രം ഫോൺ നമ്പർ.",
+        wantToGo: "🙋 എനിക്ക് പോകണം",
+        youWantToGo: "✓ നിങ്ങൾക്ക് പോകണം (നീക്കാൻ ടാപ്പ് ചെയ്യുക)",
+        peopleWantToGo: "{n} പരിചാരകർക്ക് പോകണം",
+        nobodyYet: "ഇതുവരെ ആരുമില്ല – ആദ്യത്തെയാളാകൂ.",
+        showWho: "ആരൊക്കെ എന്ന് കാണിക്കുക",
+        hideWho: "മറയ്ക്കുക",
+        invite: "ക്ഷണിക്കുക",
+        inviteConfirm: "{name}-നെ ഒരുമിച്ച് {place} സന്ദർശിക്കാൻ ക്ഷണിക്കണോ?",
+        joinFirst: "നിങ്ങൾക്ക് പോകണമെന്ന് മറ്റുള്ളവർ കാണാൻ, ആദ്യം മുകളിലെ പരിചാരകരുടെ ലിസ്റ്റിൽ ചേരുക (Near you → Caregivers).",
     },
     ru: {
         openMap: "Открыть в Google Maps",
@@ -229,40 +266,176 @@ export const COMMUNITY_T: Record<LangCode, Strings> = {
         saved: "Сохранено",
         save: "Сохранить",
         privacy: "Для вашей безопасности здесь нет чата и фото: только готовые сообщения, а номер телефона – только если вы решите им поделиться после принятия запроса.",
+        wantToGo: "🙋 Хочу поехать",
+        youWantToGo: "✓ Вы хотите поехать (нажмите, чтобы убрать)",
+        peopleWantToGo: "Хотят поехать: {n}",
+        nobodyYet: "Пока никого – будьте первой.",
+        showWho: "Показать кто",
+        hideWho: "Скрыть",
+        invite: "Пригласить",
+        inviteConfirm: "Пригласить {name} вместе посетить {place}?",
+        joinFirst: "Чтобы другие видели, что вы хотите поехать, сначала присоединитесь к списку сиделок выше (Рядом с вами → Сиделки).",
+    },
+    hi: {
+        openMap: "Google Maps में खोलें",
+        searchOnMap: "नक्शे पर खोजें",
+        pickCityFirst: "नक्शा देखने के लिए नीचे अपना शहर चुनें।",
+        mapCategory: { clinics: "clinic", taxis: "taxi station", atms: "ATM or bank" },
+        joinTitle: "अपने शहर के केयरगिवर से मिलें",
+        joinBody: "सूची में शामिल हों ताकि आपके शहर के दूसरे केयरगिवर आपसे जुड़ने का अनुरोध कर सकें। दूसरों को सिर्फ़ आपका पहला नाम और आपका चुना हुआ शहर व इलाका दिखता है – कभी आपकी लोकेशन, फ़ोन या फ़ोटो नहीं।",
+        firstName: "आपका पहला नाम",
+        join: "सूची में शामिल हों",
+        leave: "सूची छोड़ें",
+        leaveConfirm: "केयरगिवर सूची छोड़ें? दूसरे आपको नहीं देख पाएँगे, और आपके कनेक्शन व आपके शेयर किए फ़ोन नंबर हटा दिए जाएँगे।",
+        youAppearAs: "दूसरों को आप ऐसे दिखते हैं: {name} · {place}",
+        noPeople: "इस शहर में अभी सूची में कोई दूसरा केयरगिवर नहीं है।",
+        askToConnect: "जुड़ने का अनुरोध",
+        chooseMessage: "एक संदेश चुनें",
+        send: "भेजें",
+        cancel: "रद्द करें",
+        statusSent: "अनुरोध भेजा गया",
+        statusAccepted: "जुड़े हुए",
+        statusDeclined: "स्वीकार नहीं हुआ",
+        statusReceived: "जुड़ना चाहते हैं",
+        requestsTitle: "आपके लिए अनुरोध",
+        wantsToConnect: "{name} जुड़ना चाहते हैं:",
+        accept: "स्वीकार करें",
+        decline: "मना करें",
+        block: "ब्लॉक करें",
+        blockConfirm: "इस व्यक्ति को ब्लॉक करें? आप एक-दूसरे को नहीं देख पाएँगे, और शेयर किए फ़ोन नंबर मिटा दिए जाएँगे।",
+        contactsTitle: "मेरे कनेक्शन",
+        closeAll: "सब बंद करें",
+        sharePhone: "मेरा फ़ोन नंबर शेयर करें",
+        sharePhoneHint: "सिर्फ़ यही व्यक्ति इसे देखेगा। सिर्फ़ अंक, जैसे 0501234567 (या + और देश का कोड)।",
+        phonePlaceholder: "आपका फ़ोन नंबर",
+        shared: "आपने शेयर किया: {phone}",
+        theirPhone: "{name} का नंबर:",
+        waitingForPhone: "{name} ने अभी नंबर शेयर नहीं किया है।",
+        call: "कॉल करें",
+        whatsapp: "WhatsApp",
+        demo: "डेमो",
+        demoNoLink: "यह एक उदाहरण है – असली लिंक अभी नहीं जोड़ा गया।",
+        directions: "रास्ता (बस / ट्रेन)",
+        saved: "सहेजा गया",
+        save: "सहेजें",
+        privacy: "आपकी सुरक्षा के लिए यहाँ न चैट है न फ़ोटो: सिर्फ़ तय संदेश, और फ़ोन नंबर तभी जब आप अनुरोध स्वीकार होने के बाद खुद शेयर करें।",
+        wantToGo: "🙋 मैं जाना चाहती/चाहता हूँ",
+        youWantToGo: "✓ आप जाना चाहते हैं (हटाने के लिए टैप करें)",
+        peopleWantToGo: "{n} केयरगिवर जाना चाहते हैं",
+        nobodyYet: "अभी कोई नहीं – आप पहले बनें।",
+        showWho: "कौन, दिखाएँ",
+        hideWho: "छिपाएँ",
+        invite: "आमंत्रित करें",
+        inviteConfirm: "{name} को साथ में {place} चलने के लिए आमंत्रित करें?",
+        joinFirst: "दूसरों को दिखाने के लिए कि आप जाना चाहते हैं, पहले ऊपर केयरगिवर सूची में शामिल हों (आपके पास → केयरगिवर)।",
+    },
+    ta: {
+        openMap: "Google Maps-இல் திற",
+        searchOnMap: "வரைபடத்தில் தேடு",
+        pickCityFirst: "வரைபடத்தைப் பார்க்க கீழே உங்கள் நகரத்தைத் தேர்வு செய்யுங்கள்.",
+        mapCategory: { clinics: "clinic", taxis: "taxi station", atms: "ATM or bank" },
+        joinTitle: "உங்கள் நகரப் பராமரிப்பாளர்களைச் சந்தியுங்கள்",
+        joinBody: "பட்டியலில் சேருங்கள், உங்கள் நகரத்தில் உள்ள மற்ற பராமரிப்பாளர்கள் உங்களுடன் இணைய கோரிக்கை அனுப்பலாம். மற்றவர்கள் உங்கள் முதல் பெயரையும் நீங்கள் தேர்ந்தெடுத்த நகரம், பகுதியையும் மட்டுமே பார்ப்பார்கள் – உங்கள் இருப்பிடம், தொலைபேசி அல்லது புகைப்படம் ஒருபோதும் இல்லை.",
+        firstName: "உங்கள் முதல் பெயர்",
+        join: "பட்டியலில் சேர்",
+        leave: "பட்டியலிலிருந்து விலகு",
+        leaveConfirm: "பராமரிப்பாளர் பட்டியலிலிருந்து விலகவா? மற்றவர்கள் இனி உங்களைப் பார்க்க மாட்டார்கள், உங்கள் இணைப்புகளும் நீங்கள் பகிர்ந்த தொலைபேசி எண்களும் நீக்கப்படும்.",
+        youAppearAs: "மற்றவர்கள் உங்களைப் பார்ப்பது: {name} · {place}",
+        noPeople: "இந்த நகரத்தில் பட்டியலில் இன்னும் வேறு பராமரிப்பாளர்கள் இல்லை.",
+        askToConnect: "இணைய கோரிக்கை",
+        chooseMessage: "ஒரு செய்தியைத் தேர்வு செய்யுங்கள்",
+        send: "அனுப்பு",
+        cancel: "ரத்து",
+        statusSent: "கோரிக்கை அனுப்பப்பட்டது",
+        statusAccepted: "இணைந்தது",
+        statusDeclined: "ஏற்கப்படவில்லை",
+        statusReceived: "இணைய விரும்புகிறார்",
+        requestsTitle: "உங்களுக்கான கோரிக்கைகள்",
+        wantsToConnect: "{name} இணைய விரும்புகிறார்:",
+        accept: "ஏற்றுக்கொள்",
+        decline: "மறு",
+        block: "தடு",
+        blockConfirm: "இவரைத் தடுக்கவா? நீங்கள் ஒருவரையொருவர் இனி பார்க்க மாட்டீர்கள், பகிர்ந்த தொலைபேசி எண்களும் நீக்கப்படும்.",
+        contactsTitle: "என் இணைப்புகள்",
+        closeAll: "அனைத்தையும் மூடு",
+        sharePhone: "என் தொலைபேசி எண்ணைப் பகிர்",
+        sharePhoneHint: "இவர் மட்டுமே பார்ப்பார். எண்கள் மட்டும், எ.கா. 0501234567 (அல்லது + மற்றும் நாட்டுக் குறியீடு).",
+        phonePlaceholder: "உங்கள் தொலைபேசி எண்",
+        shared: "நீங்கள் பகிர்ந்தது: {phone}",
+        theirPhone: "{name}-இன் எண்:",
+        waitingForPhone: "{name} இன்னும் எண்ணைப் பகிரவில்லை.",
+        call: "அழை",
+        whatsapp: "WhatsApp",
+        demo: "டெமோ",
+        demoNoLink: "இது ஒரு உதாரணம் – உண்மையான இணைப்பு இன்னும் சேர்க்கப்படவில்லை.",
+        directions: "வழி (பேருந்து / ரயில்)",
+        saved: "சேமிக்கப்பட்டது",
+        save: "சேமி",
+        privacy: "உங்கள் பாதுகாப்புக்காக உரையாடலும் புகைப்படங்களும் இல்லை: நிலையான செய்திகள் மட்டுமே, கோரிக்கையை ஏற்ற பிறகு நீங்கள் விரும்பினால் மட்டுமே தொலைபேசி எண்.",
+        wantToGo: "🙋 நான் போக விரும்புகிறேன்",
+        youWantToGo: "✓ நீங்கள் போக விரும்புகிறீர்கள் (நீக்க தட்டவும்)",
+        peopleWantToGo: "{n} பராமரிப்பாளர்கள் போக விரும்புகிறார்கள்",
+        nobodyYet: "இன்னும் யாரும் இல்லை – முதலில் நீங்கள்.",
+        showWho: "யார் என்று காட்டு",
+        hideWho: "மறை",
+        invite: "அழைப்பு அனுப்பு",
+        inviteConfirm: "{name}-ஐ சேர்ந்து {place} செல்ல அழைக்கவா?",
+        joinFirst: "நீங்கள் போக விரும்புவதை மற்றவர்கள் பார்க்க, முதலில் மேலே உள்ள பராமரிப்பாளர் பட்டியலில் சேருங்கள் (உங்கள் அருகில் → பராமரிப்பாளர்கள்).",
     },
 };
 
-/** The only messages a contact request can carry (keys must match backend/services/community.js). */
+/**
+ * The only messages a contact request can carry (keys must match backend/services/community.js).
+ * "visitTogether" is sent only from a place's "I want to go" list and names the place.
+ */
 export const MESSAGES: Record<string, Record<LangCode, string>> = {
     hello: {
         en: "Hi! I'm a caregiver in your area. Would you like to be in touch?",
         tl: "Hi! Caregiver din ako sa lugar mo. Gusto mo bang magkakilala tayo?",
         ml: "ഹായ്! ഞാൻ നിങ്ങളുടെ പ്രദേശത്തെ ഒരു പരിചാരകയാണ്. നമുക്ക് ബന്ധപ്പെടാമോ?",
         ru: "Привет! Я сиделка из вашего района. Давайте познакомимся?",
+        hi: "नमस्ते! मैं आपके इलाके की केयरगिवर हूँ। क्या हम संपर्क में रहें?",
+        ta: "வணக்கம்! நான் உங்கள் பகுதியில் உள்ள பராமரிப்பாளர். நாம் தொடர்பில் இருக்கலாமா?",
     },
     newInArea: {
         en: "I'm new in this area. Could you give me some tips?",
         tl: "Bago lang ako sa lugar na ito. Puwede mo ba akong bigyan ng tips?",
         ml: "ഞാൻ ഈ പ്രദേശത്ത് പുതിയതാണ്. ചില നുറുങ്ങുകൾ തരാമോ?",
         ru: "Я недавно в этом районе. Можете подсказать что-нибудь полезное?",
+        hi: "मैं इस इलाके में नई हूँ। क्या आप मुझे कुछ सुझाव दे सकती हैं?",
+        ta: "நான் இந்தப் பகுதிக்குப் புதியவர். சில குறிப்புகள் தர முடியுமா?",
     },
     dayOff: {
         en: "Would you like to meet on our day off?",
         tl: "Gusto mo bang magkita tayo sa day off natin?",
         ml: "നമ്മുടെ അവധി ദിവസം കണ്ടുമുട്ടാമോ?",
         ru: "Хотите встретиться в выходной?",
+        hi: "क्या आप हमारी छुट्टी के दिन मिलना चाहेंगी?",
+        ta: "நம் விடுமுறை நாளில் சந்திக்கலாமா?",
     },
     sameLanguage: {
         en: "I'm looking for someone who speaks my language.",
         tl: "Naghahanap ako ng kausap na pareho ang wika ko.",
         ml: "എന്റെ ഭാഷ സംസാരിക്കുന്ന ഒരാളെ ഞാൻ തിരയുകയാണ്.",
         ru: "Ищу человека, который говорит на моём языке.",
+        hi: "मुझे कोई ऐसा चाहिए जो मेरी भाषा बोलता हो।",
+        ta: "என் மொழி பேசும் ஒருவரைத் தேடுகிறேன்.",
+    },
+    visitTogether: {
+        en: "Would you like to visit {place} together?",
+        tl: "Gusto mo bang pumunta tayo sa {place} nang magkasama?",
+        ml: "നമുക്ക് ഒരുമിച്ച് {place} സന്ദർശിക്കാമോ?",
+        ru: "Хотите вместе посетить {place}?",
+        hi: "क्या आप साथ में {place} चलना चाहेंगी?",
+        ta: "நாம் சேர்ந்து {place} செல்லலாமா?",
     },
     advice: {
         en: "Can I ask you for advice about caregiving work?",
         tl: "Puwede ba akong humingi ng payo tungkol sa trabaho ng caregiver?",
         ml: "പരിചരണ ജോലിയെക്കുറിച്ച് ഉപദേശം ചോദിക്കാമോ?",
         ru: "Можно спросить у вас совета о работе сиделки?",
+        hi: "क्या मैं आपसे देखभाल के काम के बारे में सलाह ले सकती हूँ?",
+        ta: "பராமரிப்பு வேலை பற்றி உங்களிடம் ஆலோசனை கேட்கலாமா?",
     },
 };
 

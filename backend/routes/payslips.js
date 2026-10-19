@@ -2,7 +2,10 @@
  * routes/payslips.js   (all routes need a signed-in user)
  *
  * GET  /api/payslips          → { payslips: [{ id, fileName, period, employer, gross, net, en, tl, ml, ru, createdAt }] }
- * POST /api/payslips/upload   Body: { files: [{ base64, mimeType, name }] }  one PDF / Word file or up to 5 photos
+ * The "Payments" page: payslips and other payment documents (an Excel / CSV table of hours and
+ * salary, a salary calculation…). URLs keep the name "payslips".
+ *
+ * POST /api/payslips/upload   Body: { files: [{ base64, mimeType, name }] }  one PDF / Word / Excel / CSV file or up to 5 photos
  *                             → { payslip }   (read, explained in every app language, stored encrypted)
  * GET  /api/payslips/:id/files → { files: [{ name, mimeType, base64 }] }   the original files, to download
  * POST /api/payslips/explain-line Body: { id, line, language: "en"|"tl"|"ml"|"ru" } → { text }
@@ -28,7 +31,7 @@ router.get("/", async (req, res, next) => {
 
 router.post("/upload", async (req, res) => {
   try {
-    const { text, fileName } = await readContractFiles(req.body.files, "an Israeli payslip");
+    const { text, fileName } = await readContractFiles(req.body.files, "an Israeli payslip or another payment document (e.g. a table of hours and salary)");
     const explanation = await payslips.explainPayslip(text);
     const payslip = await payslips.addPayslip(req.user.id, { fileName, text, ...explanation }, req.body.files);
     console.log(`[payslips] Payslip explained (${text.length} chars)`);
@@ -60,7 +63,7 @@ router.post("/explain-line", async (req, res) => {
     if (!validId(id) || typeof line !== "string" || !line.trim() || line.length > 200) {
       return res.status(400).json({ error: "Missing payslip line." });
     }
-    const text = await payslips.explainLine(req.user.id, String(id), line, ["en", "tl", "ml", "ru"].includes(language) ? language : "en");
+    const text = await payslips.explainLine(req.user.id, String(id), line, ["en", "tl", "ml", "ru", "hi", "ta"].includes(language) ? language : "en");
     if (text === null) return res.status(404).json({ error: "Payslip not found." });
     res.json({ text });
   } catch (err) {

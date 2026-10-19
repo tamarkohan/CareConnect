@@ -29,10 +29,10 @@ const Color = {
 // ── Tool card data ───────────────────────────────────────────────────
 // Each card opens its page: InfoScreen shows the content in infoPages.ts.
 const TOOLS = [
-    { id: "1", labelKey: "arrivalGuides" as const, emoji: "▶", screen: "Info", params: { page: "arrival" } },
-    { id: "2", labelKey: "safetyShelters" as const, emoji: "⚠", screen: "Info", params: { page: "safety" } },
+    { id: "1", labelKey: "arrivalGuides" as const, emoji: "✈️", screen: "Info", params: { page: "arrival" } },
+    { id: "2", labelKey: "safetyShelters" as const, emoji: "⚠️", screen: "Info", params: { page: "safety" } },
     { id: "3", labelKey: "migrationSupport" as const, emoji: "🌐", screen: "Info", params: { page: "migration" } },
-    { id: "4", labelKey: "payslips" as const, emoji: "🧾", screen: "Payslips" },
+    { id: "4", labelKey: "payslips" as const, emoji: "💵", screen: "Payslips" },
     { id: "5", labelKey: "publicTransport" as const, emoji: "🚌", screen: "Info", params: { page: "transport" } },
     { id: "6", labelKey: "remittanceApps" as const, emoji: "💲", screen: "Remittance" },
     { id: "7", labelKey: "faqElderly" as const, emoji: "📍", screen: "Info", params: { page: "faq" } },
@@ -42,9 +42,9 @@ const TOOLS = [
 // Tapping one calls the number directly. Kept in number order (100, 101, 102).
 // All numbers are on the agency page.
 const EMERGENCY = [
-    { number: "100", emoji: "👮", label: { en: "Police", tl: "Pulis", ml: "പോലീസ്", ru: "Полиция" } },
-    { number: "101", emoji: "🚑", label: { en: "Ambulance", tl: "Ambulansya", ml: "ആംബുലൻസ്", ru: "Скорая" } },
-    { number: "102", emoji: "🚒", label: { en: "Fire", tl: "Bumbero", ml: "അഗ്നിശമനം", ru: "Пожарные" } },
+    { number: "100", emoji: "👮", label: { en: "Police", tl: "Pulis", ml: "പോലീസ്", ru: "Полиция", hi: "पुलिस", ta: "காவல்துறை" } },
+    { number: "101", emoji: "🚑", label: { en: "Ambulance", tl: "Ambulansya", ml: "ആംബുലൻസ്", ru: "Скорая", hi: "एम्बुलेंस", ta: "ஆம்புலன்ஸ்" } },
+    { number: "102", emoji: "🚒", label: { en: "Fire", tl: "Bumbero", ml: "അഗ്നിശമനം", ru: "Пожарные", hi: "दमकल", ta: "தீயணைப்பு" } },
 ] as const;
 
 // ── Bottom nav items ─────────────────────────────────────────────────

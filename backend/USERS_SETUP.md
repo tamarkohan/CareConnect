@@ -149,3 +149,35 @@ Run `db/schema.sql` again once to add `community_profiles` and `contact_requests
   stored encrypted and shown only to the other person. Either side can block at any time.
 - Old pending / declined requests are removed after 90 days by the nightly job.
 - The map is Google's free embed (`google.com/maps?q=…&output=embed`, no API key).
+
+## Payments page (was "Payslips")
+
+Caregivers upload whatever they get for their salary: a payslip (PDF, Word, photo) or an
+**Excel (.xlsx) / CSV** table of hours and salary (read with `exceljs`). Each one gets a
+`kind` (payslip / hoursSheet / other) and is explained in every app language. The API and
+tables keep the old name `payslips`.
+
+## Languages: English, Tagalog, Malayalam, Russian, Hindi, Tamil
+
+Gemini already reads and writes Hindi and Tamil – no training is needed. What makes a
+language "full" in CareConnect:
+
+1. **App texts** – `src/translations.ts`, `src/botStrings.ts`, `src/pageStrings.ts`,
+   `src/communityStrings.ts`, and for the long page content the dictionaries
+   `src/i18n/hi.ts` / `src/i18n/ta.ts` (English sentence → translation).
+2. **The bots** – the language is listed in `routes/translate.js` (target + reader script),
+   the contract summary (`services/contractReader.js`) and payment explanations
+   (`services/payslips.js`); the legal assistant answers in whatever language the app sends.
+3. **Native-speaker check** – run a language test like the Tagalog one
+   (`npm run language-test`, with a `data/language-test-<lang>.json`), give the sheet to
+   caregivers, and put their corrections in `data/translation-style.json` – the translator
+   then follows them, as it does for Tagalog.
+
+Summaries and payment explanations made before a language was added show in English.
+
+## "I want to go" (community places)
+
+Run `db/schema.sql` again once: it adds the `place_interests` table and a `place_id` column
+on `contact_requests`. A user on the caregivers list can mark a place (e.g. Nazareth); people
+from any city who want to go there see each other (first name + city) and can send the fixed
+"visit together" invitation. Leaving the list removes the user's places.

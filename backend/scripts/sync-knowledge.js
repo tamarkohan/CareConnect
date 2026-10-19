@@ -157,6 +157,12 @@ async function main() {
            NOT EXISTS (SELECT 1 FROM community_profiles p WHERE p.user_id = r.to_user))`
       );
       if (orphans) console.log(`Removed ${orphans} connection(s) of people who left the list.`);
+      const { rows: [{ ok: hasPlaces }] } = await db.query("SELECT to_regclass('place_interests') IS NOT NULL AS ok");
+      if (hasPlaces) {
+        await db.query(
+          "DELETE FROM place_interests i WHERE NOT EXISTS (SELECT 1 FROM community_profiles p WHERE p.user_id = i.user_id)"
+        );
+      }
     }
   } else {
     console.warn("Users tables missing: run db/schema.sql again in Supabase.");

@@ -1,7 +1,7 @@
 // ── RemittanceScreen.tsx ─────────────────────────────────────────────
 // Currency converter (today's rates, from the backend) + information about
 // remittance apps. The first currencies depend on the app language: Tagalog
-// starts with Philippine pesos, Malayalam with Indian rupees; English and
+// starts with Philippine pesos, Malayalam / Hindi / Tamil with Indian rupees; English and
 // Russian start with dollars and shekels. Every row can be changed.
 import * as React from "react";
 import { View, Text, TextInput, Pressable, Modal, FlatList, StyleSheet, ActivityIndicator, Linking } from "react-native";
@@ -47,6 +47,8 @@ const DEFAULTS: Record<LangCode, string[]> = {
     tl: ["PHP", "USD", "ILS"],
     ml: ["INR", "USD", "ILS"],
     ru: ["USD", "ILS"],
+    hi: ["INR", "USD", "ILS"],
+    ta: ["INR", "USD", "ILS"],
 };
 const MAX_ROWS = 5;
 

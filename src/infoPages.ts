@@ -5,6 +5,7 @@
 // render whatever is here. Tagalog, Malayalam and Russian should be checked by
 // native speakers. Phone numbers and links were checked in October 2026.
 import { LangCode } from "./translations";
+import { more, moreList } from "./i18n/moreLanguages";
 
 export type Txt = Record<LangCode, string>;
 export type InfoLink = { label: Txt; url: string };
@@ -19,8 +20,9 @@ export type InfoSection = {
 };
 export type InfoPage = { title: Txt; icon: string; intro?: Txt; sections: InfoSection[] };
 
-const t = (en: string, tl: string, ml: string, ru: string): Txt => ({ en, tl, ml, ru });
-const list = (en: string[], tl: string[], ml: string[], ru: string[]) => ({ en, tl, ml, ru });
+// Hindi and Tamil come from the dictionaries in src/i18n (looked up by the English text).
+const t = (en: string, tl: string, ml: string, ru: string): Txt => ({ en, tl, ml, ru, ...more(en) });
+const list = (en: string[], tl: string[], ml: string[], ru: string[]) => ({ en, tl, ml, ru, ...moreList(en) });
 
 /** App-store search, so the link always finds the current app. */
 const playSearch = (q: string) => `https://play.google.com/store/search?q=${encodeURIComponent(q)}&c=apps`;
@@ -79,7 +81,7 @@ export const INFO_PAGES = {
     },
 
     arrival: {
-        icon: "▶",
+        icon: "✈️",
         title: t("Arrival guides", "Gabay sa pagdating", "വരവ് ഗൈഡുകൾ", "Гиды по прибытию"),
         intro: t("Your first weeks in Israel.", "Ang mga unang linggo mo sa Israel.", "ഇസ്രായേലിലെ നിങ്ങളുടെ ആദ്യ ആഴ്ചകൾ.", "Ваши первые недели в Израиле."),
         sections: [
@@ -97,7 +99,7 @@ export const INFO_PAGES = {
     },
 
     safety: {
-        icon: "⚠",
+        icon: "⚠️",
         title: t("Safety & shelters", "Kaligtasan at tirahan", "സുരക്ഷയും അഭയവും", "Безопасность и убежища"),
         intro: t(
             "What to do when there is a rocket alert, and which apps warn you.",
@@ -325,6 +327,15 @@ export const REMITTANCE_SECTIONS: InfoSection[] = [
 // ── Payslips page (below the uploaded payslips) ─────────────────────
 
 export const PAYSLIP_SECTIONS: InfoSection[] = [
+    {
+        title: t("Payslip, Excel or a list – keep them all", "Payslip, Excel o listahan – itago lahat", "ശമ്പള സ്ലിപ്പ്, എക്സൽ അല്ലെങ്കിൽ ലിസ്റ്റ് – എല്ലാം സൂക്ഷിക്കുക", "Расчётный лист, Excel или список – храните всё"),
+        body: t(
+            "Some caregivers get a payslip, others an Excel sheet or a list with their hours and salary. Upload whatever you get: it is explained in your language and kept safe here. A table of hours doesn't replace a payslip – your employer must still give you a payslip every month.",
+            "May caregiver na nakakatanggap ng payslip, ang iba naman ay Excel o listahan ng oras at sahod. I-upload kung ano ang natatanggap mo: ipapaliwanag ito sa wika mo at itatago nang ligtas dito. Hindi kapalit ng payslip ang listahan ng oras – dapat ka pa ring bigyan ng employer ng payslip bawat buwan.",
+            "ചില പരിചാരകർക്ക് ശമ്പള സ്ലിപ്പ് ലഭിക്കുന്നു, മറ്റുള്ളവർക്ക് മണിക്കൂറുകളും ശമ്പളവുമുള്ള എക്സൽ ഷീറ്റോ ലിസ്റ്റോ. ലഭിക്കുന്നതെന്തും അപ്‌ലോഡ് ചെയ്യുക: അത് നിങ്ങളുടെ ഭാഷയിൽ വിശദീകരിക്കുകയും ഇവിടെ സുരക്ഷിതമായി സൂക്ഷിക്കുകയും ചെയ്യും. മണിക്കൂറുകളുടെ പട്ടിക ശമ്പള സ്ലിപ്പിന് പകരമല്ല – തൊഴിലുടമ എല്ലാ മാസവും ശമ്പള സ്ലിപ്പ് നൽകണം.",
+            "Кто-то получает расчётный лист, кто-то – таблицу Excel или список с часами и зарплатой. Загружайте то, что получаете: всё будет объяснено на вашем языке и сохранено здесь. Таблица часов не заменяет расчётный лист – работодатель всё равно обязан выдавать его каждый месяц."
+        ),
+    },
     {
         title: t("What a payslip must show", "Ano ang dapat nasa payslip", "ശമ്പള സ്ലിപ്പിൽ ഉണ്ടായിരിക്കേണ്ടത്", "Что должно быть в расчётном листе"),
         body: t(

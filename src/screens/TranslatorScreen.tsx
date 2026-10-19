@@ -111,12 +111,16 @@ const SEED_TRANSLATIONS: TranslationEntry[] = [
             tl: "Lakachat pa'amayim bayom acharei ha'ochel",
             ml: "ലകാഹത് പഅമായിം ബയോം അഹറേയ് ഹാഓഹെൽ",
             ru: "Лакахат паамаим баём ахарей аохель",
+            hi: "लकाखत पामइम बयोम अखरेई हाओखेल",
+            ta: "லகாஹத் பஅமாயிம் பயோம் அஹரேய் ஹாஒஹெல்",
         },
         translated: {
             en: "Take twice a day after meals.",
             tl: "Inumin nang dalawang beses sa isang araw pagkatapos kumain.",
             ml: "ഭക്ഷണത്തിന് ശേഷം ദിവസത്തിൽ രണ്ടു തവണ കഴിക്കുക.",
             ru: "Принимайте два раза в день после еды.",
+            hi: "खाने के बाद दिन में दो बार लें।",
+            ta: "உணவுக்குப் பிறகு நாளுக்கு இரண்டு முறை எடுத்துக்கொள்ளவும்.",
         },
     },
     {
@@ -129,18 +133,24 @@ const SEED_TRANSLATIONS: TranslationEntry[] = [
             tl: "Hu hayom ktzat sachut",
             ml: "ഹു ഹയോം ക്റ്റാറ്റ് സഹൂത്",
             ru: "Ху хайом ктцат сахут",
+            hi: "हू हयोम क्त्सत सखूत",
+            ta: "ஹு ஹயோம் க்ட்ஸத் சஹூத்",
         },
         translated: {
             en: "He's a bit exhausted today.",
             tl: "Medyo pagod siya ngayon.",
             ml: "അവന് ഇന്ന് അല്പം ക്ഷീണിതനാണ്.",
             ru: "Он сегодня немного вымотан.",
+            hi: "वह आज थोड़ा थका हुआ है।",
+            ta: "அவர் இன்று கொஞ்சம் சோர்வாக இருக்கிறார்.",
         },
         note: {
             en: "(Lit: he is wrung out)",
             tl: "(Literal: siya ay pinigain)",
             ml: "(അക്ഷരാർത്ഥത്തിൽ: അവൻ പിഴിഞ്ഞെടുത്തു)",
             ru: "(Букв.: он выжат)",
+            hi: "(शब्दशः: वह निचोड़ा हुआ है)",
+            ta: "(நேரடிப் பொருள்: அவர் பிழியப்பட்டவர்)",
         },
     },
     {
@@ -153,18 +163,22 @@ const SEED_TRANSLATIONS: TranslationEntry[] = [
             tl: "Tachana Merkazit",
             ml: "തഹാന മെർകസീത്",
             ru: "Тахана Мерказит",
+            hi: "तखाना मर्कज़ीत",
+            ta: "தஹானா மெர்காசித்",
         },
         translated: {
             en: "Central Station",
             tl: "Sentral na Istasyon",
             ml: "സെൻട്രൽ സ്റ്റേഷൻ",
             ru: "Центральная станция",
+            hi: "केंद्रीय बस स्टेशन",
+            ta: "மத்திய பேருந்து நிலையம்",
         },
     },
 ];
 
 // ── Language options (must match what backend supports) ──────────────
-const TARGET_LANGS = ["Hebrew", "English", "Tagalog", "Malayalam", "Russian"];
+const TARGET_LANGS = ["Hebrew", "English", "Tagalog", "Malayalam", "Russian", "Hindi", "Tamil"];
 
 
 /** A translation from the server (or just made) → a card in the list. */

@@ -168,6 +168,18 @@ CREATE TABLE IF NOT EXISTS contact_requests (
   CHECK (from_user <> to_user)
 );
 CREATE INDEX IF NOT EXISTS contact_requests_to_idx ON contact_requests (to_user, status);
+-- "Visit together" requests name the place (e.g. "nazareth").
+ALTER TABLE contact_requests ADD COLUMN IF NOT EXISTS place_id TEXT CHECK (char_length(place_id) <= 40);
+
+-- "I want to go there": places (e.g. Nazareth) a user on the list wants to visit,
+-- so others who want to go can invite them. Removed when they leave the list.
+CREATE TABLE IF NOT EXISTS place_interests (
+  user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  place_id   TEXT NOT NULL CHECK (char_length(place_id) <= 40),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, place_id)
+);
+CREATE INDEX IF NOT EXISTS place_interests_place_idx ON place_interests (place_id);
 
 -- ── Lock the tables down for Supabase's API roles ───────────────────────────
 -- Row Level Security on with no policies = anon/authenticated see nothing.
@@ -183,6 +195,7 @@ ALTER TABLE payslips       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payslip_files  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE community_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE contact_requests   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE place_interests    ENABLE ROW LEVEL SECURITY;
 
 DO $$
 BEGIN

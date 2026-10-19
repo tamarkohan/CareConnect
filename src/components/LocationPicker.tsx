@@ -18,6 +18,8 @@ const STR: Record<LangCode, Record<"where" | "city" | "neighborhood" | "chooseCi
     tl: { where: "Nasaan ka ngayon?", city: "Lungsod / bayan", neighborhood: "Lugar (neighborhood)", chooseCity: "Piliin ang lungsod mo", chooseNeighborhood: "Piliin ang lugar mo", typeNeighborhood: "I-type ang lugar mo", search: "Hanapin", cancel: "Kanselahin", whole: "Buong lungsod" },
     ml: { where: "നിങ്ങൾ ഇപ്പോൾ എവിടെയാണ്?", city: "നഗരം / പട്ടണം", neighborhood: "പ്രദേശം", chooseCity: "നിങ്ങളുടെ നഗരം തിരഞ്ഞെടുക്കുക", chooseNeighborhood: "നിങ്ങളുടെ പ്രദേശം തിരഞ്ഞെടുക്കുക", typeNeighborhood: "നിങ്ങളുടെ പ്രദേശം ടൈപ്പ് ചെയ്യുക", search: "തിരയുക", cancel: "റദ്ദാക്കുക", whole: "മുഴുവൻ നഗരം" },
     ru: { where: "Где вы сейчас?", city: "Город", neighborhood: "Район", chooseCity: "Выберите город", chooseNeighborhood: "Выберите район", typeNeighborhood: "Введите район", search: "Поиск", cancel: "Отмена", whole: "Весь город" },
+    hi: { where: "आप अभी कहाँ हैं?", city: "शहर / कस्बा", neighborhood: "इलाका", chooseCity: "अपना शहर चुनें", chooseNeighborhood: "अपना इलाका चुनें", typeNeighborhood: "अपना इलाका लिखें", search: "खोजें", cancel: "रद्द करें", whole: "पूरा शहर" },
+    ta: { where: "நீங்கள் இப்போது எங்கே இருக்கிறீர்கள்?", city: "நகரம் / ஊர்", neighborhood: "பகுதி", chooseCity: "உங்கள் நகரத்தைத் தேர்வு செய்யுங்கள்", chooseNeighborhood: "உங்கள் பகுதியைத் தேர்வு செய்யுங்கள்", typeNeighborhood: "உங்கள் பகுதியை எழுதுங்கள்", search: "தேடு", cancel: "ரத்து", whole: "முழு நகரம்" },
 };
 
 export function useSavedLocation() {
