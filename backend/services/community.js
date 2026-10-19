@@ -115,10 +115,18 @@ const personRow = (r) => ({
 
 // ── "I want to go" to a place ───────────────────────────────────────────────
 
-/** For each place: how many people want to go; and the places I marked. */
+/**
+ * For each place: how many others want to go (the people placePeople lists:
+ * not me, nobody blocked with me); and the places I marked.
+ */
 async function placeSummary(userId) {
   const { rows } = await db.query(
-    `SELECT i.place_id, count(*)::int AS n, bool_or(i.user_id = $1) AS mine
+    `SELECT i.place_id,
+            count(*) FILTER (WHERE i.user_id <> $1 AND NOT EXISTS (
+              SELECT 1 FROM contact_requests r WHERE r.status = 'blocked'
+                AND ((r.from_user = $1 AND r.to_user = i.user_id) OR (r.to_user = $1 AND r.from_user = i.user_id))
+            ))::int AS n,
+            bool_or(i.user_id = $1) AS mine
      FROM place_interests i JOIN community_profiles p ON p.user_id = i.user_id
      GROUP BY i.place_id`,
     [userId]

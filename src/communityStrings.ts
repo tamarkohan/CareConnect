@@ -55,12 +55,16 @@ type Strings = {
     wantToGo: string;
     youWantToGo: string;
     peopleWantToGo: string;        // {n}
+    oneWantsToGo: string;          // the same for exactly 1
     nobodyYet: string;
     showWho: string;
     hideWho: string;
     invite: string;
     inviteConfirm: string;         // {name} {place}
     joinFirst: string;
+    inviteSays: string;            // {invite}: the Invite button; before the fixed "visit together" message
+    loadFailed: string;
+    retry: string;
 };
 
 export const COMMUNITY_T: Record<LangCode, Strings> = {
@@ -110,12 +114,16 @@ export const COMMUNITY_T: Record<LangCode, Strings> = {
         wantToGo: "🙋 I want to go",
         youWantToGo: "✓ You want to go (tap to remove)",
         peopleWantToGo: "{n} caregivers want to go",
+        oneWantsToGo: "1 caregiver wants to go",
         nobodyYet: "Nobody yet – be the first.",
         showWho: "Show who",
         hideWho: "Hide",
         invite: "Invite",
         inviteConfirm: "Invite {name} to visit {place} together?",
         joinFirst: "To show others you want to go, first join the caregivers list above (Near you → Caregivers).",
+        inviteSays: "Tap “{invite}” to send them:",
+        loadFailed: "Couldn't load this list. Check your internet and try again.",
+        retry: "Try again",
     },
     tl: {
         openMap: "Buksan sa Google Maps",
@@ -163,12 +171,16 @@ export const COMMUNITY_T: Record<LangCode, Strings> = {
         wantToGo: "🙋 Gusto kong pumunta",
         youWantToGo: "✓ Gusto mong pumunta (i-tap para alisin)",
         peopleWantToGo: "{n} caregiver ang gustong pumunta",
+        oneWantsToGo: "1 caregiver ang gustong pumunta",
         nobodyYet: "Wala pa – ikaw ang mauna.",
         showWho: "Ipakita kung sino",
         hideWho: "Itago",
         invite: "Imbitahan",
         inviteConfirm: "Imbitahan si {name} na pumunta sa {place} nang magkasama?",
         joinFirst: "Para makita ng iba na gusto mong pumunta, sumali muna sa listahan ng caregivers sa itaas (Near you → Caregivers).",
+        inviteSays: "I-tap ang “{invite}” para ipadala sa kanila:",
+        loadFailed: "Hindi ma-load ang listahan. I-check ang internet mo at subukan ulit.",
+        retry: "Subukan ulit",
     },
     ml: {
         openMap: "ഗൂഗിൾ മാപ്സിൽ തുറക്കുക",
@@ -216,12 +228,16 @@ export const COMMUNITY_T: Record<LangCode, Strings> = {
         wantToGo: "🙋 എനിക്ക് പോകണം",
         youWantToGo: "✓ നിങ്ങൾക്ക് പോകണം (നീക്കാൻ ടാപ്പ് ചെയ്യുക)",
         peopleWantToGo: "{n} പരിചാരകർക്ക് പോകണം",
+        oneWantsToGo: "1 പരിചാരകർക്ക് പോകണം",
         nobodyYet: "ഇതുവരെ ആരുമില്ല – ആദ്യത്തെയാളാകൂ.",
         showWho: "ആരൊക്കെ എന്ന് കാണിക്കുക",
         hideWho: "മറയ്ക്കുക",
         invite: "ക്ഷണിക്കുക",
         inviteConfirm: "{name}-നെ ഒരുമിച്ച് {place} സന്ദർശിക്കാൻ ക്ഷണിക്കണോ?",
         joinFirst: "നിങ്ങൾക്ക് പോകണമെന്ന് മറ്റുള്ളവർ കാണാൻ, ആദ്യം മുകളിലെ പരിചാരകരുടെ ലിസ്റ്റിൽ ചേരുക (Near you → Caregivers).",
+        inviteSays: "അവർക്ക് ഇത് അയക്കാൻ “{invite}” അമർത്തുക:",
+        loadFailed: "ഈ ലിസ്റ്റ് ലോഡ് ചെയ്യാനായില്ല. ഇന്റർനെറ്റ് പരിശോധിച്ച് വീണ്ടും ശ്രമിക്കുക.",
+        retry: "വീണ്ടും ശ്രമിക്കുക",
     },
     ru: {
         openMap: "Открыть в Google Maps",
@@ -269,12 +285,16 @@ export const COMMUNITY_T: Record<LangCode, Strings> = {
         wantToGo: "🙋 Хочу поехать",
         youWantToGo: "✓ Вы хотите поехать (нажмите, чтобы убрать)",
         peopleWantToGo: "Хотят поехать: {n}",
+        oneWantsToGo: "Хочет поехать: 1",
         nobodyYet: "Пока никого – будьте первой.",
         showWho: "Показать кто",
         hideWho: "Скрыть",
         invite: "Пригласить",
         inviteConfirm: "Пригласить {name} вместе посетить {place}?",
         joinFirst: "Чтобы другие видели, что вы хотите поехать, сначала присоединитесь к списку сиделок выше (Рядом с вами → Сиделки).",
+        inviteSays: "Нажмите «{invite}», чтобы отправить:",
+        loadFailed: "Не удалось загрузить список. Проверьте интернет и попробуйте снова.",
+        retry: "Попробовать снова",
     },
     hi: {
         openMap: "Google Maps में खोलें",
@@ -322,12 +342,16 @@ export const COMMUNITY_T: Record<LangCode, Strings> = {
         wantToGo: "🙋 मैं जाना चाहती/चाहता हूँ",
         youWantToGo: "✓ आप जाना चाहते हैं (हटाने के लिए टैप करें)",
         peopleWantToGo: "{n} केयरगिवर जाना चाहते हैं",
+        oneWantsToGo: "1 केयरगिवर जाना चाहते हैं",
         nobodyYet: "अभी कोई नहीं – आप पहले बनें।",
         showWho: "कौन, दिखाएँ",
         hideWho: "छिपाएँ",
         invite: "आमंत्रित करें",
         inviteConfirm: "{name} को साथ में {place} चलने के लिए आमंत्रित करें?",
         joinFirst: "दूसरों को दिखाने के लिए कि आप जाना चाहते हैं, पहले ऊपर केयरगिवर सूची में शामिल हों (आपके पास → केयरगिवर)।",
+        inviteSays: "उन्हें यह भेजने के लिए “{invite}” दबाएँ:",
+        loadFailed: "यह सूची लोड नहीं हो सकी। अपना इंटरनेट जाँचें और फिर से कोशिश करें।",
+        retry: "फिर से कोशिश करें",
     },
     ta: {
         openMap: "Google Maps-இல் திற",
@@ -375,12 +399,16 @@ export const COMMUNITY_T: Record<LangCode, Strings> = {
         wantToGo: "🙋 நான் போக விரும்புகிறேன்",
         youWantToGo: "✓ நீங்கள் போக விரும்புகிறீர்கள் (நீக்க தட்டவும்)",
         peopleWantToGo: "{n} பராமரிப்பாளர்கள் போக விரும்புகிறார்கள்",
+        oneWantsToGo: "1 பராமரிப்பாளர் போக விரும்புகிறார்",
         nobodyYet: "இன்னும் யாரும் இல்லை – முதலில் நீங்கள்.",
         showWho: "யார் என்று காட்டு",
         hideWho: "மறை",
         invite: "அழைப்பு அனுப்பு",
         inviteConfirm: "{name}-ஐ சேர்ந்து {place} செல்ல அழைக்கவா?",
         joinFirst: "நீங்கள் போக விரும்புவதை மற்றவர்கள் பார்க்க, முதலில் மேலே உள்ள பராமரிப்பாளர் பட்டியலில் சேருங்கள் (உங்கள் அருகில் → பராமரிப்பாளர்கள்).",
+        inviteSays: "அவர்களுக்கு இதை அனுப்ப “{invite}” என்பதைத் தட்டவும்:",
+        loadFailed: "இந்தப் பட்டியலை ஏற்ற முடியவில்லை. இணையத்தைச் சரிபார்த்து மீண்டும் முயற்சிக்கவும்.",
+        retry: "மீண்டும் முயற்சி",
     },
 };
 

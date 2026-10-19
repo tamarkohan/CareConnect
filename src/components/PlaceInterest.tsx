@@ -17,7 +17,7 @@ const C = { blue: "#005dac", ink: "#071e27", muted: "#414752", line: "#cfe6f2", 
 export default function PlaceInterest({ placeKey, placeName, count, mine, onChanged, onNeedJoin }: {
     placeKey: string;
     placeName: string;
-    count: number;           // people who want to go, me included
+    count: number;           // others who want to go (not me, nobody blocked with me)
     mine: boolean;
     onChanged: () => void;   // reload the counts
     onNeedJoin: () => void;  // the user isn't on the caregivers list yet
@@ -25,15 +25,16 @@ export default function PlaceInterest({ placeKey, placeName, count, mine, onChan
     const { lang } = useLang();
     const t = COMMUNITY_T[lang];
     const [busy, setBusy] = React.useState(false);
-    const [people, setPeople] = React.useState<CommunityPerson[] | null>(null);
+    // null while loading; "failed" shows an error with Try again (never a silently empty list).
+    const [people, setPeople] = React.useState<CommunityPerson[] | null | "failed">(null);
     const [open, setOpen] = React.useState(false);
-    const others = count - (mine ? 1 : 0);
 
     const loadPeople = async () => {
+        setPeople(null);
         try {
             setPeople((await getPlacePeople(placeKey)).people);
         } catch {
-            setPeople([]);
+            setPeople("failed");
         }
     };
 
@@ -80,15 +81,22 @@ export default function PlaceInterest({ placeKey, placeName, count, mine, onChan
                 </Pressable>
             </View>
             <View style={s.row}>
-                <Text style={s.count}>{others > 0 ? fillC(t.peopleWantToGo, { n: String(others) }) : t.nobodyYet}</Text>
-                {others > 0 ? (
+                <Text style={s.count}>{count === 1 ? t.oneWantsToGo : count > 1 ? fillC(t.peopleWantToGo, { n: String(count) }) : t.nobodyYet}</Text>
+                {count > 0 ? (
                     <Pressable onPress={showWho} accessibilityRole="button">
                         <Text style={s.link}>{open ? t.hideWho : t.showWho}</Text>
                     </Pressable>
                 ) : null}
             </View>
             {open ? (
-                people === null ? <ActivityIndicator color={C.blue} /> : (
+                people === null ? <ActivityIndicator color={C.blue} /> : people === "failed" ? (
+                    <View style={s.row}>
+                        <Text style={[s.small, { flex: 1 }]}>{t.loadFailed}</Text>
+                        <Pressable onPress={loadPeople} accessibilityRole="button">
+                            <Text style={s.link}>{t.retry}</Text>
+                        </Pressable>
+                    </View>
+                ) : (
                     <View style={{ gap: 6 }}>
                         {people.map((p) => (
                             <View key={p.id} style={s.person}>
@@ -108,7 +116,10 @@ export default function PlaceInterest({ placeKey, placeName, count, mine, onChan
                                 )}
                             </View>
                         ))}
-                        <Text style={s.small}>“{fillC(MESSAGES.visitTogether[lang], { place: placeName })}”</Text>
+                        <Text style={s.small}>
+                            {fillC(t.inviteSays, { invite: t.invite })}{" "}
+                            <Text style={s.quote}>“{fillC(MESSAGES.visitTogether[lang], { place: placeName })}”</Text>
+                        </Text>
                     </View>
                 )
             ) : null}
@@ -129,6 +140,7 @@ const s = StyleSheet.create({
     avatarText: { color: C.white, fontWeight: "700", fontSize: 13 },
     name: { fontSize: 14, fontWeight: "700", color: C.ink },
     small: { fontSize: 12, color: C.muted },
+    quote: { fontStyle: "italic", color: C.ink },
     inviteBtn: { backgroundColor: C.blue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7 },
     inviteText: { color: C.white, fontSize: 13, fontWeight: "600" },
 });
