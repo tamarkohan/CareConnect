@@ -149,7 +149,7 @@ export const T: Record<LangCode, {
     navJournal: string;
 
     // ── Home ──
-    goodMorning: string;
+    goodMorning: string;      // the user's name is added after it (Home)
     essentialTools: string;
     myAgency: string;
     arrivalGuides: string;
@@ -284,7 +284,7 @@ export const T: Record<LangCode, {
         navCommunity: "Community",
         navTasks: "Tasks",
         navJournal: "Journal",
-        goodMorning: "Good morning, Rohit",
+        goodMorning: "Good morning",
         essentialTools: "Essential Tools",
         myAgency: "My Agency",
         arrivalGuides: "Arrival Guides",
@@ -408,7 +408,7 @@ export const T: Record<LangCode, {
         navCommunity: "Komunidad",
         navTasks: "Gawain",
         navJournal: "Talaarawan",
-        goodMorning: "Magandang umaga, Rohit",
+        goodMorning: "Magandang umaga",
         essentialTools: "Mahahalagang Kagamitan",
         myAgency: "Aking Ahensya",
         arrivalGuides: "Gabay sa Pagdating",
@@ -532,7 +532,7 @@ export const T: Record<LangCode, {
         navCommunity: "കമ്മ്യൂണിറ്റി",
         navTasks: "ടാസ്ക്കുകൾ",
         navJournal: "ജേർണൽ",
-        goodMorning: "സുപ്രഭാതം, Rohit",
+        goodMorning: "സുപ്രഭാതം",
         essentialTools: "അത്യാവശ്യ ഉപകരണങ്ങൾ",
         myAgency: "എന്റെ ഏജൻസി",
         arrivalGuides: "വരവ് ഗൈഡുകൾ",
@@ -656,7 +656,7 @@ export const T: Record<LangCode, {
         navCommunity: "Сообщество",
         navTasks: "Задачи",
         navJournal: "Дневник",
-        goodMorning: "Доброе утро, Rohit",
+        goodMorning: "Доброе утро",
         essentialTools: "Основные инструменты",
         myAgency: "Моё агентство",
         arrivalGuides: "Гиды по прибытию",
@@ -779,7 +779,7 @@ export const T: Record<LangCode, {
         navCommunity: "समुदाय",
         navTasks: "काम",
         navJournal: "डायरी",
-        goodMorning: "सुप्रभात, Rohit",
+        goodMorning: "सुप्रभात",
         essentialTools: "ज़रूरी टूल",
         myAgency: "मेरी एजेंसी",
         arrivalGuides: "आगमन गाइड",
@@ -902,7 +902,7 @@ export const T: Record<LangCode, {
         navCommunity: "சமூகம்",
         navTasks: "பணிகள்",
         navJournal: "நாட்குறிப்பு",
-        goodMorning: "காலை வணக்கம், Rohit",
+        goodMorning: "காலை வணக்கம்",
         essentialTools: "முக்கிய கருவிகள்",
         myAgency: "என் ஏஜென்சி",
         arrivalGuides: "வருகை வழிகாட்டி",

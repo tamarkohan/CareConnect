@@ -10,6 +10,7 @@
  * • Production        → https://your-api.example.com
  * ─────────────────────────────────────────────────────────────────────────────
  */
+import type { LangCode } from "../translations";
 
 // Where the backend lives:
 // 1. EXPO_PUBLIC_API_URL, if set when the app is built/started.
@@ -84,6 +85,9 @@ export type User = {
     email: string | null;
     disclaimerVersion: number | null;
     isDemo: boolean;
+    /** First name as typed, and spelled in every app language's letters (e.g. hi: "रोहित"). */
+    displayName: string | null;
+    displayNames: Partial<Record<LangCode, string>> | null;
 };
 
 export type Identifier = { phone: string } | { email: string };
@@ -101,7 +105,7 @@ export const verifyCode = (id: Identifier, code: string) =>
 
 export const getMe = () => apiFetch<{ user: User }>("/api/auth/me");
 
-export const updateMe = (changes: { disclaimerVersion: number }) =>
+export const updateMe = (changes: { disclaimerVersion?: number; displayName?: string }) =>
     apiFetch<{ user: User }>("/api/auth/me", changes);
 
 export const logout = () => apiFetch<{ success: true }>("/api/auth/logout", {});
@@ -294,14 +298,18 @@ export const deletePayslip = (id: string) => apiFetch<{ success: true }>("/api/p
 
 // ── Community: caregivers in your city, contact requests ─────────────────────
 export type CommunityProfile = { id: string; displayName: string; city: string; neighborhood: string; language: string };
-export type CommunityPerson = CommunityProfile & { status: "none" | "sent" | "received" | "accepted" | "declined" };
+/** names: the name in every app language's letters (null for people who joined before names were spelled). */
+export type CommunityPerson = CommunityProfile & {
+    names: Partial<Record<LangCode, string>> | null;
+    status: "none" | "sent" | "received" | "accepted" | "declined";
+};
 export type ContactRequest = {
     id: string;
     direction: "sent" | "received";
     status: "pending" | "accepted" | "declined";
     messageKey: string;
     placeId: string | null;      // for "visitTogether": the place, e.g. "nazareth"
-    other: { displayName: string; city: string; neighborhood: string };
+    other: { displayName: string; names: Partial<Record<LangCode, string>> | null; city: string; neighborhood: string };
     myPhone: string | null;      // the number I shared (after acceptance)
     theirPhone: string | null;   // the number they shared with me
     createdAt: string;

@@ -10,8 +10,10 @@ import { useLang } from "../AppContext";
 import { COMMUNITY_T, MESSAGES, fillC } from "../communityStrings";
 import { LangCode, RELIGIOUS_PLACES } from "../translations";
 import { UserLocation } from "./LocationPicker";
+import NameEditor from "./NameEditor";
+import { NAME_T, nameIn } from "../nameStrings";
 import {
-    getCommunityMe, saveCommunityProfile, leaveCommunity, getCommunityPeople, sendContactRequest,
+    getMe, getCommunityMe, saveCommunityProfile, leaveCommunity, getCommunityPeople, sendContactRequest,
     respondContactRequest, shareContactPhone, CommunityProfile, CommunityPerson, ContactRequest,
 } from "../api/client";
 import { showAlert, confirmAction } from "../api/platform";
@@ -44,12 +46,14 @@ const waNumber = (phone: string) => {
 };
 
 export default function CaregiversPanel({ location }: { location: UserLocation | null }) {
-    const { lang } = useLang();
+    const { lang, user, setUser } = useLang();
     const t = COMMUNITY_T[lang];
     const [profile, setProfile] = React.useState<CommunityProfile | null | undefined>(undefined);
     const [requests, setRequests] = React.useState<ContactRequest[]>([]);
     const [people, setPeople] = React.useState<CommunityPerson[] | null>(null);
-    const [name, setName] = React.useState("");
+    // One name for the whole app: joining starts from the account's name (Home → "Change name").
+    const [name, setName] = React.useState(user?.displayName ?? "");
+    const [editingName, setEditingName] = React.useState(false);
     const [busy, setBusy] = React.useState(false);
     const [asking, setAsking] = React.useState<CommunityPerson | null>(null);
     // Connections are shown as one line each (name · place); tap to open the details.
@@ -81,10 +85,11 @@ export default function CaregiversPanel({ location }: { location: UserLocation |
     // Keep the profile's city in step with the place chosen above.
     React.useEffect(() => {
         if (profile && city && (profile.city !== city || profile.neighborhood !== neighborhood)) {
-            saveCommunityProfile({ displayName: profile.displayName, city, neighborhood, language: lang })
+            // The account name, in case it was changed on Home since the profile was loaded.
+            saveCommunityProfile({ displayName: user?.displayName || profile.displayName, city, neighborhood, language: lang })
                 .then((r) => setProfile(r.profile)).catch(() => {});
         }
-    }, [profile, city, neighborhood, lang]);
+    }, [profile, city, neighborhood, lang, user?.displayName]);
 
     const run = async (fn: () => Promise<unknown>) => {
         setBusy(true);
@@ -100,6 +105,8 @@ export default function CaregiversPanel({ location }: { location: UserLocation |
     const join = () => run(async () => {
         const r = await saveCommunityProfile({ displayName: name, city, neighborhood, language: lang });
         setProfile(r.profile);
+        // The list name is also the account name now (greeting on Home).
+        setUser((await getMe()).user);
     });
     const leave = async () => {
         if (!(await confirmAction(t.leaveConfirm, t.leave, t.cancel))) return;
@@ -127,7 +134,7 @@ export default function CaregiversPanel({ location }: { location: UserLocation |
                     <Text style={s.title}>🔔 {t.requestsTitle} ({incoming.length})</Text>
                     {incoming.map((r) => (
                         <View key={r.id} style={s.item}>
-                            <Text style={s.body}><Text style={s.bold}>{fillC(t.wantsToConnect, { name: r.other.displayName })}</Text> · {place(r.other)}</Text>
+                            <Text style={s.body}><Text style={s.bold}>{fillC(t.wantsToConnect, { name: nameIn(r.other, lang) })}</Text> · {place(r.other)}</Text>
                             <Text style={s.quote}>“{messageText(r.messageKey, r.placeId, lang)}”</Text>
                             <View style={s.actions}>
                                 <Btn label={t.accept} onPress={() => answer(r, "accept")} primary disabled={busy} />
@@ -178,15 +185,19 @@ export default function CaregiversPanel({ location }: { location: UserLocation |
                 </View>
             ) : (
                 <View style={s.card}>
-                    <Text style={s.small}>{fillC(t.youAppearAs, { name: profile.displayName, place: place(profile) })}</Text>
+                    <Text style={s.small}>{fillC(t.youAppearAs, { name: nameIn(user, lang) || profile.displayName, place: place(profile) })}</Text>
+                    <Text style={s.small}>
+                        {NAME_T[lang].othersLetters}{" "}
+                        <Text style={s.link} onPress={() => setEditingName(true)} accessibilityRole="button">✎ {NAME_T[lang].changeName}</Text>
+                    </Text>
                     {people === null ? null : people.length === 0 ? (
                         <Text style={s.body}>{t.noPeople}</Text>
                     ) : (
                         people.map((p) => (
                             <View key={p.id} style={s.person}>
-                                <View style={s.avatar}><Text style={s.avatarText}>{p.displayName.charAt(0).toUpperCase()}</Text></View>
+                                <View style={s.avatar}><Text style={s.avatarText}>{nameIn(p, lang).charAt(0).toUpperCase()}</Text></View>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={s.bold}>{p.displayName}</Text>
+                                    <Text style={s.bold}>{nameIn(p, lang)}</Text>
                                     <Text style={s.small}>{place(p)}</Text>
                                 </View>
                                 {p.status === "none" ? (
@@ -207,12 +218,14 @@ export default function CaregiversPanel({ location }: { location: UserLocation |
 
             <Text style={s.privacy}>🔒 {t.privacy}</Text>
 
+            <NameEditor visible={editingName} onClose={() => setEditingName(false)} />
+
             <Modal visible={!!asking} transparent animationType="fade" onRequestClose={() => setAsking(null)}>
                 <View style={s.backdrop}>
                     <Pressable style={StyleSheet.absoluteFill} onPress={() => setAsking(null)} />
                     <View style={s.sheet}>
                         <Text style={s.title}>{t.chooseMessage}</Text>
-                        <Text style={s.small}>{asking?.displayName} · {asking ? place(asking) : ""}</Text>
+                        <Text style={s.small}>{nameIn(asking, lang)} · {asking ? place(asking) : ""}</Text>
                         {Object.keys(MESSAGES).filter((key) => key !== "visitTogether").map((key) => (
                             <Pressable key={key} style={s.option} onPress={() => asking && send(asking, key)} disabled={busy}>
                                 <Text style={s.body}>“{MESSAGES[key][lang]}”</Text>
@@ -254,7 +267,7 @@ function Connection({ request: r, open, onToggle, onChanged, onBlock }: {
         <View style={s.item}>
             <Pressable style={s.connHead} onPress={onToggle} accessibilityRole="button" accessibilityState={{ expanded: open }}>
                 <Text style={[s.bold, { flex: 1 }]} numberOfLines={1}>
-                    {r.other.displayName} <Text style={s.small}>· {place(r.other)}</Text>
+                    {nameIn(r.other, lang)} <Text style={s.small}>· {place(r.other)}</Text>
                 </Text>
                 {!open && r.theirPhone ? <Text style={s.small}>📞</Text> : null}
                 <Text style={s.caret}>{open ? "▴" : "▾"}</Text>
@@ -263,14 +276,14 @@ function Connection({ request: r, open, onToggle, onChanged, onBlock }: {
             <>
             {r.theirPhone ? (
                 <View style={s.phoneRow}>
-                    <Text style={s.body}>{fillC(t.theirPhone, { name: r.other.displayName })} <Text style={s.bold}>{r.theirPhone}</Text></Text>
+                    <Text style={s.body}>{fillC(t.theirPhone, { name: nameIn(r.other, lang) })} <Text style={s.bold}>{r.theirPhone}</Text></Text>
                     <View style={s.actions}>
                         <Btn label={`📞 ${t.call}`} onPress={() => Linking.openURL(`tel:${digits(r.theirPhone!)}`)} />
                         <Btn label={`💬 ${t.whatsapp}`} onPress={() => Linking.openURL(`https://wa.me/${waNumber(r.theirPhone!)}`)} />
                     </View>
                 </View>
             ) : (
-                <Text style={s.small}>{fillC(t.waitingForPhone, { name: r.other.displayName })}</Text>
+                <Text style={s.small}>{fillC(t.waitingForPhone, { name: nameIn(r.other, lang) })}</Text>
             )}
             {r.myPhone ? (
                 <Text style={s.small}>{fillC(t.shared, { phone: r.myPhone })}</Text>

@@ -18,6 +18,7 @@
 
 const db = require("./db");
 const { encrypt, decrypt } = require("./crypto");
+const names = require("./names");
 
 const MESSAGE_KEYS = ["hello", "newInArea", "dayOff", "sameLanguage", "advice", "visitTogether"];
 const PLACE_RE = /^[a-z0-9-]{2,40}$/;   // place keys from the app, e.g. "nazareth"
@@ -29,7 +30,6 @@ const LANGS = ["en", "tl", "ml", "ru", "hi", "ta"];
 /** An error whose message is safe to show to the user. */
 const userError = (message, code, status = 400) => Object.assign(new Error(message), { expose: true, status, code });
 
-const NAME_RE = /^[\p{L}][\p{L}\p{M} .'-]{0,19}$/u;   // letters only: no numbers, links or emojis
 // Phone numbers: digits only. An Israeli number has 9–10 digits starting with 0
 // (050-1234567 is typed as 0501234567); a foreign one may start with + and
 // have up to 15 digits (the international maximum).
@@ -51,11 +51,12 @@ async function getProfile(userId) {
   return r ? { id: r.public_id, displayName: r.display_name, city: r.city, neighborhood: r.neighborhood || "", language: r.language || "" } : null;
 }
 
+/** The list name is the account name (one name, spelled in every alphabet: see names.js). */
 async function saveProfile(userId, { displayName, city, neighborhood, language }) {
-  const name = clean(displayName, 20);
-  if (!NAME_RE.test(name)) throw userError("Please write only your first name, in letters.", "badName");
+  const name = names.cleanName(displayName);
   const c = clean(city, 60);
   if (!c) throw userError("Please choose your city.", "noCity");
+  await names.setDisplayName(userId, name);
   await db.query(
     `INSERT INTO community_profiles (user_id, display_name, city, neighborhood, language, updated_at)
      VALUES ($1, $2, $3, $4, $5, now())
@@ -84,8 +85,10 @@ async function listPeople(userId, city, neighborhood) {
   if (!c) return [];
   const { rows } = await db.query(
     `SELECT p.public_id, p.display_name, p.city, p.neighborhood, p.language,
-            r.status AS request_status, (r.from_user = $1) AS sent_by_me
+            r.status AS request_status, (r.from_user = $1) AS sent_by_me,
+            CASE WHEN u.display_name = p.display_name THEN u.display_name_i18n END AS names   -- spellings of this very name
      FROM community_profiles p
+     JOIN users u ON u.id = p.user_id
      LEFT JOIN contact_requests r
        ON (r.from_user = $1 AND r.to_user = p.user_id) OR (r.to_user = $1 AND r.from_user = p.user_id)
      WHERE p.city = $2 AND p.user_id <> $1
@@ -100,6 +103,7 @@ async function listPeople(userId, city, neighborhood) {
 const personRow = (r) => ({
   id: r.public_id,
   displayName: r.display_name,
+  names: r.names || null,   // the name in each app language's letters
   city: r.city,
   neighborhood: r.neighborhood || "",
   language: r.language || "",
@@ -143,9 +147,11 @@ async function placePeople(userId, placeId) {
   if (!validPlace(placeId)) return [];
   const { rows } = await db.query(
     `SELECT p.public_id, p.display_name, p.city, p.neighborhood, p.language,
-            r.status AS request_status, (r.from_user = $1) AS sent_by_me
+            r.status AS request_status, (r.from_user = $1) AS sent_by_me,
+            CASE WHEN u.display_name = p.display_name THEN u.display_name_i18n END AS names   -- spellings of this very name
      FROM place_interests i
      JOIN community_profiles p ON p.user_id = i.user_id
+     JOIN users u ON u.id = p.user_id
      LEFT JOIN contact_requests r
        ON (r.from_user = $1 AND r.to_user = p.user_id) OR (r.to_user = $1 AND r.from_user = p.user_id)
      WHERE i.place_id = $2 AND i.user_id <> $1
@@ -190,9 +196,11 @@ async function sendRequest(userId, toPublicId, messageKey, placeId = null) {
 /** Requests I sent and received, newest first, with the other person's public details. */
 async function listRequests(userId) {
   const { rows } = await db.query(
-    `SELECT r.*, p.public_id, p.display_name, p.city, p.neighborhood
+    `SELECT r.*, p.public_id, p.display_name, p.city, p.neighborhood,
+            CASE WHEN u.display_name = p.display_name THEN u.display_name_i18n END AS names   -- spellings of this very name
      FROM contact_requests r
      JOIN community_profiles p ON p.user_id = CASE WHEN r.from_user = $1 THEN r.to_user ELSE r.from_user END
+     JOIN users u ON u.id = p.user_id
      WHERE (r.from_user = $1 OR r.to_user = $1) AND r.status <> 'blocked'
        AND NOT (r.status = 'declined' AND r.to_user = $1)
        -- Only while both people are still on the list (a person who left disappears, with their number).
@@ -218,7 +226,7 @@ async function listRequests(userId) {
       status: r.status,
       messageKey: r.message_key,
       placeId: r.place_id || null,
-      other: { displayName: r.display_name, city: r.city, neighborhood: r.neighborhood || "" },
+      other: { displayName: r.display_name, names: r.names || null, city: r.city, neighborhood: r.neighborhood || "" },
       // Phones only once accepted; "mine" is the number I shared, "theirs" what they shared with me.
       myPhone: r.status === "accepted" ? phone(mine ? "from" : "to") : null,
       theirPhone: r.status === "accepted" ? phone(mine ? "to" : "from") : null,

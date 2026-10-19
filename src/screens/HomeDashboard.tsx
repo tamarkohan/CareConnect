@@ -9,8 +9,10 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import TopBar from "../components/TopBar";
+import NameEditor from "../components/NameEditor";
 import { useLang } from "../AppContext";
 import { T } from "../translations";
+import { NAME_T, nameIn } from "../nameStrings";
 
 // ── Colour & style tokens (from your GlobalStyles) ──────────────────
 const Color = {
@@ -60,8 +62,11 @@ const NAV_ITEMS = [
 // ════════════════════════════════════════════════════════════════════
 export default function HomeDashboard({ navigation }: any) {
     const insets = useSafeAreaInsets();
-    const { lang } = useLang();
+    const { lang, user } = useLang();
     const t = T[lang];
+    // The user's name in the letters of the app language (रोहित in Hindi, ரோஹித் in Tamil…).
+    const name = nameIn(user, lang);
+    const [editingName, setEditingName] = React.useState(false);
 
     return (
         <View style={[s.root, { paddingTop: insets.top }]}>
@@ -78,7 +83,10 @@ export default function HomeDashboard({ navigation }: any) {
                 {/* Top: greeting + weather (left), word of the day square (right) */}
                 <View style={s.topRow}>
                     <View style={s.greetingCol}>
-                        <Text style={s.greeting}>{t.goodMorning}</Text>
+                        <Text style={s.greeting}>{name ? `${t.goodMorning}, ${name}` : t.goodMorning}</Text>
+                        <Pressable onPress={() => setEditingName(true)} style={s.nameBtn} accessibilityRole="button">
+                            <Text style={s.nameBtnText}>{name ? `✎ ${NAME_T[lang].changeName}` : `＋ ${NAME_T[lang].addName}`}</Text>
+                        </Pressable>
                         <View style={s.weatherPill}>
                             <Text style={s.weatherText}>☀  Haifa, 24°C</Text>
                         </View>
@@ -131,6 +139,8 @@ export default function HomeDashboard({ navigation }: any) {
                 </View>
             </ScrollView>
 
+            <NameEditor visible={editingName} onClose={() => setEditingName(false)} />
+
             {/* ── Bottom navigation ── */}
             <View style={[s.bottomNav, { paddingBottom: 12 + insets.bottom }]}>
                 {NAV_ITEMS.map((item) => (
@@ -180,7 +190,7 @@ const s = StyleSheet.create({
 
     // Top row
     topRow: { flexDirection: "row", alignItems: "stretch", gap: 12 },
-    greetingCol: { flex: 1, justifyContent: "flex-start", gap: 10 },
+    greetingCol: { flex: 1, justifyContent: "flex-start", alignItems: "flex-start", gap: 8 },
     greeting: {
         fontSize: 24,
         fontWeight: "700",
@@ -188,6 +198,15 @@ const s = StyleSheet.create({
         lineHeight: 28,
         marginTop: -2,   // line the top of the text up with the word-of-the-day card
     },
+    nameBtn: {
+        borderWidth: 1,
+        borderColor: Color.linkWater,
+        backgroundColor: Color.white,
+        borderRadius: 9999,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+    },
+    nameBtnText: { fontSize: 12, fontWeight: "600", color: Color.endeavour },
     weatherPill: {
         alignSelf: "flex-start",
         backgroundColor: Color.linkWater,

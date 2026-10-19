@@ -8,6 +8,7 @@ import * as React from "react";
 import { View, Text, Pressable, StyleSheet, ActivityIndicator } from "react-native";
 import { useLang } from "../AppContext";
 import { COMMUNITY_T, MESSAGES, fillC } from "../communityStrings";
+import { nameIn } from "../nameStrings";
 import { setPlaceInterest, getPlacePeople, sendContactRequest, CommunityPerson } from "../api/client";
 import { showAlert, confirmAction } from "../api/platform";
 
@@ -55,7 +56,7 @@ export default function PlaceInterest({ placeKey, placeName, count, mine, onChan
     };
 
     const invite = async (p: CommunityPerson) => {
-        if (!(await confirmAction(fillC(t.inviteConfirm, { name: p.displayName, place: placeName }), t.invite, t.cancel))) return;
+        if (!(await confirmAction(fillC(t.inviteConfirm, { name: nameIn(p, lang), place: placeName }), t.invite, t.cancel))) return;
         try {
             await sendContactRequest(p.id, "visitTogether", placeKey);
             loadPeople();
@@ -91,9 +92,9 @@ export default function PlaceInterest({ placeKey, placeName, count, mine, onChan
                     <View style={{ gap: 6 }}>
                         {people.map((p) => (
                             <View key={p.id} style={s.person}>
-                                <View style={s.avatar}><Text style={s.avatarText}>{p.displayName.charAt(0).toUpperCase()}</Text></View>
+                                <View style={s.avatar}><Text style={s.avatarText}>{nameIn(p, lang).charAt(0).toUpperCase()}</Text></View>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={s.name}>{p.displayName}</Text>
+                                    <Text style={s.name}>{nameIn(p, lang)}</Text>
                                     <Text style={s.small}>{p.neighborhood ? `${p.neighborhood}, ` : ""}{p.city}</Text>
                                 </View>
                                 {p.status === "none" ? (
