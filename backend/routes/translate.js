@@ -36,6 +36,7 @@ const express = require("express");
 const router = express.Router();
 const { generate } = require("../services/geminiService");
 const { glossaryFor } = require("../services/glossary");
+const { styleGuide } = require("../services/translationStyle");
 const { parseJsonReply } = require("../services/jsonReply");
 const translations = require("../services/translationHistory");
 const { optionalAuth, requireAuth } = require("../services/users");
@@ -112,22 +113,6 @@ const CONTEXT_HINTS = {
 const READER_LANGS = { en: "English", tl: "Tagalog", ml: "Malayalam", ru: "Russian", hi: "Hindi", ta: "Tamil" };
 // The alphabet "phonetic" (how to read the Hebrew aloud) is written in, per reader language.
 const READER_SCRIPTS = { Malayalam: "Malayalam script", Russian: "Cyrillic", Hindi: "Devanagari", Tamil: "Tamil script" };
-
-// How caregivers really speak each language (rules + corrected examples from the
-// caregivers' language test). Edit backend/data/translation-style.json to add more.
-const STYLE = require("../data/translation-style.json");
-
-function styleGuide(language) {
-  const style = STYLE[language];
-  if (!style?.rules?.length) return "";
-  const examples = (style.examples || [])
-    .map((e) => `Hebrew: ${e.he}\nNot: ${e.wrong}\nBut: ${e.right}`)
-    .join("\n\n");
-  return `<style language="${language}">\nCaregivers corrected earlier translations. Write ${language} like this:\n` +
-    style.rules.map((r) => `- ${r}`).join("\n") +
-    (examples ? `\nCorrected examples (learn the style, don't copy them into unrelated texts):\n${examples}` : "") +
-    `\n</style>`;
-}
 
 /**
  * Short inputs are where double meanings happen, and the general rule in the

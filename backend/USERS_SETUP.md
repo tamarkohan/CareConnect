@@ -98,24 +98,27 @@ the AI again.
 [`data/glossary.json`](data/glossary.json) lists Israeli institutions, medicine
 brands, care words, places and slang with their meaning. When a term appears in
 the text, it is added to the prompt. Add the corrections caregivers give you in
-interviews (`tl`, `ml`, `ru` fields) — that is the best way to improve the
+interviews (`tl`, `ml`, `ru`, `hi`, `ta` fields) — that is the best way to improve the
 Asian-language translations.
 
-## Tagalog rating sheet for caregivers
+## Language rating sheets for caregivers (Tagalog, Hindi, Malayalam)
 
 ```bash
 cd backend
 npm run demo:reset                     # clean demo account with the fake contract
-npm run language-test -- https://careconnect-il-app-id9mu.ondigitalocean.app
+npm run language-test -- hi ml https://careconnect-il-app-id9mu.ondigitalocean.app
 ```
 
 Sends the 25 test sentences (5 each: medical, transport, slang, general, double
-meaning) and a 10-question legal conversation to the real bots, in Tagalog, and
-writes `backend/reports/language-test-tagalog-<date>.html`: open it in the browser
+meaning) and a 10-question legal conversation to the real bots, in each language
+asked for (`tl` Tagalog – the default, `hi` Hindi, `ml` Malayalam), and writes
+`backend/reports/language-test-<language>-<date>.html`: open it in the browser
 and print it (Ctrl+P). Each item has 1–5 rating boxes and a line for a better
 translation; the last page is a summary for the interviewer. Without a URL it uses
-the local backend (`npm run dev`). The inputs are in
-[`data/language-test-tl.json`](data/language-test-tl.json) — edit them freely.
+the local backend (`npm run dev`). The inputs and the sheet's wording are in
+`data/language-test-<code>.json` — edit them freely.
+[LANGUAGE_TEST.md](LANGUAGE_TEST.md) explains how to run the session and how to put
+the caregivers' corrections back into the bots, with Hindi and Malayalam examples.
 
 ## Home-screen pages
 
@@ -168,10 +171,10 @@ language "full" in CareConnect:
 2. **The bots** – the language is listed in `routes/translate.js` (target + reader script),
    the contract summary (`services/contractReader.js`) and payment explanations
    (`services/payslips.js`); the legal assistant answers in whatever language the app sends.
-3. **Native-speaker check** – run a language test like the Tagalog one
-   (`npm run language-test`, with a `data/language-test-<lang>.json`), give the sheet to
-   caregivers, and put their corrections in `data/translation-style.json` – the translator
-   then follows them, as it does for Tagalog.
+3. **Native-speaker check** – run a language test (`npm run language-test -- <code>`, with a
+   `data/language-test-<code>.json`; Tagalog, Hindi and Malayalam exist), give the sheet to
+   caregivers, and put their corrections in `data/translation-style.json` – the translator and
+   the legal assistant then follow them. See [LANGUAGE_TEST.md](LANGUAGE_TEST.md).
 
 Summaries and payment explanations made before a language was added show in English.
 

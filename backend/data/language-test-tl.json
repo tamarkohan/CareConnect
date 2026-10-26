@@ -1,7 +1,46 @@
 {
-  "_about": "Inputs for `npm run language-test` (Tagalog rating sheet for caregivers). 'en' is what the text really means, shown to the raters as the answer key. Edit freely.",
+  "_about": "Inputs for `npm run language-test -- tl` (Tagalog rating sheet for caregivers, see LANGUAGE_TEST.md). 'sheet' is the wording of the printed sheet. 'en' is what the text really means, shown to the raters as the answer key. Edit freely.",
   "language": "Tagalog",
   "readerLanguage": "tl",
+  "sheet": {
+    "title": "CareConnect – Pagsusuri ng Tagalog",
+    "subtitle": "Tagalog language test · {date} · {translations} na salin at {questions} na tanong sa legal assistant",
+    "intro": "**Salamat sa pagtulong!** Ito ang mga totoong sagot ng CareConnect app. Pakibasa ang bawat isa at bigyan ng marka mula 1 hanggang 5. Kung may mas magandang paraan ng pagsasabi nito sa Tagalog, isulat ito.\n*Thank you for helping! These are real answers from the CareConnect app. Please read each one and rate it from 1 to 5. If there is a better way to say it in Tagalog, write it down.*",
+    "scale": ["Mali / Wrong", "Mahina / Poor", "Puwede na / OK", "Mahusay / Good", "Napakahusay / Excellent"],
+    "who": [
+      "Pangalan (hindi kailangan) · Name (optional):",
+      "Ilang taon ka na sa Israel? · Years in Israel:",
+      "Gaano ka kahusay sa Hebrew? (wala / kaunti / mahusay) · Hebrew level (none / some / good):"
+    ],
+    "part1": "Bahagi 1 · Tagasalin (Translator)",
+    "part1Sub": "Hebrew → Tagalog",
+    "part2": "Bahagi 2 · Legal Assistant",
+    "part2Sub": "Isang tuloy-tuloy na usapan · One conversation, in order. Ang kontrata: {contract} (halimbawa lamang / fictional).",
+    "groups": {
+      "medical": "Medikal · Medical",
+      "transit": "Transportasyon · Transport",
+      "slang": "Slang · Salitang kalye",
+      "general": "Pangkalahatan · General",
+      "double": "Dobleng kahulugan · Double meaning"
+    },
+    "original": "Orihinal (Hebrew)",
+    "meaning": "Ibig sabihin / Meaning:",
+    "appTranslation": "Salin ng app / App's translation",
+    "pronunciation": "Pagbigkas / Pronunciation:",
+    "note": "Paalala / Note:",
+    "couldAlsoMean": "Maaari ring mangahulugang / Could also mean:",
+    "rateMeaning": "Tama ba ang kahulugan? · Is the meaning correct?",
+    "rateNatural": "Natural ba ang Tagalog? · Does it sound natural?",
+    "rateAlternatives": "Tama ba ang ibang kahulugan? · Are the other meanings right?",
+    "betterTranslation": "Mas magandang salin · Better translation:",
+    "question": "Tanong / Question",
+    "appAnswer": "Sagot ng app / App's answer",
+    "sources": "Pinagkunan / Sources:",
+    "rateEasy": "Madaling maintindihan? · Easy to understand?",
+    "rateHelpful": "Nakatulong ba ang sagot? · Was the answer helpful?",
+    "betterWords": "Mali o kakaibang salita → mas magandang salita · Strange or wrong words → better words:",
+    "comments": "Komento / Comments:"
+  },
   "translations": [
     { "group": "medical", "he": "לתת לו כדור אקמול אחד כל 6 שעות, לא יותר מ-4 ביום", "en": "Give him one Acamol (paracetamol) tablet every 6 hours, not more than 4 tablets a day." },
     { "group": "medical", "he": "לבדוק סוכר לפני ארוחת בוקר ולרשום בטבלה", "en": "Check (blood) sugar before breakfast and write it in the chart." },

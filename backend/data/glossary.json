@@ -1,5 +1,5 @@
 {
-  "_about": "Terms the translator must handle consistently. Edit freely: 'he' is what appears in the Hebrew text (several spellings allowed), 'en' the meaning, 'note' how to translate it. Native speakers' corrections go in 'tl' / 'ml' / 'ru'. Keep it small and specific: only terms the model gets wrong.",
+  "_about": "Terms the translator must handle consistently. Edit freely: 'he' is what appears in the Hebrew text (several spellings allowed), 'en' the meaning, 'note' how to translate it. Native speakers' corrections go in 'tl' / 'ml' / 'ru' / 'hi' / 'ta', e.g. \"hi\": \"डायपर\". Keep it small and specific: only terms the model gets wrong.",
   "terms": [
     { "category": "institution", "he": ["קופת חולים", "קופ\"ח"], "en": "health fund (HMO)", "note": "Israeli health insurer; keep the fund's name (Clalit, Maccabi, Meuhedet, Leumit)." },
     { "category": "institution", "he": ["כללית"], "en": "Clalit (health fund)", "note": "Name: transliterate, don't translate." },

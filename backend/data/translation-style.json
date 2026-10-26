@@ -1,5 +1,5 @@
 {
-  "_about": "How caregivers really speak, per language. Added to the translator prompt when translating into that language (or writing notes in it). Rules and examples come from caregivers' corrections of the printed language test. Add new corrections to 'examples'.",
+  "_about": "How caregivers really speak, per language. Added to the translator prompt when translating into that language (or writing notes in it), and to the legal assistant's prompt when it answers in it. Rules and examples come from caregivers' corrections of the printed language test (see LANGUAGE_TEST.md). Add new corrections to 'examples'; leave out 'he' for a correction of a legal answer.",
   "Tagalog": {
     "rules": [
       "Write the everyday Tagalog (Taglish) that Filipino caregivers in Israel speak, not textbook Tagalog.",
@@ -47,5 +47,13 @@
         "right": "Sa Shabbat, tayong lahat ay kakain kina Lola, maghanda ka ng simpleng pagkain."
       }
     ]
+  },
+  "Hindi": {
+    "rules": [],
+    "examples": []
+  },
+  "Malayalam": {
+    "rules": [],
+    "examples": []
   }
 }

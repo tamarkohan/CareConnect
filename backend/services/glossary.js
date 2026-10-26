@@ -12,7 +12,7 @@ const normalise = (s) => s.replace(/[֑-ׇ]/g, "").replace(/[״"׳']/g, '"'); //
 const indexed = terms.map((t) => ({ ...t, keys: t.he.map(normalise) }));
 
 function format(t) {
-  const extra = ["tl", "ml", "ru"].filter((l) => t[l]).map((l) => `${l}: ${t[l]}`);
+  const extra = ["tl", "ml", "ru", "hi", "ta"].filter((l) => t[l]).map((l) => `${l}: ${t[l]}`);
   return `- ${t.he[0]} = ${t.en}${t.note ? ` (${t.note})` : ""}${extra.length ? ` [${extra.join("; ")}]` : ""}`;
 }
 

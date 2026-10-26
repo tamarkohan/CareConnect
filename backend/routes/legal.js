@@ -45,6 +45,7 @@ const history = require("../services/legalHistory");
 const { readContractFiles, summariseContract } = require("../services/contractReader");
 const { searchKnowledgeBase } = require("../services/retrieval");
 const { parseJsonReply } = require("../services/jsonReply");
+const { styleGuide } = require("../services/translationStyle");
 const { optionalAuth, requireAuth } = require("../services/users");
 
 const MAX_CONTRACT_CHARS = 100_000;
@@ -78,6 +79,7 @@ Guidelines:
 - Sources may be in Hebrew or English; answer in the language the user requested regardless.
 - Always refer to the specific contract when one is provided, and flag any clauses that appear to violate Israeli law or industry standards.
 - Use plain, simple language appropriate for someone who may not have a legal background.
+- When a <style> block is given, follow it for word choice: it is how caregivers who speak that language corrected earlier texts.
 - If no contract was provided and the question is about the user's own contract, say so and advise them to upload it first.
 - If the situation sounds urgent or serious (unpaid wages, passport taken, violence, being fired), say who can help: a labour lawyer, the caregiver's agency, the Population and Immigration Authority ombudsman or a workers' rights organisation such as Kav LaOved.
 - Do NOT add a disclaimer: the app already shows one.
@@ -127,6 +129,10 @@ function buildPrompt({ question, language, contractText, sources }) {
       ? `<contract>\n${contractText}\n</contract>`
       : "<contract>\n(the user has NOT uploaded a contract)\n</contract>"
   );
+
+  // Caregivers' corrections of earlier texts in this language (data/translation-style.json).
+  const style = styleGuide(language);
+  if (style) parts.push(style);
 
   parts.push(`User question (answer in ${language}):\n${question}`);
   return parts.join("\n\n");

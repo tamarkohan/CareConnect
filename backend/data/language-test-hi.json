@@ -1,0 +1,88 @@
+{
+  "_about": "Inputs for `npm run language-test -- hi` (Hindi rating sheet for caregivers, see LANGUAGE_TEST.md). Same Hebrew sentences as the Tagalog test, so languages can be compared. 'sheet' is the wording of the printed sheet. 'en' is what the text really means, shown to the raters as the answer key. 'legal' is one conversation with the legal assistant, written the way caregivers type. Have a native speaker check the questions and wording before printing. Edit freely.",
+  "language": "Hindi",
+  "readerLanguage": "hi",
+  "sheet": {
+    "title": "CareConnect – हिंदी भाषा की जाँच",
+    "subtitle": "Hindi language test · {date} · {translations} अनुवाद और कानूनी सहायक से {questions} सवाल",
+    "intro": "**मदद करने के लिए धन्यवाद!** ये CareConnect ऐप के असली जवाब हैं। हर एक को पढ़ें और 1 से 5 तक नंबर दें। अगर इसे हिंदी में कहने का कोई बेहतर तरीका है, तो उसे लिखें।\n*Thank you for helping! These are real answers from the CareConnect app. Please read each one and rate it from 1 to 5. If there is a better way to say it in Hindi, write it down.*",
+    "scale": ["गलत / Wrong", "कमज़ोर / Poor", "ठीक है / OK", "अच्छा / Good", "बहुत अच्छा / Excellent"],
+    "who": [
+      "नाम (ज़रूरी नहीं) · Name (optional):",
+      "इज़राइल में कितने साल से हैं? · Years in Israel:",
+      "आपकी हिब्रू कैसी है? (बिल्कुल नहीं / थोड़ी / अच्छी) · Hebrew level (none / some / good):",
+      "आपकी पहली भाषा (मातृभाषा) · Your first language:"
+    ],
+    "part1": "भाग 1 · अनुवादक (Translator)",
+    "part1Sub": "Hebrew → हिंदी",
+    "part2": "भाग 2 · कानूनी सहायक (Legal Assistant)",
+    "part2Sub": "एक ही बातचीत, क्रम से · One conversation, in order. कॉन्ट्रैक्ट: {contract} (सिर्फ़ उदाहरण / fictional).",
+    "groups": {
+      "medical": "मेडिकल · Medical",
+      "transit": "बस और ट्रेन · Transport",
+      "slang": "बोलचाल / स्लैंग · Slang",
+      "general": "आम बातें · General",
+      "double": "दो मतलब · Double meaning"
+    },
+    "original": "मूल (Hebrew) / Original",
+    "meaning": "मतलब / Meaning:",
+    "appTranslation": "ऐप का अनुवाद / App's translation",
+    "pronunciation": "उच्चारण / Pronunciation:",
+    "note": "ध्यान दें / Note:",
+    "couldAlsoMean": "इसका मतलब यह भी हो सकता है / Could also mean:",
+    "rateMeaning": "क्या मतलब सही है? · Is the meaning correct?",
+    "rateNatural": "क्या हिंदी आम बोलचाल जैसी लगती है? · Does the Hindi sound natural?",
+    "rateAlternatives": "क्या दूसरे मतलब सही हैं? · Are the other meanings right?",
+    "betterTranslation": "बेहतर अनुवाद · Better translation:",
+    "question": "सवाल / Question",
+    "appAnswer": "ऐप का जवाब / App's answer",
+    "sources": "स्रोत / Sources:",
+    "rateEasy": "क्या समझना आसान है? · Easy to understand?",
+    "rateHelpful": "क्या जवाब से मदद मिली? · Was the answer helpful?",
+    "betterWords": "अजीब या गलत शब्द → बेहतर शब्द · Strange or wrong words → better words:",
+    "comments": "टिप्पणी · Comments:"
+  },
+  "translations": [
+    { "group": "medical", "he": "לתת לו כדור אקמול אחד כל 6 שעות, לא יותר מ-4 ביום", "en": "Give him one Acamol (paracetamol) tablet every 6 hours, not more than 4 tablets a day." },
+    { "group": "medical", "he": "לבדוק סוכר לפני ארוחת בוקר ולרשום בטבלה", "en": "Check (blood) sugar before breakfast and write it in the chart." },
+    { "group": "medical", "he": "אם יש לה חום מעל 38 – להתקשר מיד לרופא", "en": "If she has a fever above 38, call the doctor immediately." },
+    { "group": "medical", "he": "יש לו תור במרפאה של מכבי ביום שלישי ב-10:30, צריך להביא את טופס 17", "en": "He has an appointment at the Maccabi clinic on Tuesday at 10:30; you need to bring Form 17." },
+    { "group": "medical", "he": "קומדין רק בערב, אחרי האוכל. לא לתת יחד עם אופטלגין", "en": "Coumadin only in the evening, after food. Don't give it together with Optalgin." },
+
+    { "group": "transit", "he": "קחי את קו 5 מהתחנה המרכזית ורדי בתחנה של בית החולים", "en": "Take bus line 5 from the central bus station and get off at the hospital stop." },
+    { "group": "transit", "he": "צריך לטעון את הרב קו לפני שעולים לאוטובוס", "en": "You need to top up the Rav-Kav card before getting on the bus." },
+    { "group": "transit", "he": "הרכבת לחיפה יוצאת מתחנת סבידור מרכז כל חצי שעה", "en": "The train to Haifa leaves from Savidor Center station every half hour." },
+    { "group": "transit", "he": "ביום שישי אחרי הצהריים אין אוטובוסים עד מוצאי שבת", "en": "On Friday afternoon there are no buses until Saturday night (end of Shabbat)." },
+    { "group": "transit", "he": "תרדי ברחוב ויצמן ליד הסופר, ואני אחכה לך שם", "en": "Get off on Weizmann Street next to the supermarket, and I'll wait for you there." },
+
+    { "group": "slang", "he": "סבבה, יאללה נצא בעוד רבע שעה", "en": "OK, come on, we'll leave in a quarter of an hour." },
+    { "group": "slang", "he": "הוא היום קצת סחוט, תני לו לנוח", "en": "He's a bit exhausted today, let him rest." },
+    { "group": "slang", "he": "אל תדאגי, זה בקטנה", "en": "Don't worry, it's no big deal." },
+    { "group": "slang", "he": "תכלס, היא צריכה מישהו איתה כל הזמן", "en": "Basically, she needs someone with her all the time." },
+    { "group": "slang", "he": "האוכל שלך חבל על הזמן!", "en": "Your food is amazing!" },
+
+    { "group": "general", "he": "הבת שלה, מיכל, תגיע מרעננה בערב", "en": "Her daughter, Michal, will come from Ra'anana in the evening." },
+    { "group": "general", "he": "צריך להביא את הדרכון לרשות האוכלוסין ביום ראשון", "en": "You need to bring the passport to the Population (and Immigration) Authority on Sunday." },
+    { "group": "general", "he": "ביטוח לאומי שלחו מכתב, תשאירי אותו על השולחן", "en": "National Insurance sent a letter, leave it on the table." },
+    { "group": "general", "he": "בשבת כולנו אוכלים אצל סבתא, תכיני משהו קטן", "en": "On Shabbat we all eat at grandma's, prepare something small." },
+    { "group": "general", "he": "תודה רבה על כל מה שאת עושה בשבילו", "en": "Thank you very much for everything you do for him." },
+
+    { "group": "double", "he": "hola", "en": "Spanish \"hello\" — or Hebrew חולה \"sick\" written in Latin letters. Both meanings should appear." },
+    { "group": "double", "he": "ספר", "en": "Without vowels: \"book\", \"barber\", or \"he told / counted\". More than one meaning should appear." },
+    { "group": "double", "he": "toda", "en": "Hebrew תודה \"thank you\" in Latin letters — or Spanish \"all\". Both meanings should appear." },
+    { "group": "double", "he": "kupat cholim", "en": "Hebrew קופת חולים \"health fund\" in Latin letters. Only one meaning — no \"could also mean\"." },
+    { "group": "double", "he": "בית חולים", "en": "\"Hospital\". Only one meaning — no \"could also mean\"." }
+  ],
+  "legal": [
+    "मुझे हर साल कितने दिन की छुट्टी मिलती है?",
+    "लेकिन मेरे कॉन्ट्रैक्ट में सिर्फ़ 10 दिन लिखे हैं। क्या यह कानूनी है?",
+    "क्या मेरा एम्प्लॉयर मेरा पासपोर्ट अपने पास रख सकता है?",
+    "मेरी हफ़्ते की छुट्टी कौन-सा दिन है, और वह कितने घंटे की होनी चाहिए?",
+    "मेरी सैलरी से रहने, खाने और एजेंसी की फ़ीस के पैसे काटे जाते हैं। क्या ऐसा करने की इजाज़त है?",
+    "इज़राइल में केयरगिवर की मिनिमम सैलरी कितनी है?",
+    "क्या मुझे पूरा घर साफ़ करना और परिवार की गाड़ी धोना ज़रूरी है?",
+    "अगर मैं बीमार हो जाऊँ तो क्या होगा? क्या सिक लीव के पैसे मिलते हैं?",
+    "अगर मैं नौकरी छोड़ना चाहूँ, तो कितने दिन पहले बताना होगा?",
+    "इस महीने मुझे सैलरी नहीं मिली। मैं मदद के लिए कहाँ जा सकती हूँ?"
+  ]
+}

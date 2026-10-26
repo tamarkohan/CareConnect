@@ -1,33 +1,37 @@
 /**
- * scripts/language-test.js  —  `npm run language-test`
+ * scripts/language-test.js  —  `npm run language-test -- <language code>`
  *
  * Builds a printable rating sheet for caregivers: it sends the test sentences in
- * data/language-test-tl.json to the real translator (25 translations, 5 per
+ * data/language-test-<code>.json to the real translator (25 translations, 5 per
  * kind of text) and has a 10-question conversation with the legal bot, all in
- * Tagalog, then writes the answers into an HTML page with 1–5 rating boxes.
+ * that language, then writes the answers into an HTML page with 1–5 rating boxes.
+ * The wording of the sheet ("sheet") is in the same file. LANGUAGE_TEST.md says
+ * how to put the caregivers' corrections back into the bots.
  *
  * It signs in as the demo account (phone "123", needs DEMO_LOGIN=true on that
  * server) and uses its contract, so run `npm run demo:reset` first for a clean
- * start. The demo chat is cleared before the conversation starts.
+ * start. The demo chat is cleared before each language's conversation starts.
  *
  * Usage (from the backend folder):
- *   npm run language-test                    against the local backend (npm run dev)
- *   npm run language-test -- https://careconnect-il-app-id9mu.ondigitalocean.app
+ *   npm run language-test                    Tagalog, against the local backend (npm run dev)
+ *   npm run language-test -- hi ml           Hindi and Malayalam (any codes with a data file)
+ *   npm run language-test -- hi https://careconnect-il-app-id9mu.ondigitalocean.app
  *                                            against the live site
- *   npm run language-test -- --retry-failed  only redo the items that failed in
+ *   npm run language-test -- hi --retry-failed
+ *                                            only redo the items that failed in
  *                                            today's run (keeps the rest)
  *
- * Output: backend/reports/language-test-tagalog-<date>.html  (open it, print it)
- *         backend/reports/language-test-tagalog-<date>.json  (raw answers)
+ * Output: backend/reports/language-test-<language>-<date>.html  (open it, print it)
+ *         backend/reports/language-test-<language>-<date>.json  (raw answers)
  */
 
 const fs = require("fs");
 const path = require("path");
-const test = require("../data/language-test-tl.json");
 
 const args = process.argv.slice(2);
 const RETRY_FAILED = args.includes("--retry-failed");
-const BASE = (args.find((a) => !a.startsWith("--")) || process.env.LANGTEST_URL || "http://localhost:3000").replace(/\/+$/, "");
+const CODES = args.filter((a) => /^[a-z]{2}$/.test(a));
+const BASE = (args.find((a) => !a.startsWith("--") && !CODES.includes(a)) || process.env.LANGTEST_URL || "http://localhost:3000").replace(/\/+$/, "");
 const OUT_DIR = path.join(__dirname, "../reports");
 const PAUSE_MS = 1500; // be gentle with the Gemini free tier
 // The model the app is meant to use; answers from a backup model are marked.
@@ -98,47 +102,43 @@ function md(text) {
   return out.join("\n");
 }
 
+/** Fills {name} placeholders in the sheet's wording. */
+const fill = (text, vars) => String(text).replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m));
+
 const scale = (label) => `
   <div class="rate"><span class="q">${label}</span>
     <span class="boxes">${[1, 2, 3, 4, 5].map((n) => `<span class="box">${n}</span>`).join("")}</span>
   </div>`;
 const lineField = (label) => `<div class="field"><span class="q">${label}</span><span class="line"></span></div>`;
 
-const GROUPS = {
-  medical: "Medikal · Medical",
-  transit: "Transportasyon · Transport",
-  slang: "Slang · Salitang kalye",
-  general: "Pangkalahatan · General",
-  double: "Dobleng kahulugan · Double meaning",
-};
-
-function buildHtml({ translations, legal, contractName, date }) {
+function buildHtml({ test, translations, legal, contractName, date }) {
+  const S = test.sheet;
   let n = 0;
-  const trItems = Object.keys(GROUPS)
+  const trItems = Object.keys(S.groups)
     .map((g) => {
       const items = translations.filter((t) => t.group === g);
       if (!items.length) return "";
-      return `<h2>${GROUPS[g]}</h2>` + items.map((t) => {
+      return `<h2>${esc(S.groups[g])}</h2>` + items.map((t) => {
         n++;
         const r = t.result || {};
         return `
         <div class="item">
           <div class="num">${n}</div>
           <div class="body">
-            <div class="label">Orihinal (Hebrew)</div>
+            <div class="label">${esc(S.original)}</div>
             <div class="he" dir="auto">${esc(t.he)}</div>
-            <div class="key"><b>Ibig sabihin / Meaning:</b> ${esc(t.en)}</div>
-            <div class="label">Salin ng app / App's translation</div>
+            <div class="key"><b>${esc(S.meaning)}</b> ${esc(t.en)}</div>
+            <div class="label">${esc(S.appTranslation)}</div>
             ${t.error ? `<div class="err">Error: ${esc(t.error)}</div>` : `
             <div class="answer">${esc(r.translatedText)}</div>
-            ${r.phonetic ? `<div class="small"><b>Pagbigkas / Pronunciation:</b> ${esc(r.phonetic)}</div>` : ""}
-            ${r.note ? `<div class="small"><b>Paalala / Note:</b> ${esc(r.note)}</div>` : ""}
-            ${r.alternatives?.length ? `<div class="small"><b>Maaari ring mangahulugang / Could also mean:</b> ${r.alternatives.map((a) => `${esc(a.meaning)}${a.language ? ` (${esc(a.language)})` : ""}`).join(" · ")}</div>` : ""}`}
+            ${r.phonetic ? `<div class="small"><b>${esc(S.pronunciation)}</b> ${esc(r.phonetic)}</div>` : ""}
+            ${r.note ? `<div class="small"><b>${esc(S.note)}</b> ${esc(r.note)}</div>` : ""}
+            ${r.alternatives?.length ? `<div class="small"><b>${esc(S.couldAlsoMean)}</b> ${r.alternatives.map((a) => `${esc(a.meaning)}${a.language ? ` (${esc(a.language)})` : ""}`).join(" · ")}</div>` : ""}`}
             <div class="ratings">
-              ${scale("Tama ba ang kahulugan? · Is the meaning correct?")}
-              ${scale("Natural ba ang Tagalog? · Does it sound natural?")}
-              ${g === "double" ? scale("Tama ba ang ibang kahulugan? · Are the other meanings right?") : ""}
-              ${lineField("Mas magandang salin · Better translation:")}
+              ${scale(esc(S.rateMeaning))}
+              ${scale(esc(S.rateNatural))}
+              ${g === "double" ? scale(esc(S.rateAlternatives)) : ""}
+              ${lineField(esc(S.betterTranslation))}
             </div>
           </div>
         </div>`;
@@ -150,16 +150,17 @@ function buildHtml({ translations, legal, contractName, date }) {
     <div class="item">
       <div class="num">${i + 1}</div>
       <div class="body">
-        <div class="label">Tanong / Question</div>
+        <div class="label">${esc(S.question)}</div>
         <div class="question">${esc(m.question)}</div>
-        <div class="label">Sagot ng app / App's answer</div>
+        <div class="label">${esc(S.appAnswer)}</div>
         ${m.error ? `<div class="err">Error: ${esc(m.error)}</div>` : `<div class="answer md">${md(m.answer)}</div>
-        ${m.sources?.length ? `<div class="small"><b>Pinagkunan / Sources:</b> ${m.sources.map((s) => `[${s.id}] ${esc(s.title)}`).join(" · ")}</div>` : ""}`}
+        ${m.sources?.length ? `<div class="small"><b>${esc(S.sources)}</b> ${m.sources.map((s) => `[${s.id}] ${esc(s.title)}`).join(" · ")}</div>` : ""}`}
         <div class="ratings">
-          ${scale("Madaling maintindihan? · Easy to understand?")}
-          ${scale("Natural ba ang Tagalog? · Does it sound natural?")}
-          ${scale("Nakatulong ba ang sagot? · Was the answer helpful?")}
-          ${lineField("Komento / Comments:")}
+          ${scale(esc(S.rateEasy))}
+          ${scale(esc(S.rateNatural))}
+          ${scale(esc(S.rateHelpful))}
+          ${lineField(esc(S.betterWords))}
+          ${lineField(esc(S.comments))}
         </div>
       </div>
     </div>`).join("");
@@ -175,12 +176,12 @@ function buildHtml({ translations, legal, contractName, date }) {
   }).join("");
 
   return `<!doctype html>
-<html lang="tl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CareConnect – Pagsusuri ng Tagalog</title>
+<html lang="${esc(test.readerLanguage)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${esc(S.title)}</title>
 <style>
   :root { --ink:#071e27; --muted:#556; --line:#cfe6f2; --blue:#005dac; --bg:#f3faff; }
   * { box-sizing: border-box; }
-  body { font-family: "Segoe UI", Roboto, Arial, sans-serif; color: var(--ink); margin: 0; background: #fff; line-height: 1.45; }
+  body { font-family: "Segoe UI", Roboto, Arial, "Nirmala UI", "Noto Sans Devanagari", "Noto Sans Malayalam", sans-serif; color: var(--ink); margin: 0; background: #fff; line-height: 1.45; }
   .page { max-width: 820px; margin: 0 auto; padding: 24px 16px 48px; }
   h1 { color: var(--blue); font-size: 26px; margin: 0 0 4px; }
   h2 { color: var(--blue); font-size: 19px; margin: 28px 0 8px; border-bottom: 2px solid var(--line); padding-bottom: 4px; }
@@ -216,29 +217,24 @@ function buildHtml({ translations, legal, contractName, date }) {
   @media print { .page { padding: 0; } .item { border-color: #999; } .noprint { display: none; } }
 </style></head>
 <body><div class="page">
-  <h1>CareConnect – Pagsusuri ng Tagalog</h1>
-  <p class="sub">Tagalog language test · ${esc(date)} · ${translations.length} na salin at ${legal.length} na tanong sa legal assistant</p>
+  <h1>${esc(S.title)}</h1>
+  <p class="sub">${esc(fill(S.subtitle, { date, translations: translations.length, questions: legal.length }))}</p>
 
   <div class="intro">
-    <p><b>Salamat sa pagtulong!</b> Ito ang mga totoong sagot ng CareConnect app. Pakibasa ang bawat isa at bigyan ng marka mula 1 hanggang 5.
-    Kung may mas magandang paraan ng pagsasabi nito sa Tagalog, isulat ito.</p>
-    <p><i>Thank you for helping! These are real answers from the CareConnect app. Please read each one and rate it from 1 to 5.
-    If there is a better way to say it in Tagalog, write it down.</i></p>
-    <div class="legend"><span><b>1</b> = Mali / Wrong</span><span><b>2</b> = Mahina / Poor</span><span><b>3</b> = Puwede na / OK</span><span><b>4</b> = Mahusay / Good</span><span><b>5</b> = Napakahusay / Excellent</span></div>
+    ${md(S.intro)}
+    <div class="legend">${S.scale.map((label, i) => `<span><b>${i + 1}</b> = ${esc(label)}</span>`).join("")}</div>
   </div>
 
   <div class="who">
-    ${lineField("Pangalan (hindi kailangan) · Name (optional):")}
-    ${lineField("Ilang taon ka na sa Israel? · Years in Israel:")}
-    ${lineField("Gaano ka kahusay sa Hebrew? (wala / kaunti / mahusay) · Hebrew level (none / some / good):")}
+    ${S.who.map((label) => lineField(esc(label))).join("\n    ")}
   </div>
 
-  <h1 style="margin-top:28px">Bahagi 1 · Tagasalin (Translator)</h1>
-  <p class="sub">Hebrew → Tagalog</p>
+  <h1 style="margin-top:28px">${esc(S.part1)}</h1>
+  <p class="sub">${esc(S.part1Sub)}</p>
   ${trItems}
 
-  <h1 class="pb" style="margin-top:28px">Bahagi 2 · Legal Assistant</h1>
-  <p class="sub">Isang tuloy-tuloy na usapan · One conversation, in order. Ang kontrata: ${esc(contractName || "demo contract")} (halimbawa lamang / fictional).</p>
+  <h1 class="pb" style="margin-top:28px">${esc(S.part2)}</h1>
+  <p class="sub">${esc(fill(S.part2Sub, { contract: contractName || "demo contract" }))}</p>
   ${legalItems}
 
   <div class="pb interviewer">
@@ -250,19 +246,50 @@ function buildHtml({ translations, legal, contractName, date }) {
     <p>Answers from a backup model (not ${esc(PRIMARY)}) usually happen when the free daily Gemini quota is used up;
     they can be weaker than what users normally get.</p>
     <p>Server: ${esc(BASE)} · generated ${esc(new Date().toISOString())}</p>
+    <p><b>Next:</b> put the caregivers' corrections into the bots (data/translation-style.json and
+    data/glossary.json) — see backend/LANGUAGE_TEST.md.</p>
   </div>
 </div></body></html>`;
 }
 
 // ── Run ──────────────────────────────────────────────────────────────────────
+function loadTest(code) {
+  const file = path.join(__dirname, `../data/language-test-${code}.json`);
+  if (!fs.existsSync(file)) {
+    const have = fs.readdirSync(path.dirname(file))
+      .map((f) => f.match(/^language-test-([a-z]{2})\.json$/)?.[1]).filter(Boolean);
+    throw new Error(`No test for "${code}" (data/language-test-${code}.json). Available: ${have.join(", ")}`);
+  }
+  return JSON.parse(fs.readFileSync(file, "utf8"));
+}
+
 async function main() {
-  console.log(`Language test (${test.language}) against ${BASE}`);
+  const tests = (CODES.length ? CODES : ["tl"]).map(loadTest);
   const signIn = await api("/api/auth/request-code", { phone: "123" }).catch((err) => {
     throw new Error(`Could not sign in as the demo account (${err.message}). Is DEMO_LOGIN=true on that server?`);
   });
   if (!signIn.token) throw new Error("The demo login didn't return a token. Is DEMO_LOGIN=true on that server?");
   token = signIn.token;
 
+  const { contract } = await api("/api/legal/contract");
+  if (!contract) console.warn("⚠ The demo account has no contract: run `npm run demo:reset` first for contract-based answers.");
+
+  const files = [];
+  let failed = 0;
+  for (const test of tests) {
+    const result = await runTest(test, contract);
+    files.push(result.file);
+    failed += result.failed;
+  }
+
+  const retry = `npm.cmd run language-test -- ${[...args.filter((a) => a !== "--retry-failed"), "--retry-failed"].join(" ")}`;
+  console.log(`\nDone${failed ? ` (${failed} failed — run again with:  ${retry})` : ""}.`);
+  console.log(`Open ${files.length > 1 ? "these files" : "this file"} in your browser and print:\n  ${files.join("\n  ")}`);
+}
+
+/** Runs one language's test and writes its sheet. @returns {{ file: string, failed: number }} */
+async function runTest(test, contract) {
+  console.log(`\nLanguage test (${test.language}) against ${BASE}`);
   const date = new Date().toISOString().slice(0, 10);
   const base = path.join(OUT_DIR, `language-test-${test.language.toLowerCase()}-${date}`);
   let previous = null;
@@ -276,9 +303,6 @@ async function main() {
   }
   const prevTr = (t) => previous?.translations?.find((x) => x.he === t.he && x.result && !x.error);
   const prevLegal = (q) => previous?.legal?.find((x) => x.question === q && x.answer && !x.error);
-
-  const { contract } = await api("/api/legal/contract");
-  if (!contract) console.warn("⚠ The demo account has no contract: run `npm run demo:reset` first for contract-based answers.");
 
   const translations = [];
   for (const [i, t] of test.translations.entries()) {
@@ -319,11 +343,9 @@ async function main() {
 
   fs.mkdirSync(OUT_DIR, { recursive: true });
   fs.writeFileSync(`${base}.json`, JSON.stringify({ server: BASE, date, translations, legal }, null, 2));
-  fs.writeFileSync(`${base}.html`, buildHtml({ translations, legal, contractName: contract?.fileName, date }));
+  fs.writeFileSync(`${base}.html`, buildHtml({ test, translations, legal, contractName: contract?.fileName, date }));
 
-  const failed = [...translations, ...legal].filter((x) => x.error).length;
-  console.log(`\nDone${failed ? ` (${failed} failed — run again with:  npm.cmd run language-test -- --retry-failed)` : ""}.`);
-  console.log(`Open this file in your browser and print it:\n  ${base}.html`);
+  return { file: `${base}.html`, failed: [...translations, ...legal].filter((x) => x.error).length };
 }
 
 main().catch((err) => {
