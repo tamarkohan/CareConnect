@@ -56,21 +56,40 @@ async function api(p, body) {
       body: body ? JSON.stringify(body) : undefined,
       });
     } catch (err) {
+      const code = err.cause?.code || err.message;
+      // Something on this computer or network inspects HTTPS (an antivirus, a school or work network):
+      // Node must trust the certificates Windows trusts. Retrying won't help.
+      if (/CERT|SELF_SIGNED/.test(code)) {
+        throw new Error(`can't reach ${BASE}: certificate not trusted (${code}). In PowerShell run first:\n` +
+          `  $env:NODE_OPTIONS="--use-system-ca"\n  (see LANGUAGE_TEST.md, "If it doesn't run")`);
+      }
       // The server isn't answering (stopped, or restarting): wait for it a little.
       if (attempt < 4) {
-        console.log(`   … can't reach ${BASE} (${err.cause?.code || err.message}), retrying in ${attempt * 10}s`);
+        console.log(`   … can't reach ${BASE} (${code}), retrying in ${attempt * 10}s`);
         await sleep(attempt * 10_000);
         continue;
       }
       throw new Error(`can't reach ${BASE} — is the backend still running?`);
     }
-    const data = await res.json().catch(() => ({}));
-    if (res.ok) return data;
+    const text = await res.text();
+    let data = null;
+    try { data = JSON.parse(text); } catch { /* not JSON: see below */ }
+    if (res.ok && data) return data;
     // "AI busy" / rate limit: wait and try again a few times.
     if ((res.status === 503 || res.status === 429) && attempt < 4) {
       console.log(`   … server busy (${res.status}), retrying in ${attempt * 10}s`);
       await sleep(attempt * 10_000);
       continue;
+    }
+    // CareConnect always answers with JSON. Anything else comes from something in between
+    // (a firewall, an antivirus, the hosting's protection against automated requests).
+    if (!data) {
+      const title = text.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1]?.trim();
+      const server = res.headers.get("server");
+      const from = [server && `server "${server}"`, title && `page "${title}"`].filter(Boolean).join(", ");
+      const err = new Error(`${p} → ${res.status}, blocked before it reached CareConnect${from ? ` (${from})` : ""}`);
+      err.blocked = true;
+      throw err;
     }
     throw new Error(`${p} → ${res.status} ${data.error || ""}`);
   }
@@ -289,6 +308,7 @@ function loadTest(code) {
 async function main() {
   const tests = (CODES.length ? CODES : ["tl"]).map(loadTest);
   const signIn = await api("/api/auth/request-code", { phone: "123" }).catch((err) => {
+    if (err.blocked || /certificate/.test(err.message)) throw err;
     throw new Error(`Could not sign in as the demo account (${err.message}). Is DEMO_LOGIN=true on that server?`);
   });
   if (!signIn.token) throw new Error("The demo login didn't return a token. Is DEMO_LOGIN=true on that server?");
@@ -328,6 +348,17 @@ async function runTest(test, contract) {
   const prevLegal = (q) => previous?.legal?.find((x) => x.question === q && x.answer && !x.error);
 
   const translations = [];
+  const legal = [];
+  const saveAnswers = () => {
+    fs.mkdirSync(OUT_DIR, { recursive: true });
+    fs.writeFileSync(`${base}.json`, JSON.stringify({ server: BASE, date, translations, legal }, null, 2));
+  };
+  // Blocked by something in between: every next request would fail too, so keep
+  // what worked (--retry-failed won't ask for it again) and stop.
+  const stopIfBlocked = (err) => {
+    if (err.blocked) { saveAnswers(); throw err; }
+  };
+
   for (const [i, t] of test.translations.entries()) {
     const kept = prevTr(t);
     if (kept) { translations.push(kept); continue; }
@@ -339,16 +370,18 @@ async function runTest(test, contract) {
       translations.push({ ...t, result });
       console.log(`${result.translatedText.slice(0, 60)}${result.model && result.model !== PRIMARY ? `  [${result.model}]` : ""}`);
     } catch (err) {
+      stopIfBlocked(err);
       translations.push({ ...t, error: err.message });
       console.log(`FAILED: ${err.message}`);
     }
     await sleep(PAUSE_MS);
   }
 
-  // A fresh conversation, unless we continue one: then the server still has
-  // the earlier questions, so the follow-ups keep their context.
-  if (!previous) await api("/api/legal/clear-history", {});
-  const legal = [];
+  // A fresh conversation, unless we continue one that has answers: then the server
+  // still has the earlier questions, so the follow-ups keep their context.
+  if (!previous?.legal?.some((x) => x.answer)) {
+    await api("/api/legal/clear-history", {}).catch((err) => { stopIfBlocked(err); throw err; });
+  }
   for (const [i, item] of test.legal.entries()) {
     const { question } = item;
     // The meanings (en, he) always come from the data file, also for answers kept from an earlier run.
@@ -360,14 +393,14 @@ async function runTest(test, contract) {
       legal.push({ ...item, answer: r.answer, sources: r.sources, model: r.model });
       console.log(`${r.answer.length} chars${r.model && r.model !== PRIMARY ? `  [${r.model}]` : ""}`);
     } catch (err) {
+      stopIfBlocked(err);
       legal.push({ ...item, error: err.message });
       console.log(`FAILED: ${err.message}`);
     }
     await sleep(PAUSE_MS);
   }
 
-  fs.mkdirSync(OUT_DIR, { recursive: true });
-  fs.writeFileSync(`${base}.json`, JSON.stringify({ server: BASE, date, translations, legal }, null, 2));
+  saveAnswers();
   fs.writeFileSync(`${base}.html`, buildHtml({ test, translations, legal, contractName: contract?.fileName, date }));
 
   return { file: `${base}.html`, failed: [...translations, ...legal].filter((x) => x.error).length };
@@ -375,5 +408,11 @@ async function runTest(test, contract) {
 
 main().catch((err) => {
   console.error(`\n✗ ${err.message}`);
+  if (err.blocked) {
+    console.error(`\nSomething between this computer and ${BASE} blocks the requests: usually the network\n` +
+      `(a school or work firewall), an antivirus, or the site's protection against automated requests.\n` +
+      `Try another network (e.g. your phone's hotspot) or wait 10 minutes, then run the same command\n` +
+      `with --retry-failed at the end: the answers so far are kept. See LANGUAGE_TEST.md, "If it doesn't run".`);
+  }
   process.exit(1);
 });

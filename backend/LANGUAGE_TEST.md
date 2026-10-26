@@ -13,13 +13,26 @@ npm run demo:reset                                  # clean demo account with th
 npm run language-test -- hi ml https://careconnect-il-app-id9mu.ondigitalocean.app
 ```
 
-- **Windows PowerShell:** type `npm.cmd` instead of `npm` (e.g. `npm.cmd run demo:reset`),
-  otherwise PowerShell says "running scripts is disabled on this system". In cmd, `npm` works.
 - `hi` = Hindi, `ml` = Malayalam, `tl` = Tagalog (the default). One or more codes.
 - Without a URL it uses the local backend (`npm run dev`).
 - If some items fail (Gemini busy), add `--retry-failed` to the same command: only those are redone.
 - Output: `backend/reports/language-test-hindi-<date>.html` and `…-malayalam-<date>.html`.
   Open them in the browser and print (Ctrl+P). The last page is for you, not the raters.
+
+### If it doesn't run
+
+- **"running scripts is disabled on this system"** (Windows PowerShell): type `npm.cmd`
+  instead of `npm`, e.g. `npm.cmd run demo:reset`. In cmd, `npm` works.
+- **"certificate not trusted"**, `UNABLE_TO_GET_ISSUER_CERT_LOCALLY`, or Gemini "fetch failed":
+  something on the computer or network inspects HTTPS (an antivirus, a school or work
+  network). Tell Node to trust the certificates Windows trusts, in the same window, before
+  the commands: `$env:NODE_OPTIONS="--use-system-ca"` (PowerShell) or
+  `set NODE_OPTIONS=--use-system-ca` (cmd). It lasts until the window is closed. Needs
+  Node 22.15 or newer.
+- **"blocked before it reached CareConnect"** (403): the CareConnect server never answers 403;
+  the network, an antivirus or the hosting's protection against automated requests stopped
+  the requests. The script stops and keeps the answers it got. Try another network (e.g. a
+  phone hotspot) or wait 10 minutes, then run the same command with `--retry-failed`.
 
 Each sheet has 25 translations (Hebrew → the language: medical, transport, slang,
 general, double meanings) and one 10-question conversation with the legal
