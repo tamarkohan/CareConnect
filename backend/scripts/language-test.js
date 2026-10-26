@@ -5,6 +5,8 @@
  * data/language-test-<code>.json to the real translator (25 translations, 5 per
  * kind of text) and has a 10-question conversation with the legal bot, all in
  * that language, then writes the answers into an HTML page with 1–5 rating boxes.
+ * Of each legal answer the sheet shows only the first sentences, enough to rate
+ * the language; the full answers are in the .json file.
  * The wording of the sheet ("sheet") is in the same file. LANGUAGE_TEST.md says
  * how to put the caregivers' corrections back into the bots.
  *
@@ -34,6 +36,7 @@ const CODES = args.filter((a) => /^[a-z]{2}$/.test(a));
 const BASE = (args.find((a) => !a.startsWith("--") && !CODES.includes(a)) || process.env.LANGTEST_URL || "http://localhost:3000").replace(/\/+$/, "");
 const OUT_DIR = path.join(__dirname, "../reports");
 const PAUSE_MS = 1500; // be gentle with the Gemini free tier
+const ANSWER_SENTENCES = 3; // of each legal answer, on the sheet
 // The model the app is meant to use; answers from a backup model are marked.
 const PRIMARY = process.env.GEMINI_MODEL || "gemini-3.5-flash";
 
@@ -102,6 +105,28 @@ function md(text) {
   return out.join("\n");
 }
 
+/**
+ * The first few sentences of a legal answer, Markdown kept, so the sheet stays
+ * short. A list item counts as one sentence or more.
+ */
+function excerpt(text, max = ANSWER_SENTENCES) {
+  const lines = String(text).split("\n").map((l) => l.trim()).filter((l) => l && !/^([-*_]\s*){3,}$/.test(l));
+  const out = [];
+  let left = max;
+  for (const line of lines) {
+    if (!left) { out.push("…"); break; }
+    // Split after the list marker, so "1. Go there." is one sentence; "।" ends a Hindi sentence.
+    const [, marker = "", body] = line.match(/^((?:[-*•]|\d+[.)])\s+)?(.*)$/);
+    const parts = body.split(/(?<=[.!?।])\s+(?![a-z])/); // not after "e.g." in the middle of a sentence
+    let kept = marker + parts.slice(0, left).join(" ");
+    if ((kept.match(/\*\*/g) || []).length % 2) kept += "**"; // don't leave a bold part open
+    if (parts.length > left) { out.push(`${kept} …`); break; }
+    out.push(kept);
+    left -= parts.length;
+  }
+  return out.join("\n");
+}
+
 /** Fills {name} placeholders in the sheet's wording. */
 const fill = (text, vars) => String(text).replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m));
 
@@ -152,17 +177,13 @@ function buildHtml({ test, translations, legal, contractName, date }) {
       <div class="body">
         <div class="label">${esc(S.question)}</div>
         <div class="question">${esc(m.question)}</div>
-        ${m.en ? `<div class="key"><b>${esc(S.meaning)}</b> ${esc(m.en)}</div>` : ""}
-        ${m.he ? `<div class="key" dir="rtl">${esc(m.he)}</div>` : ""}
+        ${m.en || m.he ? `<div class="key"><b>${esc(S.meaning)}</b> ${[m.en, m.he].filter(Boolean).map((x) => `<bdi>${esc(x)}</bdi>`).join(" · ")}</div>` : ""}
         <div class="label">${esc(S.appAnswer)}</div>
-        ${m.error ? `<div class="err">Error: ${esc(m.error)}</div>` : `<div class="answer md">${md(m.answer)}</div>
-        ${m.sources?.length ? `<div class="small"><b>${esc(S.sources)}</b> ${m.sources.map((s) => `[${s.id}] ${esc(s.title)}`).join(" · ")}</div>` : ""}`}
+        ${m.error ? `<div class="err">Error: ${esc(m.error)}</div>` : `<div class="answer md">${md(excerpt(m.answer))}</div>`}
         <div class="ratings">
           ${scale(esc(S.rateEasy))}
           ${scale(esc(S.rateNatural))}
-          ${scale(esc(S.rateHelpful))}
           ${lineField(esc(S.betterWords))}
-          ${lineField(esc(S.comments))}
         </div>
       </div>
     </div>`).join("");

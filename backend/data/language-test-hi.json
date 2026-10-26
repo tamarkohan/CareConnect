@@ -35,12 +35,9 @@
     "rateAlternatives": "क्या दूसरे मतलब सही हैं? · Are the other meanings right?",
     "betterTranslation": "बेहतर अनुवाद · Better translation:",
     "question": "सवाल / Question",
-    "appAnswer": "ऐप का जवाब / App's answer",
-    "sources": "स्रोत / Sources:",
+    "appAnswer": "ऐप के जवाब की शुरुआत / Start of the app's answer",
     "rateEasy": "क्या समझना आसान है? · Easy to understand?",
-    "rateHelpful": "क्या जवाब से मदद मिली? · Was the answer helpful?",
-    "betterWords": "अजीब या गलत शब्द → बेहतर शब्द · Strange or wrong words → better words:",
-    "comments": "टिप्पणी · Comments:"
+    "betterWords": "अजीब या गलत शब्द → बेहतर शब्द · Strange or wrong words → better words:"
   },
   "translations": [
     { "group": "medical", "he": "לתת לו כדור אקמול אחד כל 6 שעות, לא יותר מ-4 ביום", "en": "Give him one Acamol (paracetamol) tablet every 6 hours, not more than 4 tablets a day." },

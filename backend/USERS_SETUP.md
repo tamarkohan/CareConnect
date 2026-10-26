@@ -114,7 +114,8 @@ meaning) and a 10-question legal conversation to the real bots, in each language
 asked for (`tl` Tagalog – the default, `hi` Hindi, `ml` Malayalam), and writes
 `backend/reports/language-test-<language>-<date>.html`: open it in the browser
 and print it (Ctrl+P). Each item has 1–5 rating boxes and a line for a better
-translation; the last page is a summary for the interviewer. Without a URL it uses
+translation; of each legal answer only the first 3 sentences are printed (the full
+answers are in the `.json` next to it); the last page is a summary for the interviewer. Without a URL it uses
 the local backend (`npm run dev`). The inputs and the sheet's wording are in
 `data/language-test-<code>.json` — edit them freely.
 [LANGUAGE_TEST.md](LANGUAGE_TEST.md) explains how to run the session and how to put

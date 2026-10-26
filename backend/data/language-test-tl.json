@@ -34,12 +34,9 @@
     "rateAlternatives": "Tama ba ang ibang kahulugan? · Are the other meanings right?",
     "betterTranslation": "Mas magandang salin · Better translation:",
     "question": "Tanong / Question",
-    "appAnswer": "Sagot ng app / App's answer",
-    "sources": "Pinagkunan / Sources:",
+    "appAnswer": "Simula ng sagot ng app / Start of the app's answer",
     "rateEasy": "Madaling maintindihan? · Easy to understand?",
-    "rateHelpful": "Nakatulong ba ang sagot? · Was the answer helpful?",
-    "betterWords": "Mali o kakaibang salita → mas magandang salita · Strange or wrong words → better words:",
-    "comments": "Komento / Comments:"
+    "betterWords": "Mali o kakaibang salita → mas magandang salita · Strange or wrong words → better words:"
   },
   "translations": [
     { "group": "medical", "he": "לתת לו כדור אקמול אחד כל 6 שעות, לא יותר מ-4 ביום", "en": "Give him one Acamol (paracetamol) tablet every 6 hours, not more than 4 tablets a day." },

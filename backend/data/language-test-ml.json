@@ -35,12 +35,9 @@
     "rateAlternatives": "മറ്റ് അർത്ഥങ്ങൾ ശരിയാണോ? · Are the other meanings right?",
     "betterTranslation": "കൂടുതൽ നല്ല വിവർത്തനം · Better translation:",
     "question": "ചോദ്യം / Question",
-    "appAnswer": "ആപ്പിന്റെ ഉത്തരം / App's answer",
-    "sources": "ഉറവിടങ്ങൾ / Sources:",
+    "appAnswer": "ആപ്പിന്റെ ഉത്തരത്തിന്റെ തുടക്കം / Start of the app's answer",
     "rateEasy": "മനസ്സിലാക്കാൻ എളുപ്പമാണോ? · Easy to understand?",
-    "rateHelpful": "ഉത്തരം ഉപകാരപ്പെട്ടോ? · Was the answer helpful?",
-    "betterWords": "തെറ്റായ അല്ലെങ്കിൽ ചേരാത്ത വാക്ക് → നല്ല വാക്ക് · Strange or wrong words → better words:",
-    "comments": "അഭിപ്രായം · Comments:"
+    "betterWords": "തെറ്റായ അല്ലെങ്കിൽ ചേരാത്ത വാക്ക് → നല്ല വാക്ക് · Strange or wrong words → better words:"
   },
   "translations": [
     { "group": "medical", "he": "לתת לו כדור אקמול אחד כל 6 שעות, לא יותר מ-4 ביום", "en": "Give him one Acamol (paracetamol) tablet every 6 hours, not more than 4 tablets a day." },
