@@ -21,8 +21,9 @@ npm run language-test -- hi ml https://careconnect-il-app-id9mu.ondigitalocean.a
 
 Each sheet has 25 translations (Hebrew → the language: medical, transport, slang,
 general, double meanings) and one 10-question conversation with the legal
-assistant in that language. The sentences, the questions and the wording of the
-sheet are in [`data/language-test-hi.json`](data/language-test-hi.json) and
+assistant in that language. Every item shows what it means in English (and Hebrew),
+so you can follow along without reading Hindi or Malayalam. The sentences, the
+questions and the wording of the sheet are in [`data/language-test-hi.json`](data/language-test-hi.json) and
 [`data/language-test-ml.json`](data/language-test-ml.json). The Hebrew sentences are
 the same as in the Tagalog test, so you can compare languages.
 

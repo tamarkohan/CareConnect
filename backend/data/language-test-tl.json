@@ -1,5 +1,5 @@
 {
-  "_about": "Inputs for `npm run language-test -- tl` (Tagalog rating sheet for caregivers, see LANGUAGE_TEST.md). 'sheet' is the wording of the printed sheet. 'en' is what the text really means, shown to the raters as the answer key. Edit freely.",
+  "_about": "Inputs for `npm run language-test -- tl` (Tagalog rating sheet for caregivers, see LANGUAGE_TEST.md). 'sheet' is the wording of the printed sheet. 'en' is what the text really means, shown to the raters as the answer key. Each legal question has its meaning in English ('en') and Hebrew ('he'), shown under it. Edit freely.",
   "language": "Tagalog",
   "readerLanguage": "tl",
   "sheet": {
@@ -73,15 +73,15 @@
     { "group": "double", "he": "בית חולים", "en": "\"Hospital\". Only one meaning — no \"could also mean\"." }
   ],
   "legal": [
-    "Ilang araw ng bakasyon ang meron ako bawat taon?",
-    "Pero sa kontrata ko, 10 araw lang ang nakasulat. Legal ba iyon?",
-    "Puwede bang itago ng employer ang passport ko?",
-    "Ano ang aking lingguhang araw ng pahinga at ilang oras dapat ito?",
-    "May kaltas sa sahod ko para sa pabahay, pagkain at bayad sa ahensya. Pinapayagan ba iyon?",
-    "Magkano ang minimum na sahod ng caregiver sa Israel?",
-    "Kailangan ko bang linisin ang buong bahay at hugasan ang kotse ng pamilya?",
-    "Ano ang mangyayari kung magkasakit ako? May bayad ba ang sick leave?",
-    "Kung gusto kong umalis sa trabaho, ilang araw na abiso ang kailangan?",
-    "Saan ako puwedeng humingi ng tulong kung hindi ako binayaran ngayong buwan?"
+    { "question": "Ilang araw ng bakasyon ang meron ako bawat taon?", "en": "How many vacation days do I have each year?", "he": "כמה ימי חופשה מגיעים לי בכל שנה?" },
+    { "question": "Pero sa kontrata ko, 10 araw lang ang nakasulat. Legal ba iyon?", "en": "But my contract says only 10 days. Is that legal?", "he": "אבל בחוזה שלי כתוב רק 10 ימים. זה חוקי?" },
+    { "question": "Puwede bang itago ng employer ang passport ko?", "en": "Can the employer keep my passport?", "he": "האם המעסיק שלי יכול להחזיק אצלו את הדרכון שלי?" },
+    { "question": "Ano ang aking lingguhang araw ng pahinga at ilang oras dapat ito?", "en": "What is my weekly rest day, and how many hours should it be?", "he": "מהו יום המנוחה השבועי שלי, וכמה שעות הוא צריך להיות?" },
+    { "question": "May kaltas sa sahod ko para sa pabahay, pagkain at bayad sa ahensya. Pinapayagan ba iyon?", "en": "There are deductions from my salary for housing, food and the agency fee. Is that allowed?", "he": "מורידים לי מהמשכורת כסף על מגורים, אוכל ותשלום לחברת הסיעוד. זה מותר?" },
+    { "question": "Magkano ang minimum na sahod ng caregiver sa Israel?", "en": "How much is the minimum wage for a caregiver in Israel?", "he": "מה שכר המינימום של מטפלת בישראל?" },
+    { "question": "Kailangan ko bang linisin ang buong bahay at hugasan ang kotse ng pamilya?", "en": "Do I have to clean the whole house and wash the family's car?", "he": "האם אני חייבת לנקות את כל הבית ולשטוף את המכונית של המשפחה?" },
+    { "question": "Ano ang mangyayari kung magkasakit ako? May bayad ba ang sick leave?", "en": "What happens if I get sick? Is sick leave paid?", "he": "מה קורה אם אני חולה? האם משלמים על ימי מחלה?" },
+    { "question": "Kung gusto kong umalis sa trabaho, ilang araw na abiso ang kailangan?", "en": "If I want to leave the job, how many days' notice is needed?", "he": "אם אני רוצה לעזוב את העבודה, כמה ימים מראש אני צריכה להודיע?" },
+    { "question": "Saan ako puwedeng humingi ng tulong kung hindi ako binayaran ngayong buwan?", "en": "Where can I ask for help if I wasn't paid this month?", "he": "לא קיבלתי משכורת החודש. איפה אפשר לקבל עזרה?" }
   ]
 }

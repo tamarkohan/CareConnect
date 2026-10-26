@@ -1,5 +1,5 @@
 {
-  "_about": "Inputs for `npm run language-test -- hi` (Hindi rating sheet for caregivers, see LANGUAGE_TEST.md). Same Hebrew sentences as the Tagalog test, so languages can be compared. 'sheet' is the wording of the printed sheet. 'en' is what the text really means, shown to the raters as the answer key. 'legal' is one conversation with the legal assistant, written the way caregivers type. Have a native speaker check the questions and wording before printing. Edit freely.",
+  "_about": "Inputs for `npm run language-test -- hi` (Hindi rating sheet for caregivers, see LANGUAGE_TEST.md). Same Hebrew sentences as the Tagalog test, so languages can be compared. 'sheet' is the wording of the printed sheet. 'en' is what the text really means, shown to the raters as the answer key. Each legal question has its meaning in English ('en') and Hebrew ('he'), shown under it. 'legal' is one conversation with the legal assistant, written the way caregivers type. Have a native speaker check the questions and wording before printing. Edit freely.",
   "language": "Hindi",
   "readerLanguage": "hi",
   "sheet": {
@@ -74,15 +74,15 @@
     { "group": "double", "he": "בית חולים", "en": "\"Hospital\". Only one meaning — no \"could also mean\"." }
   ],
   "legal": [
-    "मुझे हर साल कितने दिन की छुट्टी मिलती है?",
-    "लेकिन मेरे कॉन्ट्रैक्ट में सिर्फ़ 10 दिन लिखे हैं। क्या यह कानूनी है?",
-    "क्या मेरा एम्प्लॉयर मेरा पासपोर्ट अपने पास रख सकता है?",
-    "मेरी हफ़्ते की छुट्टी कौन-सा दिन है, और वह कितने घंटे की होनी चाहिए?",
-    "मेरी सैलरी से रहने, खाने और एजेंसी की फ़ीस के पैसे काटे जाते हैं। क्या ऐसा करने की इजाज़त है?",
-    "इज़राइल में केयरगिवर की मिनिमम सैलरी कितनी है?",
-    "क्या मुझे पूरा घर साफ़ करना और परिवार की गाड़ी धोना ज़रूरी है?",
-    "अगर मैं बीमार हो जाऊँ तो क्या होगा? क्या सिक लीव के पैसे मिलते हैं?",
-    "अगर मैं नौकरी छोड़ना चाहूँ, तो कितने दिन पहले बताना होगा?",
-    "इस महीने मुझे सैलरी नहीं मिली। मैं मदद के लिए कहाँ जा सकती हूँ?"
+    { "question": "मुझे हर साल कितने दिन की छुट्टी मिलती है?", "en": "How many days of leave do I get every year?", "he": "כמה ימי חופשה מגיעים לי בכל שנה?" },
+    { "question": "लेकिन मेरे कॉन्ट्रैक्ट में सिर्फ़ 10 दिन लिखे हैं। क्या यह कानूनी है?", "en": "But my contract says only 10 days. Is that legal?", "he": "אבל בחוזה שלי כתוב רק 10 ימים. זה חוקי?" },
+    { "question": "क्या मेरा एम्प्लॉयर मेरा पासपोर्ट अपने पास रख सकता है?", "en": "Can my employer keep my passport?", "he": "האם המעסיק שלי יכול להחזיק אצלו את הדרכון שלי?" },
+    { "question": "मेरी हफ़्ते की छुट्टी कौन-सा दिन है, और वह कितने घंटे की होनी चाहिए?", "en": "Which day is my weekly day off, and how many hours should it be?", "he": "מהו יום המנוחה השבועי שלי, וכמה שעות הוא צריך להיות?" },
+    { "question": "मेरी सैलरी से रहने, खाने और एजेंसी की फ़ीस के पैसे काटे जाते हैं। क्या ऐसा करने की इजाज़त है?", "en": "Money for housing, food and the agency fee is cut from my salary. Is that allowed?", "he": "מורידים לי מהמשכורת כסף על מגורים, אוכל ותשלום לחברת הסיעוד. זה מותר?" },
+    { "question": "इज़राइल में केयरगिवर की मिनिमम सैलरी कितनी है?", "en": "What is the minimum salary for a caregiver in Israel?", "he": "מה שכר המינימום של מטפלת בישראל?" },
+    { "question": "क्या मुझे पूरा घर साफ़ करना और परिवार की गाड़ी धोना ज़रूरी है?", "en": "Do I have to clean the whole house and wash the family's car?", "he": "האם אני חייבת לנקות את כל הבית ולשטוף את המכונית של המשפחה?" },
+    { "question": "अगर मैं बीमार हो जाऊँ तो क्या होगा? क्या सिक लीव के पैसे मिलते हैं?", "en": "What happens if I get sick? Do I get paid for sick leave?", "he": "מה קורה אם אני חולה? האם משלמים על ימי מחלה?" },
+    { "question": "अगर मैं नौकरी छोड़ना चाहूँ, तो कितने दिन पहले बताना होगा?", "en": "If I want to leave the job, how many days before do I have to tell them?", "he": "אם אני רוצה לעזוב את העבודה, כמה ימים מראש אני צריכה להודיע?" },
+    { "question": "इस महीने मुझे सैलरी नहीं मिली। मैं मदद के लिए कहाँ जा सकती हूँ?", "en": "I didn't get my salary this month. Where can I go for help?", "he": "לא קיבלתי משכורת החודש. איפה אפשר לקבל עזרה?" }
   ]
 }

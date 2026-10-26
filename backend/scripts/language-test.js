@@ -152,6 +152,8 @@ function buildHtml({ test, translations, legal, contractName, date }) {
       <div class="body">
         <div class="label">${esc(S.question)}</div>
         <div class="question">${esc(m.question)}</div>
+        ${m.en ? `<div class="key"><b>${esc(S.meaning)}</b> ${esc(m.en)}</div>` : ""}
+        ${m.he ? `<div class="key" dir="rtl">${esc(m.he)}</div>` : ""}
         <div class="label">${esc(S.appAnswer)}</div>
         ${m.error ? `<div class="err">Error: ${esc(m.error)}</div>` : `<div class="answer md">${md(m.answer)}</div>
         ${m.sources?.length ? `<div class="small"><b>${esc(S.sources)}</b> ${m.sources.map((s) => `[${s.id}] ${esc(s.title)}`).join(" · ")}</div>` : ""}`}
@@ -326,16 +328,18 @@ async function runTest(test, contract) {
   // the earlier questions, so the follow-ups keep their context.
   if (!previous) await api("/api/legal/clear-history", {});
   const legal = [];
-  for (const [i, question] of test.legal.entries()) {
+  for (const [i, item] of test.legal.entries()) {
+    const { question } = item;
+    // The meanings (en, he) always come from the data file, also for answers kept from an earlier run.
     const kept = prevLegal(question);
-    if (kept) { legal.push(kept); continue; }
+    if (kept) { legal.push({ ...kept, ...item }); continue; }
     process.stdout.write(`Legal ${i + 1}/${test.legal.length} … `);
     try {
       const r = await api("/api/legal/ask", { question, language: test.language });
-      legal.push({ question, answer: r.answer, sources: r.sources, model: r.model });
+      legal.push({ ...item, answer: r.answer, sources: r.sources, model: r.model });
       console.log(`${r.answer.length} chars${r.model && r.model !== PRIMARY ? `  [${r.model}]` : ""}`);
     } catch (err) {
-      legal.push({ question, error: err.message });
+      legal.push({ ...item, error: err.message });
       console.log(`FAILED: ${err.message}`);
     }
     await sleep(PAUSE_MS);
