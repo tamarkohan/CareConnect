@@ -411,8 +411,9 @@ main().catch((err) => {
   if (err.blocked) {
     console.error(`\nSomething between this computer and ${BASE} blocks the requests: usually the network\n` +
       `(a school or work firewall), an antivirus, or the site's protection against automated requests.\n` +
-      `Try another network (e.g. your phone's hotspot) or wait 10 minutes, then run the same command\n` +
-      `with --retry-failed at the end: the answers so far are kept. See LANGUAGE_TEST.md, "If it doesn't run".`);
+      `Run the backend on this computer instead: \`npm run dev\` in a second window, then this command\n` +
+      `without the URL. Or try another network (e.g. your phone's hotspot). Add --retry-failed at the end:\n` +
+      `the answers so far are kept. See LANGUAGE_TEST.md, "If it doesn't run".`);
   }
   process.exit(1);
 });

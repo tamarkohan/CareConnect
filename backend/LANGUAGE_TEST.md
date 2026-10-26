@@ -29,10 +29,25 @@ npm run language-test -- hi ml https://careconnect-il-app-id9mu.ondigitalocean.a
   the commands: `$env:NODE_OPTIONS="--use-system-ca"` (PowerShell) or
   `set NODE_OPTIONS=--use-system-ca` (cmd). It lasts until the window is closed. Needs
   Node 22.15 or newer.
-- **"blocked before it reached CareConnect"** (403): the CareConnect server never answers 403;
-  the network, an antivirus or the hosting's protection against automated requests stopped
-  the requests. The script stops and keeps the answers it got. Try another network (e.g. a
-  phone hotspot) or wait 10 minutes, then run the same command with `--retry-failed`.
+- **"blocked before it reached CareConnect"** (403, e.g. page "Access Denied"): the CareConnect
+  server never answers 403; the laptop's web filter, an antivirus or the hosting's protection
+  stopped the requests. The script stops and keeps the answers it got. Run the backend on the
+  laptop instead (requests to `localhost` aren't filtered), in two PowerShell windows:
+
+  ```
+  # window 1 – the backend; leave it open
+  cd C:\CareConnect\backend
+  $env:NODE_OPTIONS="--use-system-ca"
+  npm.cmd run dev
+
+  # window 2 – once window 1 says "CareConnect backend running"
+  cd C:\CareConnect\backend
+  $env:NODE_OPTIONS="--use-system-ca"
+  npm.cmd run language-test -- hi ml --retry-failed
+  ```
+
+  It uses `backend/.env` (same database and Gemini key as `demo:reset`). Or try another
+  network (e.g. a phone hotspot) with the live URL.
 
 Each sheet has 25 translations (Hebrew → the language: medical, transport, slang,
 general, double meanings) and one 10-question conversation with the legal
