@@ -13,6 +13,8 @@ npm run demo:reset                                  # clean demo account with th
 npm run language-test -- hi ml https://careconnect-il-app-id9mu.ondigitalocean.app
 ```
 
+- **Windows PowerShell:** type `npm.cmd` instead of `npm` (e.g. `npm.cmd run demo:reset`),
+  otherwise PowerShell says "running scripts is disabled on this system". In cmd, `npm` works.
 - `hi` = Hindi, `ml` = Malayalam, `tl` = Tagalog (the default). One or more codes.
 - Without a URL it uses the local backend (`npm run dev`).
 - If some items fail (Gemini busy), add `--retry-failed` to the same command: only those are redone.
