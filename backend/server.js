@@ -18,6 +18,8 @@ const authRouter = require("./routes/auth");
 const ratesRouter = require("./routes/rates");
 const payslipsRouter = require("./routes/payslips");
 const communityRouter = require("./routes/community");
+const tasksRouter = require("./routes/tasks");
+const journalRouter = require("./routes/journal");
 
 // ── App setup ─────────────────────────────────────────────────────────────────
 const app = express();
@@ -55,6 +57,8 @@ app.use("/api/auth", authRouter);
 app.use("/api/rates", ratesRouter);
 app.use("/api/payslips", payslipsRouter);
 app.use("/api/community", communityRouter);
+app.use("/api/tasks", tasksRouter);
+app.use("/api/journal", journalRouter);
 
 // ── 404 handler ───────────────────────────────────────────────────────────────
 app.use((_req, res) => {

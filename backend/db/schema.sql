@@ -195,6 +195,37 @@ CREATE TABLE IF NOT EXISTS place_interests (
 );
 CREATE INDEX IF NOT EXISTS place_interests_place_idx ON place_interests (place_id);
 
+-- ── Tasks and journal (personal, encrypted) ────────────────────────────────
+-- The caregiver's to-do list and the Burden / Gratitude books. The texts are
+-- encrypted like everything personal (tasks can name medicines, the journal is
+-- private). Example items for new users are stored with an "exampleKey" instead
+-- of a text, so the app shows them in its current language.
+CREATE TABLE IF NOT EXISTS tasks (
+  id         BIGSERIAL PRIMARY KEY,
+  user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  ciphertext BYTEA NOT NULL,      -- {label, time} or {exampleKey, time}
+  iv         BYTEA NOT NULL,
+  auth_tag   BYTEA NOT NULL,
+  done_at    TIMESTAMPTZ,         -- null = still to do; set = completed
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS tasks_user_idx ON tasks (user_id, id);
+
+CREATE TABLE IF NOT EXISTS journal_entries (
+  id         BIGSERIAL PRIMARY KEY,
+  user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  ciphertext BYTEA NOT NULL,      -- {book, mood, text} or {book, mood, exampleKey}
+  iv         BYTEA NOT NULL,
+  auth_tag   BYTEA NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS journal_entries_user_idx ON journal_entries (user_id, created_at);
+
+-- When the example tasks / journal entries were added for this user (once only,
+-- so deleting them doesn't bring them back).
+ALTER TABLE users ADD COLUMN IF NOT EXISTS tasks_examples_at   TIMESTAMPTZ;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS journal_examples_at TIMESTAMPTZ;
+
 -- ── Lock the tables down for Supabase's API roles ───────────────────────────
 -- Row Level Security on with no policies = anon/authenticated see nothing.
 -- (The backend connects as the database owner, which bypasses RLS.)
@@ -210,6 +241,8 @@ ALTER TABLE payslip_files  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE community_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE contact_requests   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE place_interests    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tasks              ENABLE ROW LEVEL SECURITY;
+ALTER TABLE journal_entries    ENABLE ROW LEVEL SECURITY;
 
 DO $$
 BEGIN

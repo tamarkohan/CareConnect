@@ -6,6 +6,7 @@
  *   - uploads the fake contract (data/demo-contract.txt, or the file you pass)
  *     with its summary, so the demo starts with a contract already there
  *   - adds three example translations
+ *   - deletes its tasks and journal, so the example ones come back on the next visit
  *   - shows the legal disclaimer again on the next visit
  *
  * Run it before each interview so earlier testers' messages are gone.
@@ -26,6 +27,8 @@ const users = require("../services/users");
 const contracts = require("../services/contractStore");
 const legalHistory = require("../services/legalHistory");
 const translations = require("../services/translationHistory");
+const tasks = require("../services/tasks");
+const journal = require("../services/journal");
 const { readContractFiles, summariseContract } = require("../services/contractReader");
 
 const EXAMPLE_TRANSLATIONS = [
@@ -57,9 +60,14 @@ async function main() {
   ]);
 
   const user = await users.findOrCreateUser({ kind: "phone", value: users.DEMO_PHONE });
-  await db.query("UPDATE users SET disclaimer_version = NULL WHERE id = $1", [user.id]);
+  await db.query(
+    "UPDATE users SET disclaimer_version = NULL, tasks_examples_at = NULL, journal_examples_at = NULL WHERE id = $1",
+    [user.id]
+  );
   await legalHistory.clearMessages(user.id);
   await translations.clearTranslations(user.id);
+  await tasks.clearTasks(user.id);
+  await journal.clearEntries(user.id);
 
   console.log("Summarising the demo contract with Gemini…");
   const summary = await summariseContract(text);
@@ -69,7 +77,7 @@ async function main() {
   for (const t of [...EXAMPLE_TRANSLATIONS].reverse()) await translations.addTranslation(user.id, t);
 
   console.log(`Demo account reset: contract "${fileName}" (${text.length} chars, summary ${summary ? "ok" : "FAILED"}), ` +
-    `${EXAMPLE_TRANSLATIONS.length} translations, empty chat.`);
+    `${EXAMPLE_TRANSLATIONS.length} translations, empty chat, example tasks and journal.`);
   await db.pool.end();
 }
 
