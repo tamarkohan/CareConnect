@@ -15,7 +15,8 @@
  *
  * New users get a few example tasks, once (users.tasks_examples_at). They have an
  * exampleKey instead of a label, so the app shows them in its current language,
- * and they are removed as soon as the user has a task of their own.
+ * can't be edited (they stay examples), and are removed as soon as the user has a
+ * task of their own.
  */
 
 const db = require("./db");
@@ -152,13 +153,14 @@ async function addTask(userId, input) {
   return listTasks(userId);
 }
 
-/** Changes the text, time and repeat days. An edited example becomes the user's own task. */
+/** Changes the text, time and repeat days. */
 async function updateTask(userId, id, input) {
   const changes = cleanInput(input);
   const found = await db.withTransaction(async (client) => {
     const row = (await loadRows(client, userId)).find((r) => r.id === id);
     if (!row) return false;
-    const { exampleKey, translations, ...rest } = row.payload;
+    if (row.payload.exampleKey) throw userError("Examples can't be changed. Add a task of your own.", "exampleReadOnly");
+    const { translations, ...rest } = row.payload;
     await savePayload(client, userId, id, { ...rest, ...changes });   // old translations no longer match
     return true;
   });

@@ -249,7 +249,8 @@ Both pages save to the server, per account, encrypted (`services/tasks.js`,
 
 - **Tasks:** "+ Add task" opens a form: the text, a time picked from a list (every 15 minutes,
   like Google Calendar; optional) and **Repeat**: doesn't repeat, every day, or on chosen days.
-  Every task has **Edit**, **Share** (the phone's share menu; on a computer it copies the text)
+  Every task has **Edit**, **Share** (the phone's share menu; on a computer it copies the text,
+  since the Windows share window that Chrome / Edge open doesn't pass the text on reliably)
   and **Delete**. Ticking a one-off task moves it to **Completed tasks** with the day and time it
   was done; unticking brings it back. A repeating task is ticked for today only: that day goes to
   Completed tasks and the task comes back on its next day ("today" is the phone's day). Repeating
@@ -267,8 +268,9 @@ Both pages save to the server, per account, encrypted (`services/tasks.js`,
 - **Examples for new users:** the first time someone opens Tasks they get 3 example tasks
   (one completed, one repeating every day), and the first time they open the Journal 2 example
   entries. They are marked "Example" and show in the current app language (the texts are
-  `task1`… and `journalEntry1`… in `src/translations.ts`). Like on the translator, the user's
-  first own task or entry (or editing an example) replaces them. They are added once per account
+  `task1`… and `journalEntry1`… in `src/translations.ts`). They can be ticked, shared and
+  deleted but not edited, so they always stay examples. Like on the translator, the user's
+  first own task or entry replaces them. They are added once per account
   (`users.tasks_examples_at` / `journal_examples_at`); `npm run demo:reset` resets this for the demo.
 - Texts of the buttons and messages: `src/tasksJournalStrings.ts`; the time list is
   `src/components/TimePicker.tsx`, the add / edit form `src/components/TaskForm.tsx`.

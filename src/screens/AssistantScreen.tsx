@@ -19,7 +19,7 @@ import { Audio } from "expo-av";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
 import * as Clipboard from "expo-clipboard";
-import { showAlert, uriToBase64, confirmAction } from "../api/platform";
+import { showAlert, uriToBase64, confirmAction, hasShareMenu } from "../api/platform";
 import TopBar from "../components/TopBar";
 import MarkdownText from "../components/MarkdownText";
 import { useApp } from "../AppContext";
@@ -362,8 +362,8 @@ export default function AssistantScreen({ navigation }: Props) {
 
     const shareOther = async () => {
         if (!exportList) return;
-        // Browsers without a share menu (most computers): copy instead.
-        if (Platform.OS === "web" && !(navigator as any).share) {
+        // On a computer: copy instead (see hasShareMenu).
+        if (!hasShareMenu()) {
             await copyExport();
             return;
         }

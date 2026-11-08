@@ -36,12 +36,28 @@ export function confirmAction(message: string, okLabel = "OK", cancelLabel = "Ca
 }
 
 /**
- * Opens the phone's share menu (WhatsApp, SMS, email…) with this text. Browsers
- * without a share menu (most computers) copy it instead, so the caller can show
- * "Copied"; if even that is blocked, the text is shown to copy by hand.
+ * True where "Share" should open a share menu: the phone apps and a phone's
+ * browser. A computer's browser may have one too (Chrome / Edge on Windows open
+ * the Windows share window), but it doesn't pass plain text on reliably, so on
+ * computers we copy instead.
+ */
+export function hasShareMenu(): boolean {
+    if (Platform.OS !== "web") return true;
+    if (typeof navigator === "undefined" || !(navigator as any).share) return false;
+    const uaData = (navigator as any).userAgentData;
+    if (uaData) return !!uaData.mobile || /Android/i.test(uaData.platform ?? "");
+    const ua = navigator.userAgent || "";
+    // An iPad asks for the computer version of sites, so it looks like a Mac with a touch screen.
+    return /Android|iPhone|iPad|iPod|Mobile/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+}
+
+/**
+ * Opens the phone's share menu (WhatsApp, SMS, email…) with this text. On a
+ * computer it copies the text instead, so the caller can show "Copied"; if even
+ * that is blocked, the text is shown to copy by hand.
  */
 export async function shareText(text: string): Promise<"shared" | "copied" | "shown" | "cancelled"> {
-    if (Platform.OS === "web" && !(typeof navigator !== "undefined" && (navigator as any).share)) {
+    if (!hasShareMenu()) {
         try {
             await Clipboard.setStringAsync(text);
             return "copied";

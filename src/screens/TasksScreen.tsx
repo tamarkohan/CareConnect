@@ -263,7 +263,8 @@ export default function TasksScreen({ navigation }: Props) {
                             {!!task.exampleKey && <Text style={s.exampleBadge}>{tj.example}</Text>}
                         </View>
                         <View style={s.itemActions}>
-                            {!done && (
+                            {/* Examples can't be edited: they stay examples until the user adds their own. */}
+                            {!done && !task.exampleKey && (
                                 <Pressable
                                     onPress={() => {
                                         setAdding(false);

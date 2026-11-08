@@ -8,7 +8,7 @@
  *
  * GET  /api/tasks              New users get a few example tasks the first time.
  * POST /api/tasks              Body: { label, time?, days?, lang }   add
- * POST /api/tasks/update       Body: { id, label, time?, days?, lang }   edit
+ * POST /api/tasks/update       Body: { id, label, time?, days?, lang }   edit (not examples)
  * POST /api/tasks/done         Body: { id, done: boolean, date: "YYYY-MM-DD" }   tick / untick
  *                              (date = the user's today; a repeating task is ticked for that day)
  * POST /api/tasks/delete       Body: { id }
