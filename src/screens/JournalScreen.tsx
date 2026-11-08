@@ -333,9 +333,12 @@ export default function JournalScreen({ navigation }: Props) {
                                         <View style={s.entryFooter}>
                                             {!!entry.exampleKey && <Text style={s.exampleBadge}>{tj.example}</Text>}
                                             <View style={s.itemActions}>
-                                                <Pressable onPress={() => startEdit(entry)} hitSlop={6} accessibilityRole="button">
-                                                    <Text style={s.actionText}>✏️ {tj.edit}</Text>
-                                                </Pressable>
+                                                {/* Examples can't be edited: they stay examples until the user writes their own. */}
+                                                {!entry.exampleKey && (
+                                                    <Pressable onPress={() => startEdit(entry)} hitSlop={6} accessibilityRole="button">
+                                                        <Text style={s.actionText}>✏️ {tj.edit}</Text>
+                                                    </Pressable>
+                                                )}
                                                 <Pressable onPress={() => shareEntry(entry)} hitSlop={6} accessibilityRole="button">
                                                     <Text style={s.actionText}>{copiedId === entry.id ? tj.copied : `📤 ${tj.share}`}</Text>
                                                 </Pressable>

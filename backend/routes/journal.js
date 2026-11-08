@@ -6,7 +6,7 @@
  *                              text in its language. New users get two examples the first time;
  *                              they go away once the user has an entry of their own.
  * POST /api/journal          Body: { book: "burden" | "gratitude", mood, text } → { entry }
- * POST /api/journal/update   Body: { id, mood, text } → { entry }   (an edited example becomes the user's own)
+ * POST /api/journal/update   Body: { id, mood, text } → { entry }   (not for examples)
  * POST /api/journal/delete   Body: { id } → { success: true }
  */
 

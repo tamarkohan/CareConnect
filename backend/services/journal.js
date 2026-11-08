@@ -6,7 +6,8 @@
  *
  * New users get two example entries, once (users.journal_examples_at). They are
  * stored with an exampleKey instead of a text, so the app shows them in its
- * current language, and are removed as soon as the user has an entry of their own.
+ * current language, can't be edited (they stay examples), and are removed as soon
+ * as the user has an entry of their own.
  */
 
 const db = require("./db");
@@ -98,7 +99,6 @@ async function addEntry(userId, { book, mood, text }) {
 
 /**
  * Changes the text and mood of an entry (it stays in its book and keeps its date).
- * An edited example becomes the user's own entry.
  * @returns the entry, or null if it doesn't exist
  */
 async function updateEntry(userId, id, { mood, text }) {
@@ -109,7 +109,8 @@ async function updateEntry(userId, id, { mood, text }) {
     [id, userId]
   );
   if (!rows.length) return null;
-  const { book } = toEntry(rows[0], userId);
+  const { book, exampleKey } = toEntry(rows[0], userId);
+  if (exampleKey) throw userError("Examples can't be changed. Write an entry of your own.", "exampleReadOnly");
   const { ciphertext, iv, authTag } = encryptJson({ book, mood: MOODS.includes(mood) ? mood : "🙂", text: body }, context(userId));
   const updated = await db.query(
     `UPDATE journal_entries SET ciphertext = $3, iv = $4, auth_tag = $5 WHERE id = $1 AND user_id = $2
