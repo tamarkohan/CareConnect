@@ -65,7 +65,7 @@ export default function TaskForm({ initial, saving, error, onSave, onCancel }: P
                 setDaysMissing(false);
             }}
             accessibilityRole="radio"
-            accessibilityState={{ selected: repeat === value }}
+            aria-checked={repeat === value}
         >
             <Text style={[s.pillText, repeat === value && s.pillTextActive]}>{text}</Text>
         </Pressable>
@@ -102,7 +102,7 @@ export default function TaskForm({ initial, saving, error, onSave, onCancel }: P
                             style={[s.day, days.includes(d) && s.dayActive]}
                             onPress={() => toggleDay(d)}
                             accessibilityRole="checkbox"
-                            accessibilityState={{ checked: days.includes(d) }}
+                            aria-checked={days.includes(d)}
                         >
                             <Text style={[s.dayText, days.includes(d) && s.dayTextActive]}>{name}</Text>
                         </Pressable>

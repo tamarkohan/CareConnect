@@ -65,7 +65,7 @@ export default function JournalScreen({ navigation }: Props) {
     const { lang } = useLang();
     const t = T[lang];
     const tj = TJ_T[lang];
-    // No book chosen = all entries; a chosen book shows only its entries, and you write in it.
+    // null = the "All entries" tab; a chosen book shows only its entries, and you write in it.
     const [activeBook, setActiveBook] = React.useState<JournalBook | null>(null);
     const [selectedMood, setSelectedMood] = React.useState<number | null>(3);
     const [entryText, setEntryText] = React.useState("");
@@ -99,7 +99,6 @@ export default function JournalScreen({ navigation }: Props) {
     // Like the translator: the user's first own entry replaces the examples.
     const own = (entries ?? []).filter((e) => !e.exampleKey);
     const shown = (own.length ? own : entries ?? []).filter((e) => !activeBook || e.book === activeBook);
-    const chooseBook = (book: JournalBook) => setActiveBook((current) => (current === book ? null : book));
 
     const saveEntry = async () => {
         const text = entryText.trim();
@@ -173,50 +172,30 @@ export default function JournalScreen({ navigation }: Props) {
             >
                 <Text style={s.subheading}>{t.journalSub}</Text>
 
-                {/* Book tabs */}
+                {/* Tabs: all entries, or one book (to read its entries and write in it) */}
                 <View style={s.tabRow}>
-                    <Pressable
-                        style={[s.tab, activeBook === "burden" && s.tabActive]}
-                        onPress={() => chooseBook("burden")}
-                        accessibilityRole="tab"
-                        accessibilityState={{ selected: activeBook === "burden" }}
-                    >
-                        <Text style={s.tabEmoji}>🩶</Text>
-                        <View style={s.tabTextWrap}>
-                            <Text
-                                style={[s.tabTitle, activeBook === "burden" && s.tabTitleActive]}
-                                numberOfLines={1}
-                                adjustsFontSizeToFit
-                                minimumFontScale={0.8}
+                    {([
+                        { book: null, emoji: "📚", title: tj.allEntries, sub: tj.allEntriesSub },
+                        { book: "burden", emoji: "🩶", title: t.burdenBook, sub: t.burdenBookSub },
+                        { book: "gratitude", emoji: "💚", title: t.gratitudeBook, sub: t.gratitudeBookSub },
+                    ] as const).map(({ book, emoji, title, sub }) => {
+                        const active = activeBook === book;
+                        return (
+                            <Pressable
+                                key={book ?? "all"}
+                                style={[s.tab, active && s.tabActive]}
+                                onPress={() => setActiveBook(book)}
+                                accessibilityRole="tab"
+                                aria-selected={active}
                             >
-                                {t.burdenBook}
-                            </Text>
-                            <Text style={s.tabSub} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
-                                {t.burdenBookSub}
-                            </Text>
-                        </View>
-                    </Pressable>
-                    <Pressable
-                        style={[s.tab, activeBook === "gratitude" && s.tabActive]}
-                        onPress={() => chooseBook("gratitude")}
-                        accessibilityRole="tab"
-                        accessibilityState={{ selected: activeBook === "gratitude" }}
-                    >
-                        <Text style={s.tabEmoji}>💚</Text>
-                        <View style={s.tabTextWrap}>
-                            <Text
-                                style={[s.tabTitle, activeBook === "gratitude" && s.tabTitleActive]}
-                                numberOfLines={1}
-                                adjustsFontSizeToFit
-                                minimumFontScale={0.8}
-                            >
-                                {t.gratitudeBook}
-                            </Text>
-                            <Text style={s.tabSub} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
-                                {t.gratitudeBookSub}
-                            </Text>
-                        </View>
-                    </Pressable>
+                                <Text style={s.tabEmoji}>{emoji}</Text>
+                                <Text style={[s.tabTitle, active && s.tabTitleActive]} numberOfLines={2}>
+                                    {title}
+                                </Text>
+                                <Text style={s.tabSub} numberOfLines={2}>{sub}</Text>
+                            </Pressable>
+                        );
+                    })}
                 </View>
 
                 {/* Entry card: writing needs a book */}
@@ -407,20 +386,29 @@ const s = StyleSheet.create({
     subheading: { fontSize: 13, color: Color.mako, lineHeight: 18 },
     tabRow: {
         flexDirection: "row",
-        gap: 12,
+        gap: 6,
         backgroundColor: Color.white,
         borderRadius: 12,
         borderWidth: 1,
         borderColor: Color.linkWater,
         padding: 8,
     },
-    tab: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 10, paddingVertical: 10, borderRadius: 8, minWidth: 0 },
-    tabActive: { borderWidth: 1.5, borderColor: Color.endeavour, backgroundColor: "#f0f8ff" },
+    tab: {
+        flex: 1,
+        alignItems: "center",
+        gap: 2,
+        paddingHorizontal: 6,
+        paddingVertical: 10,
+        borderRadius: 8,
+        borderWidth: 1.5,
+        borderColor: "transparent",
+        minWidth: 0,
+    },
+    tabActive: { borderColor: Color.endeavour, backgroundColor: "#f0f8ff" },
     tabEmoji: { fontSize: 20 },
-    tabTextWrap: { flex: 1, minWidth: 0 },
-    tabTitle: { fontSize: 13, fontWeight: "600", color: Color.mako },
+    tabTitle: { fontSize: 13, fontWeight: "600", color: Color.mako, textAlign: "center" },
     tabTitleActive: { color: Color.blackPearl },
-    tabSub: { fontSize: 10, color: Color.mako },
+    tabSub: { fontSize: 10, color: Color.mako, textAlign: "center" },
     entryCard: {
         backgroundColor: Color.white,
         borderRadius: 12,
