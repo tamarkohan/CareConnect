@@ -247,16 +247,28 @@ or "moshav" are ignored, since the list doesn't say which places are kibbutzim.
 Both pages save to the server, per account, encrypted (`services/tasks.js`,
 `services/journal.js`), so they're the same on every device and survive a reload.
 
-- **Tasks:** "+ Add task" (a text and an optional time like 8:30 or 2:30 pm). Ticking a task
-  moves it to **Completed tasks**, with the day and time it was done; unticking brings it back.
-  Every task has **Share** (the phone's share menu; on a computer it copies the text) and
-  **Delete**. Open tasks are sorted by time; one whose time has passed is outlined.
-- **Journal:** entries in the Burden Book or Gratitude Book with a mood, newest first, each with
-  **Share** and **Delete**. An entry stays in the language it was written in.
+- **Tasks:** "+ Add task" opens a form: the text, a time picked from a list (every 15 minutes,
+  like Google Calendar; optional) and **Repeat**: doesn't repeat, every day, or on chosen days.
+  Every task has **Edit**, **Share** (the phone's share menu; on a computer it copies the text)
+  and **Delete**. Ticking a one-off task moves it to **Completed tasks** with the day and time it
+  was done; unticking brings it back. A repeating task is ticked for today only: that day goes to
+  Completed tasks and the task comes back on its next day ("today" is the phone's day). Repeating
+  tasks that aren't for today are under **Other days**. Open tasks are sorted by time; one whose
+  time has passed is outlined. The purple reminder card has ✕, remembered on the device per account.
+- **Tasks in other languages:** a task keeps the language it was written in. When the app
+  language is different, the app asks the server to translate it (`POST /api/tasks/translate`,
+  Gemini, one call for all the tasks missing that language). The translation is stored, so each
+  task is translated into each language only once; editing a task drops its old translations.
+- **Journal:** with no book chosen, all entries show, newest first, and the page asks you to
+  choose a book to write in. Choosing the Burden or Gratitude Book shows only that book's entries
+  and the writing box for it; tapping it again, or "Show all entries", goes back to all. Every
+  entry has **Edit** (text and mood), **Share** and **Delete**, and stays in the language it was
+  written in.
 - **Examples for new users:** the first time someone opens Tasks they get 3 example tasks
-  (one already completed), and the first time they open the Journal 2 example entries. They are
-  marked "Example", show in the current app language (the texts are `task1`… and
-  `journalEntry1`… in `src/translations.ts`) and can be ticked, shared and deleted like any
-  other. They are added once per account (`users.tasks_examples_at` / `journal_examples_at`),
-  so deleting them doesn't bring them back; `npm run demo:reset` resets this for the demo.
-- Texts of the buttons and messages: `src/tasksJournalStrings.ts`.
+  (one completed, one repeating every day), and the first time they open the Journal 2 example
+  entries. They are marked "Example" and show in the current app language (the texts are
+  `task1`… and `journalEntry1`… in `src/translations.ts`). Like on the translator, the user's
+  first own task or entry (or editing an example) replaces them. They are added once per account
+  (`users.tasks_examples_at` / `journal_examples_at`); `npm run demo:reset` resets this for the demo.
+- Texts of the buttons and messages: `src/tasksJournalStrings.ts`; the time list is
+  `src/components/TimePicker.tsx`, the add / edit form `src/components/TaskForm.tsx`.

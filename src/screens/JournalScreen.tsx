@@ -13,7 +13,9 @@ import TopBar from "../components/TopBar";
 import { useLang } from "../AppContext";
 import { T, formatEntryDateTime } from "../translations";
 import { TJ_T } from "../tasksJournalStrings";
-import { ApiError, JournalBook, JournalEntry, addJournalEntry, deleteJournalEntry, getJournal } from "../api/client";
+import {
+    ApiError, JournalBook, JournalEntry, addJournalEntry, deleteJournalEntry, getJournal, updateJournalEntry,
+} from "../api/client";
 import { confirmAction, shareText, showAlert } from "../api/platform";
 
 // ── Tokens ───────────────────────────────────────────────────────────
@@ -49,7 +51,8 @@ const MOODS = ["😢", "😐", "🙂", "😊", "😄"];
 // ── Entries ───────────────────────────────────────────────────────────
 // Entries are saved on the server (per account, encrypted) in the language they
 // were written in. New users get two example entries from the server, with one
-// of these keys instead of a text, so they show in the current app language.
+// of these keys instead of a text, so they show in the current app language;
+// they go away once the user has written an entry of their own.
 const EXAMPLE_KEYS = ["journalEntry1", "journalEntry2"] as const;
 type ExampleKey = (typeof EXAMPLE_KEYS)[number];
 const isExampleKey = (k: string | null): k is ExampleKey => (EXAMPLE_KEYS as readonly (string | null)[]).includes(k);
@@ -62,18 +65,27 @@ export default function JournalScreen({ navigation }: Props) {
     const { lang } = useLang();
     const t = T[lang];
     const tj = TJ_T[lang];
-    const [activeBook, setActiveBook] = React.useState<JournalBook>("gratitude");
+    // No book chosen = all entries; a chosen book shows only its entries, and you write in it.
+    const [activeBook, setActiveBook] = React.useState<JournalBook | null>(null);
     const [selectedMood, setSelectedMood] = React.useState<number | null>(3);
     const [entryText, setEntryText] = React.useState("");
     const [entries, setEntries] = React.useState<JournalEntry[] | null>(null);   // null = loading
     const [loadFailed, setLoadFailed] = React.useState(false);
     const [saving, setSaving] = React.useState(false);
     const [copiedId, setCopiedId] = React.useState<string | null>(null);
+    const [editingId, setEditingId] = React.useState<string | null>(null);
+    const [editText, setEditText] = React.useState("");
+    const [editMood, setEditMood] = React.useState<string>("🙂");
+    const [savingEdit, setSavingEdit] = React.useState(false);
 
+    // Every change bumps this, so a slower load can't undo a change made meanwhile.
+    const version = React.useRef(0);
     const load = React.useCallback(async () => {
+        const asked = version.current;
         setLoadFailed(false);
         try {
-            setEntries((await getJournal()).entries);
+            const { entries: list } = await getJournal();
+            if (asked === version.current) setEntries(list);
         } catch {
             setLoadFailed(true);
         }
@@ -84,10 +96,15 @@ export default function JournalScreen({ navigation }: Props) {
 
     const textOf = (entry: JournalEntry) => entry.text ?? (isExampleKey(entry.exampleKey) ? t[entry.exampleKey] : "");
     const bookLabel = (book: JournalBook) => (book === "burden" ? t.burdenBookLabel : t.gratitudeBookLabel);
+    // Like the translator: the user's first own entry replaces the examples.
+    const own = (entries ?? []).filter((e) => !e.exampleKey);
+    const shown = (own.length ? own : entries ?? []).filter((e) => !activeBook || e.book === activeBook);
+    const chooseBook = (book: JournalBook) => setActiveBook((current) => (current === book ? null : book));
 
     const saveEntry = async () => {
         const text = entryText.trim();
-        if (!text || saving) return;
+        if (!text || saving || !activeBook) return;
+        version.current++;
         setSaving(true);
         try {
             const { entry } = await addJournalEntry(activeBook, selectedMood !== null ? MOODS[selectedMood] : undefined, text);
@@ -103,12 +120,35 @@ export default function JournalScreen({ navigation }: Props) {
 
     const removeEntry = async (entry: JournalEntry) => {
         if (!(await confirmAction(tj.deleteEntryConfirm, tj.delete, tj.cancel))) return;
+        version.current++;
         setEntries((prev) => prev && prev.filter((x) => x.id !== entry.id));
         try {
             await deleteJournalEntry(entry.id);
         } catch {
             showAlert(tj.saveError);
             load();
+        }
+    };
+
+    const startEdit = (entry: JournalEntry) => {
+        setEditingId(entry.id);
+        setEditText(textOf(entry));
+        setEditMood(entry.mood);
+    };
+
+    const saveEdit = async () => {
+        const text = editText.trim();
+        if (!editingId || !text || savingEdit) return;
+        version.current++;
+        setSavingEdit(true);
+        try {
+            const { entry } = await updateJournalEntry(editingId, editMood, text);
+            setEntries((prev) => prev && prev.map((x) => (x.id === entry.id ? entry : x)));
+            setEditingId(null);
+        } catch {
+            showAlert(tj.saveError);
+        } finally {
+            setSavingEdit(false);
         }
     };
 
@@ -137,7 +177,9 @@ export default function JournalScreen({ navigation }: Props) {
                 <View style={s.tabRow}>
                     <Pressable
                         style={[s.tab, activeBook === "burden" && s.tabActive]}
-                        onPress={() => setActiveBook("burden")}
+                        onPress={() => chooseBook("burden")}
+                        accessibilityRole="tab"
+                        accessibilityState={{ selected: activeBook === "burden" }}
                     >
                         <Text style={s.tabEmoji}>🩶</Text>
                         <View style={s.tabTextWrap}>
@@ -156,7 +198,9 @@ export default function JournalScreen({ navigation }: Props) {
                     </Pressable>
                     <Pressable
                         style={[s.tab, activeBook === "gratitude" && s.tabActive]}
-                        onPress={() => setActiveBook("gratitude")}
+                        onPress={() => chooseBook("gratitude")}
+                        accessibilityRole="tab"
+                        accessibilityState={{ selected: activeBook === "gratitude" }}
                     >
                         <Text style={s.tabEmoji}>💚</Text>
                         <View style={s.tabTextWrap}>
@@ -175,46 +219,57 @@ export default function JournalScreen({ navigation }: Props) {
                     </Pressable>
                 </View>
 
-                {/* Entry card */}
-                <View style={s.entryCard}>
-                    {/* Mood selector */}
-                    <Text style={s.moodLabel}>{t.howFeeling}</Text>
-                    <View style={s.moodRow}>
-                        {MOODS.map((emoji, i) => (
-                            <Pressable
-                                key={i}
-                                style={[s.moodBtn, selectedMood === i && s.moodBtnActive]}
-                                onPress={() => setSelectedMood(i)}
-                            >
-                                <Text style={s.moodEmoji}>{emoji}</Text>
-                            </Pressable>
-                        ))}
+                {/* Entry card: writing needs a book */}
+                {!activeBook ? (
+                    <Text style={s.chooseBookHint}>{tj.chooseBook}</Text>
+                ) : (
+                    <View style={s.entryCard}>
+                        {/* Mood selector */}
+                        <Text style={s.moodLabel}>{t.howFeeling}</Text>
+                        <View style={s.moodRow}>
+                            {MOODS.map((emoji, i) => (
+                                <Pressable
+                                    key={i}
+                                    style={[s.moodBtn, selectedMood === i && s.moodBtnActive]}
+                                    onPress={() => setSelectedMood(i)}
+                                >
+                                    <Text style={s.moodEmoji}>{emoji}</Text>
+                                </Pressable>
+                            ))}
+                        </View>
+
+                        {/* Text input */}
+                        <TextInput
+                            style={s.entryInput}
+                            placeholder={activeBook === "burden" ? t.wantRelease : t.gratefulFor}
+                            placeholderTextColor={Color.mako}
+                            value={entryText}
+                            onChangeText={setEntryText}
+                            multiline
+                            numberOfLines={4}
+                            textAlignVertical="top"
+                        />
+
+                        {/* Save button */}
+                        <Pressable
+                            style={[s.saveBtn, (!entryText.trim() || saving) && s.btnDisabled]}
+                            disabled={!entryText.trim() || saving}
+                            onPress={saveEntry}
+                        >
+                            <Text style={s.saveBtnText}>{saving ? "…" : t.saveEntry}</Text>
+                        </Pressable>
                     </View>
+                )}
 
-                    {/* Text input */}
-                    <TextInput
-                        style={s.entryInput}
-                        placeholder={activeBook === "burden" ? t.wantRelease : t.gratefulFor}
-                        placeholderTextColor={Color.mako}
-                        value={entryText}
-                        onChangeText={setEntryText}
-                        multiline
-                        numberOfLines={4}
-                        textAlignVertical="top"
-                    />
-
-                    {/* Save button */}
-                    <Pressable
-                        style={[s.saveBtn, (!entryText.trim() || saving) && s.btnDisabled]}
-                        disabled={!entryText.trim() || saving}
-                        onPress={saveEntry}
-                    >
-                        <Text style={s.saveBtnText}>{saving ? "…" : t.saveEntry}</Text>
-                    </Pressable>
+                {/* Entries: all of them, or the chosen book's */}
+                <View style={s.sectionRow}>
+                    <Text style={s.sectionTitle}>{activeBook ? bookLabel(activeBook) : t.recentEntries}</Text>
+                    {activeBook && (
+                        <Pressable onPress={() => setActiveBook(null)} hitSlop={6} accessibilityRole="button">
+                            <Text style={s.showAllText}>{tj.showAll}</Text>
+                        </Pressable>
+                    )}
                 </View>
-
-                {/* Recent entries */}
-                <Text style={s.sectionTitle}>{t.recentEntries}</Text>
                 {entries === null ? (
                     loadFailed ? (
                         <View style={s.notice}>
@@ -226,11 +281,11 @@ export default function JournalScreen({ navigation }: Props) {
                     ) : (
                         <ActivityIndicator color={Color.endeavour} accessibilityLabel={tj.loading} />
                     )
-                ) : !entries.length ? (
-                    <Text style={s.empty}>{tj.noEntries}</Text>
+                ) : !shown.length ? (
+                    <Text style={s.empty}>{activeBook && entries.length ? tj.noEntriesInBook : tj.noEntries}</Text>
                 ) : (
                     <View style={s.entriesList}>
-                        {entries.map((entry) => (
+                        {shown.map((entry) => (
                             <View
                                 key={entry.id}
                                 style={[
@@ -258,18 +313,60 @@ export default function JournalScreen({ navigation }: Props) {
                                         {formatEntryDateTime(new Date(entry.createdAt), lang)}
                                     </Text>
                                 </View>
-                                <Text style={s.entryBody}>{textOf(entry)}</Text>
-                                <View style={s.entryFooter}>
-                                    {!!entry.exampleKey && <Text style={s.exampleBadge}>{tj.example}</Text>}
-                                    <View style={s.itemActions}>
-                                        <Pressable onPress={() => shareEntry(entry)} hitSlop={6} accessibilityRole="button">
-                                            <Text style={s.actionText}>{copiedId === entry.id ? tj.copied : `📤 ${tj.share}`}</Text>
-                                        </Pressable>
-                                        <Pressable onPress={() => removeEntry(entry)} hitSlop={6} accessibilityRole="button">
-                                            <Text style={[s.actionText, s.deleteText]}>🗑️ {tj.delete}</Text>
-                                        </Pressable>
+                                {editingId === entry.id ? (
+                                    <View style={s.editBox}>
+                                        <View style={s.moodRowSmall}>
+                                            {MOODS.map((emoji) => (
+                                                <Pressable
+                                                    key={emoji}
+                                                    style={[s.moodBtnSmall, editMood === emoji && s.moodBtnActive]}
+                                                    onPress={() => setEditMood(emoji)}
+                                                >
+                                                    <Text style={s.moodEmojiSmall}>{emoji}</Text>
+                                                </Pressable>
+                                            ))}
+                                        </View>
+                                        <TextInput
+                                            style={s.entryInput}
+                                            value={editText}
+                                            onChangeText={setEditText}
+                                            multiline
+                                            numberOfLines={4}
+                                            textAlignVertical="top"
+                                            autoFocus
+                                        />
+                                        <View style={s.editButtons}>
+                                            <Pressable style={s.cancelBtn} onPress={() => setEditingId(null)}>
+                                                <Text style={s.cancelBtnText}>{tj.cancel}</Text>
+                                            </Pressable>
+                                            <Pressable
+                                                style={[s.smallSaveBtn, (!editText.trim() || savingEdit) && s.btnDisabled]}
+                                                disabled={!editText.trim() || savingEdit}
+                                                onPress={saveEdit}
+                                            >
+                                                <Text style={s.saveBtnText}>{savingEdit ? "…" : tj.save}</Text>
+                                            </Pressable>
+                                        </View>
                                     </View>
-                                </View>
+                                ) : (
+                                    <>
+                                        <Text style={s.entryBody}>{textOf(entry)}</Text>
+                                        <View style={s.entryFooter}>
+                                            {!!entry.exampleKey && <Text style={s.exampleBadge}>{tj.example}</Text>}
+                                            <View style={s.itemActions}>
+                                                <Pressable onPress={() => startEdit(entry)} hitSlop={6} accessibilityRole="button">
+                                                    <Text style={s.actionText}>✏️ {tj.edit}</Text>
+                                                </Pressable>
+                                                <Pressable onPress={() => shareEntry(entry)} hitSlop={6} accessibilityRole="button">
+                                                    <Text style={s.actionText}>{copiedId === entry.id ? tj.copied : `📤 ${tj.share}`}</Text>
+                                                </Pressable>
+                                                <Pressable onPress={() => removeEntry(entry)} hitSlop={6} accessibilityRole="button">
+                                                    <Text style={[s.actionText, s.deleteText]}>🗑️ {tj.delete}</Text>
+                                                </Pressable>
+                                            </View>
+                                        </View>
+                                    </>
+                                )}
                             </View>
                         ))}
                     </View>
@@ -356,6 +453,28 @@ const s = StyleSheet.create({
     retryText: { fontSize: 15, fontWeight: "700", color: Color.endeavour },
     empty: { fontSize: 14, color: Color.mako, textAlign: "center", paddingVertical: 8 },
     sectionTitle: { fontSize: 16, fontWeight: "700", color: Color.blackPearl },
+    sectionRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" },
+    showAllText: { fontSize: 13, fontWeight: "700", color: Color.endeavour },
+    chooseBookHint: {
+        fontSize: 14,
+        color: Color.mako,
+        textAlign: "center",
+        backgroundColor: Color.white,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: Color.linkWater,
+        borderStyle: "dashed",
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+    },
+    editBox: { gap: 10 },
+    moodRowSmall: { flexDirection: "row", gap: 6, flexWrap: "wrap" },
+    moodBtnSmall: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
+    moodEmojiSmall: { fontSize: 22 },
+    editButtons: { flexDirection: "row", justifyContent: "flex-end", gap: 10 },
+    cancelBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10 },
+    cancelBtnText: { fontSize: 15, fontWeight: "600", color: Color.mako },
+    smallSaveBtn: { backgroundColor: Color.endeavour, paddingHorizontal: 22, paddingVertical: 10, borderRadius: 10 },
     entriesList: { gap: 12 },
     entryItem: { borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, gap: 8, borderWidth: 1 },
     entryBurden: { backgroundColor: Color.lightPink, borderColor: "#f8bbd0" },

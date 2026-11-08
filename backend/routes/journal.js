@@ -3,8 +3,10 @@
  *
  * GET  /api/journal          → { entries: [{ id, book, mood, text, exampleKey, createdAt }] }  newest first
  *                              text is null for an example entry: the app shows exampleKey's
- *                              text in its language. New users get two examples the first time.
+ *                              text in its language. New users get two examples the first time;
+ *                              they go away once the user has an entry of their own.
  * POST /api/journal          Body: { book: "burden" | "gratitude", mood, text } → { entry }
+ * POST /api/journal/update   Body: { id, mood, text } → { entry }   (an edited example becomes the user's own)
  * POST /api/journal/delete   Body: { id } → { success: true }
  */
 
@@ -34,6 +36,14 @@ router.get("/", handle(async (req, res) => {
 
 router.post("/", handle(async (req, res) => {
   res.json({ entry: await journal.addEntry(req.user.id, req.body || {}) });
+}));
+
+router.post("/update", handle(async (req, res) => {
+  const { id, mood, text } = req.body || {};
+  if (!validId(id)) return res.status(400).json({ error: "Missing entry." });
+  const entry = await journal.updateEntry(req.user.id, String(id), { mood, text });
+  if (!entry) return res.status(404).json({ error: "This entry was deleted." });
+  res.json({ entry });
 }));
 
 router.post("/delete", handle(async (req, res) => {

@@ -6,7 +6,7 @@
  *
  * New users get two example entries, once (users.journal_examples_at). They are
  * stored with an exampleKey instead of a text, so the app shows them in its
- * current language.
+ * current language, and are removed as soon as the user has an entry of their own.
  */
 
 const db = require("./db");
@@ -58,20 +58,26 @@ async function addExamplesOnce(userId) {
   });
 }
 
-/** @returns {Promise<Array>} newest first */
+/** @returns {Promise<Array>} newest first, without the examples once the user wrote something */
 async function listEntries(userId) {
   const { rows } = await db.query(
     `SELECT id, ciphertext, iv, auth_tag, created_at FROM journal_entries
      WHERE user_id = $1 ORDER BY created_at DESC, id DESC`,
     [userId]
   );
-  return rows.flatMap((r) => {
+  const entries = rows.flatMap((r) => {
     try {
       return [toEntry(r, userId)];
     } catch {
       return [];
     }
   });
+  const examples = entries.filter((e) => e.exampleKey);
+  if (examples.length && examples.length < entries.length) {
+    await db.query("DELETE FROM journal_entries WHERE user_id = $1 AND id = ANY($2::bigint[])", [userId, examples.map((e) => e.id)]);
+    return entries.filter((e) => !e.exampleKey);
+  }
+  return entries;
 }
 
 async function addEntry(userId, { book, mood, text }) {
@@ -90,6 +96,29 @@ async function addEntry(userId, { book, mood, text }) {
   });
 }
 
+/**
+ * Changes the text and mood of an entry (it stays in its book and keeps its date).
+ * An edited example becomes the user's own entry.
+ * @returns the entry, or null if it doesn't exist
+ */
+async function updateEntry(userId, id, { mood, text }) {
+  const body = typeof text === "string" ? text.trim() : "";
+  if (!body || body.length > MAX_TEXT) throw userError(`Write something (up to ${MAX_TEXT} characters).`);
+  const { rows } = await db.query(
+    "SELECT id, ciphertext, iv, auth_tag, created_at FROM journal_entries WHERE id = $1 AND user_id = $2",
+    [id, userId]
+  );
+  if (!rows.length) return null;
+  const { book } = toEntry(rows[0], userId);
+  const { ciphertext, iv, authTag } = encryptJson({ book, mood: MOODS.includes(mood) ? mood : "🙂", text: body }, context(userId));
+  const updated = await db.query(
+    `UPDATE journal_entries SET ciphertext = $3, iv = $4, auth_tag = $5 WHERE id = $1 AND user_id = $2
+     RETURNING id, ciphertext, iv, auth_tag, created_at`,
+    [id, userId, ciphertext, iv, authTag]
+  );
+  return updated.rows.length ? toEntry(updated.rows[0], userId) : null;
+}
+
 async function deleteEntry(userId, id) {
   await db.query("DELETE FROM journal_entries WHERE id = $1 AND user_id = $2", [id, userId]);
 }
@@ -98,4 +127,4 @@ async function clearEntries(userId) {
   await db.query("DELETE FROM journal_entries WHERE user_id = $1", [userId]);
 }
 
-module.exports = { addExamplesOnce, listEntries, addEntry, deleteEntry, clearEntries };
+module.exports = { addExamplesOnce, listEntries, addEntry, updateEntry, deleteEntry, clearEntries };

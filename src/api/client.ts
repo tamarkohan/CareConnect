@@ -341,18 +341,32 @@ export const shareContactPhone = (requestId: string, phone: string) =>
 // ── Tasks and journal ─────────────────────────────────────────────────────────
 // New users get a few examples the first time. An example has exampleKey instead
 // of its text (T.task1…, T.journalEntry1…), so it shows in the current app language.
+// The examples go away once the user has a task / an entry of their own.
 export type Task = {
     id: string;
     label: string | null;        // null for an example task
+    lang: LangCode | null;       // the language it was written in
+    translations: Partial<Record<LangCode, string>>;   // see translateTasks
     exampleKey: string | null;
     time: string | null;         // "HH:MM" (24 hours) or null
+    days: number[] | null;       // repeats on these days (0 = Sunday … 6); null = once
+    lastDoneOn: string | null;   // repeating: the last day ("YYYY-MM-DD") it was ticked
+    fromTaskId: string | null;   // a completed day of the repeating task with this id
+    doneOn: string | null;       // …and that day
     doneAt: string | null;       // set = completed
     createdAt: string;
 };
+export type TaskInput = { label: string; time: string | null; days: number[] | null; lang: LangCode };
+// Every change answers with the whole list.
 export const getTasks = () => apiFetch<{ tasks: Task[] }>("/api/tasks");
-export const addTask = (label: string, time: string | null) => apiFetch<{ task: Task }>("/api/tasks", { label, time });
-export const setTaskDone = (id: string, done: boolean) => apiFetch<{ task: Task }>("/api/tasks/done", { id, done });
-export const deleteTask = (id: string) => apiFetch<{ success: true }>("/api/tasks/delete", { id });
+export const addTask = (task: TaskInput) => apiFetch<{ tasks: Task[] }>("/api/tasks", task);
+export const updateTask = (id: string, task: TaskInput) => apiFetch<{ tasks: Task[] }>("/api/tasks/update", { id, ...task });
+/** date: the user's today ("YYYY-MM-DD"); a repeating task is ticked for that day. */
+export const setTaskDone = (id: string, done: boolean, date: string) =>
+    apiFetch<{ tasks: Task[] }>("/api/tasks/done", { id, done, date });
+export const deleteTask = (id: string) => apiFetch<{ tasks: Task[] }>("/api/tasks/delete", { id });
+/** Translates tasks written in other languages into `lang`; the server keeps the translations. */
+export const translateTasks = (lang: LangCode) => apiFetch<{ tasks: Task[] }>("/api/tasks/translate", { lang });
 
 export type JournalBook = "burden" | "gratitude";
 export type JournalEntry = {
@@ -366,4 +380,7 @@ export type JournalEntry = {
 export const getJournal = () => apiFetch<{ entries: JournalEntry[] }>("/api/journal");
 export const addJournalEntry = (book: JournalBook, mood: string | undefined, text: string) =>
     apiFetch<{ entry: JournalEntry }>("/api/journal", { book, mood, text });
+/** Changes the text and mood; the entry keeps its book and date. */
+export const updateJournalEntry = (id: string, mood: string | undefined, text: string) =>
+    apiFetch<{ entry: JournalEntry }>("/api/journal/update", { id, mood, text });
 export const deleteJournalEntry = (id: string) => apiFetch<{ success: true }>("/api/journal/delete", { id });
