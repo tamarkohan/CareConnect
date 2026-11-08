@@ -3,7 +3,8 @@
  *
  * Small helpers that behave the same on iOS, Android and the web build.
  */
-import { Alert, Linking, Platform } from "react-native";
+import { Alert, Linking, Platform, Share } from "react-native";
+import * as Clipboard from "expo-clipboard";
 import * as FileSystem from "expo-file-system";
 import * as LegacyFileSystem from "expo-file-system/legacy";
 
@@ -32,6 +33,29 @@ export function confirmAction(message: string, okLabel = "OK", cancelLabel = "Ca
             { text: okLabel, style: "destructive", onPress: () => resolve(true) },
         ])
     );
+}
+
+/**
+ * Opens the phone's share menu (WhatsApp, SMS, email…) with this text. Browsers
+ * without a share menu (most computers) copy it instead, so the caller can show
+ * "Copied"; if even that is blocked, the text is shown to copy by hand.
+ */
+export async function shareText(text: string): Promise<"shared" | "copied" | "shown" | "cancelled"> {
+    if (Platform.OS === "web" && !(typeof navigator !== "undefined" && (navigator as any).share)) {
+        try {
+            await Clipboard.setStringAsync(text);
+            return "copied";
+        } catch {
+            showAlert(text);
+            return "shown";
+        }
+    }
+    try {
+        const result = await Share.share({ message: text });
+        return result.action === Share.dismissedAction ? "cancelled" : "shared";
+    } catch {
+        return "cancelled";   // closed the share menu
+    }
 }
 
 /**

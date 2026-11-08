@@ -6,11 +6,15 @@ import {
     Pressable,
     ScrollView,
     TextInput,
+    ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import TopBar from "../components/TopBar";
 import { useLang } from "../AppContext";
-import { T, LangCode, formatEntryDateTime } from "../translations";
+import { T, formatEntryDateTime } from "../translations";
+import { TJ_T } from "../tasksJournalStrings";
+import { ApiError, JournalBook, JournalEntry, addJournalEntry, deleteJournalEntry, getJournal } from "../api/client";
+import { confirmAction, shareText, showAlert } from "../api/platform";
 
 // ── Tokens ───────────────────────────────────────────────────────────
 const Color = {
@@ -25,6 +29,8 @@ const Color = {
     pinkText: "#c62828",
     lightGreen: "#e8f5e9",
     greenText: "#2e7d32",
+    lightPurple: "#f3e8ff",
+    purple: "#7c3aed",
 };
 
 // ── Nav items ─────────────────────────────────────────────────────────
@@ -37,60 +43,16 @@ const NAV_ITEMS = [
     { labelKey: "navJournal" as const, emoji: "📓", screen: "Journal", active: true },
 ];
 
-// ── Book tabs ─────────────────────────────────────────────────────────
-type BookType = "burden" | "gratitude";
-
-// ── Mood emojis ───────────────────────────────────────────────────────
+// ── Mood emojis (the server accepts only these) ───────────────────────
 const MOODS = ["😢", "😐", "🙂", "😊", "😄"];
 
-// ── Entry data model ─────────────────────────────────────────────────
-// ⚠️ SEED / EXAMPLE DATA ONLY.
-//
-// In production, entries are per-user and come from the backend or
-// on-device storage, appended live via setEntries() every time the
-// person saves a new entry below. Seed entries here happen to have
-// text pre-translated in every language (pulled straight from T, so
-// there's no duplication); real entries the user writes only exist in
-// the language they typed — getEntryText() below gracefully falls
-// back to whatever language is available so nothing ever renders blank.
-type Entry = {
-    id: string;
-    book: BookType;
-    mood: string;
-    timestamp: number;
-    text: Partial<Record<LangCode, string>>;
-};
-
-function getEntryText(entry: Entry, lang: LangCode): string {
-    return entry.text[lang] ?? entry.text.en ?? Object.values(entry.text)[0] ?? "";
-}
-
-const buildSeedEntries = (): Entry[] => [
-    {
-        id: "1",
-        book: "burden",
-        mood: "😢",
-        timestamp: Date.now() - 26 * 60 * 60 * 1000, // yesterday evening
-        text: {
-            en: T.en.journalEntry1,
-            tl: T.tl.journalEntry1,
-            ml: T.ml.journalEntry1,
-            ru: T.ru.journalEntry1,
-        },
-    },
-    {
-        id: "2",
-        book: "gratitude",
-        mood: "😊",
-        timestamp: Date.now() - 30 * 60 * 60 * 1000, // yesterday morning
-        text: {
-            en: T.en.journalEntry2,
-            tl: T.tl.journalEntry2,
-            ml: T.ml.journalEntry2,
-            ru: T.ru.journalEntry2,
-        },
-    },
-];
+// ── Entries ───────────────────────────────────────────────────────────
+// Entries are saved on the server (per account, encrypted) in the language they
+// were written in. New users get two example entries from the server, with one
+// of these keys instead of a text, so they show in the current app language.
+const EXAMPLE_KEYS = ["journalEntry1", "journalEntry2"] as const;
+type ExampleKey = (typeof EXAMPLE_KEYS)[number];
+const isExampleKey = (k: string | null): k is ExampleKey => (EXAMPLE_KEYS as readonly (string | null)[]).includes(k);
 
 // ════════════════════════════════════════════════════════════════════
 type Props = { navigation?: any };
@@ -99,25 +61,63 @@ export default function JournalScreen({ navigation }: Props) {
     const insets = useSafeAreaInsets();
     const { lang } = useLang();
     const t = T[lang];
-    const [activeBook, setActiveBook] = React.useState<BookType>("gratitude");
+    const tj = TJ_T[lang];
+    const [activeBook, setActiveBook] = React.useState<JournalBook>("gratitude");
     const [selectedMood, setSelectedMood] = React.useState<number | null>(3);
     const [entryText, setEntryText] = React.useState("");
-    const [entries, setEntries] = React.useState<Entry[]>(buildSeedEntries());
+    const [entries, setEntries] = React.useState<JournalEntry[] | null>(null);   // null = loading
+    const [loadFailed, setLoadFailed] = React.useState(false);
+    const [saving, setSaving] = React.useState(false);
+    const [copiedId, setCopiedId] = React.useState<string | null>(null);
 
-    const saveEntry = () => {
-        if (!entryText.trim()) return;
-        const newEntry: Entry = {
-            id: Date.now().toString(),
-            book: activeBook,
-            mood: selectedMood !== null ? MOODS[selectedMood] : "🙂",
-            timestamp: Date.now(),
-            // Only the language it was actually written in — see
-            // getEntryText() for the display fallback.
-            text: { [lang]: entryText.trim() },
-        };
-        setEntries((prev) => [newEntry, ...prev]);
-        setEntryText("");
-        setSelectedMood(null);
+    const load = React.useCallback(async () => {
+        setLoadFailed(false);
+        try {
+            setEntries((await getJournal()).entries);
+        } catch {
+            setLoadFailed(true);
+        }
+    }, []);
+    React.useEffect(() => {
+        load();
+    }, [load]);
+
+    const textOf = (entry: JournalEntry) => entry.text ?? (isExampleKey(entry.exampleKey) ? t[entry.exampleKey] : "");
+    const bookLabel = (book: JournalBook) => (book === "burden" ? t.burdenBookLabel : t.gratitudeBookLabel);
+
+    const saveEntry = async () => {
+        const text = entryText.trim();
+        if (!text || saving) return;
+        setSaving(true);
+        try {
+            const { entry } = await addJournalEntry(activeBook, selectedMood !== null ? MOODS[selectedMood] : undefined, text);
+            setEntries((prev) => [entry, ...(prev ?? [])]);
+            setEntryText("");
+            setSelectedMood(null);
+        } catch (err) {
+            showAlert(err instanceof ApiError && err.code === "journalFull" ? tj.journalFull : tj.saveError);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const removeEntry = async (entry: JournalEntry) => {
+        if (!(await confirmAction(tj.deleteEntryConfirm, tj.delete, tj.cancel))) return;
+        setEntries((prev) => prev && prev.filter((x) => x.id !== entry.id));
+        try {
+            await deleteJournalEntry(entry.id);
+        } catch {
+            showAlert(tj.saveError);
+            load();
+        }
+    };
+
+    const shareEntry = async (entry: JournalEntry) => {
+        const date = formatEntryDateTime(new Date(entry.createdAt), lang);
+        if ((await shareText(`${entry.mood} ${bookLabel(entry.book)} · ${date}\n\n${textOf(entry)}`)) === "copied") {
+            setCopiedId(entry.id);
+            setTimeout(() => setCopiedId((id) => (id === entry.id ? null : id)), 2000);
+        }
     };
 
     return (
@@ -204,46 +204,76 @@ export default function JournalScreen({ navigation }: Props) {
                     />
 
                     {/* Save button */}
-                    <Pressable style={s.saveBtn} onPress={saveEntry}>
-                        <Text style={s.saveBtnText}>{t.saveEntry}</Text>
+                    <Pressable
+                        style={[s.saveBtn, (!entryText.trim() || saving) && s.btnDisabled]}
+                        disabled={!entryText.trim() || saving}
+                        onPress={saveEntry}
+                    >
+                        <Text style={s.saveBtnText}>{saving ? "…" : t.saveEntry}</Text>
                     </Pressable>
                 </View>
 
                 {/* Recent entries */}
                 <Text style={s.sectionTitle}>{t.recentEntries}</Text>
-                <View style={s.entriesList}>
-                    {entries.map((entry) => (
-                        <View
-                            key={entry.id}
-                            style={[
-                                s.entryItem,
-                                entry.book === "burden" ? s.entryBurden : s.entryGratitude,
-                            ]}
-                        >
-                            <View style={s.entryHeader}>
-                                <Text style={s.entryMood}>{entry.mood}</Text>
-                                <View style={[
-                                    s.entryBookBadge,
-                                    entry.book === "burden" ? s.burdenBadge : s.gratitudeBadge,
-                                ]}>
-                                    <Text
-                                        style={[
-                                            s.entryBookText,
-                                            entry.book === "burden" ? s.burdenText : s.gratitudeText,
-                                        ]}
-                                        numberOfLines={1}
-                                    >
-                                        {entry.book === "burden" ? t.burdenBookLabel : t.gratitudeBookLabel}
+                {entries === null ? (
+                    loadFailed ? (
+                        <View style={s.notice}>
+                            <Text style={s.noticeText}>{tj.loadError}</Text>
+                            <Pressable onPress={load} hitSlop={6}>
+                                <Text style={s.retryText}>{tj.retry}</Text>
+                            </Pressable>
+                        </View>
+                    ) : (
+                        <ActivityIndicator color={Color.endeavour} accessibilityLabel={tj.loading} />
+                    )
+                ) : !entries.length ? (
+                    <Text style={s.empty}>{tj.noEntries}</Text>
+                ) : (
+                    <View style={s.entriesList}>
+                        {entries.map((entry) => (
+                            <View
+                                key={entry.id}
+                                style={[
+                                    s.entryItem,
+                                    entry.book === "burden" ? s.entryBurden : s.entryGratitude,
+                                ]}
+                            >
+                                <View style={s.entryHeader}>
+                                    <Text style={s.entryMood}>{entry.mood}</Text>
+                                    <View style={[
+                                        s.entryBookBadge,
+                                        entry.book === "burden" ? s.burdenBadge : s.gratitudeBadge,
+                                    ]}>
+                                        <Text
+                                            style={[
+                                                s.entryBookText,
+                                                entry.book === "burden" ? s.burdenText : s.gratitudeText,
+                                            ]}
+                                            numberOfLines={1}
+                                        >
+                                            {bookLabel(entry.book)}
+                                        </Text>
+                                    </View>
+                                    <Text style={s.entryDate} numberOfLines={1}>
+                                        {formatEntryDateTime(new Date(entry.createdAt), lang)}
                                     </Text>
                                 </View>
-                                <Text style={s.entryDate} numberOfLines={1}>
-                                    {formatEntryDateTime(new Date(entry.timestamp), lang)}
-                                </Text>
+                                <Text style={s.entryBody}>{textOf(entry)}</Text>
+                                <View style={s.entryFooter}>
+                                    {!!entry.exampleKey && <Text style={s.exampleBadge}>{tj.example}</Text>}
+                                    <View style={s.itemActions}>
+                                        <Pressable onPress={() => shareEntry(entry)} hitSlop={6} accessibilityRole="button">
+                                            <Text style={s.actionText}>{copiedId === entry.id ? tj.copied : `📤 ${tj.share}`}</Text>
+                                        </Pressable>
+                                        <Pressable onPress={() => removeEntry(entry)} hitSlop={6} accessibilityRole="button">
+                                            <Text style={[s.actionText, s.deleteText]}>🗑️ {tj.delete}</Text>
+                                        </Pressable>
+                                    </View>
+                                </View>
                             </View>
-                            <Text style={s.entryBody}>{getEntryText(entry, lang)}</Text>
-                        </View>
-                    ))}
-                </View>
+                        ))}
+                    </View>
+                )}
             </ScrollView>
 
             {/* ── Bottom navigation ── */}
@@ -320,6 +350,11 @@ const s = StyleSheet.create({
     },
     saveBtn: { backgroundColor: Color.endeavour, borderRadius: 10, paddingVertical: 14, alignItems: "center" },
     saveBtnText: { fontSize: 15, fontWeight: "700", color: Color.white },
+    btnDisabled: { opacity: 0.5 },
+    notice: { alignItems: "center", gap: 8, paddingVertical: 8 },
+    noticeText: { fontSize: 14, color: Color.mako, textAlign: "center" },
+    retryText: { fontSize: 15, fontWeight: "700", color: Color.endeavour },
+    empty: { fontSize: 14, color: Color.mako, textAlign: "center", paddingVertical: 8 },
     sectionTitle: { fontSize: 16, fontWeight: "700", color: Color.blackPearl },
     entriesList: { gap: 12 },
     entryItem: { borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, gap: 8, borderWidth: 1 },
@@ -335,6 +370,20 @@ const s = StyleSheet.create({
     gratitudeText: { color: Color.greenText },
     entryDate: { fontSize: 11, color: Color.mako, marginLeft: "auto" },
     entryBody: { fontSize: 13, color: Color.blackPearl, lineHeight: 19 },
+    entryFooter: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
+    exampleBadge: {
+        fontSize: 11,
+        fontWeight: "600",
+        color: Color.purple,
+        backgroundColor: Color.lightPurple,
+        borderRadius: 6,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        overflow: "hidden",
+    },
+    itemActions: { flexDirection: "row", gap: 14, marginLeft: "auto" },
+    actionText: { fontSize: 13, fontWeight: "600", color: Color.endeavour },
+    deleteText: { color: Color.pinkText },
     bottomNav: {
         flexDirection: "row",
         backgroundColor: Color.aliceBlue,

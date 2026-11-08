@@ -106,20 +106,17 @@ export function formatRelativeTime(date: Date, lang: LangCode): string {
 export function formatEntryDateTime(date: Date, lang: LangCode): string {
     const month = MONTHS_SHORT[lang][date.getMonth()];
     const day = date.getDate();
-    const hours24 = date.getHours();
-    const minutes = date.getMinutes().toString().padStart(2, "0");
-
-    let timePart: string;
-    if (lang === "ru") {
-        timePart = `${hours24.toString().padStart(2, "0")}:${minutes}`;
-    } else {
-        const period = hours24 >= 12 ? "PM" : "AM";
-        const hours12 = hours24 % 12 === 0 ? 12 : hours24 % 12;
-        timePart = `${hours12}:${minutes} ${period}`;
-    }
-
     const datePart = lang === "ru" ? `${day} ${month}` : `${month} ${day}`;
-    return `${datePart} · ${timePart}`;
+    return `${datePart} · ${formatTime(date.getHours(), date.getMinutes(), lang)}`;
+}
+
+/** "8:30 PM" (or "20:30" for Russian), localized to `lang`. */
+export function formatTime(hours24: number, minutes: number, lang: LangCode): string {
+    const mm = minutes.toString().padStart(2, "0");
+    if (lang === "ru") return `${hours24.toString().padStart(2, "0")}:${mm}`;
+    const period = hours24 >= 12 ? "PM" : "AM";
+    const hours12 = hours24 % 12 === 0 ? 12 : hours24 % 12;
+    return `${hours12}:${mm} ${period}`;
 }
 
 /** "Tuesday, May 5" style heading, localized to `lang`. */

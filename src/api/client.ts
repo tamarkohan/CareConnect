@@ -337,3 +337,33 @@ export const respondContactRequest = (requestId: string, action: "accept" | "dec
     apiFetch<{ success: true }>("/api/community/respond", { requestId, action });
 export const shareContactPhone = (requestId: string, phone: string) =>
     apiFetch<{ success: true }>("/api/community/share-phone", { requestId, phone });
+
+// ── Tasks and journal ─────────────────────────────────────────────────────────
+// New users get a few examples the first time. An example has exampleKey instead
+// of its text (T.task1…, T.journalEntry1…), so it shows in the current app language.
+export type Task = {
+    id: string;
+    label: string | null;        // null for an example task
+    exampleKey: string | null;
+    time: string | null;         // "HH:MM" (24 hours) or null
+    doneAt: string | null;       // set = completed
+    createdAt: string;
+};
+export const getTasks = () => apiFetch<{ tasks: Task[] }>("/api/tasks");
+export const addTask = (label: string, time: string | null) => apiFetch<{ task: Task }>("/api/tasks", { label, time });
+export const setTaskDone = (id: string, done: boolean) => apiFetch<{ task: Task }>("/api/tasks/done", { id, done });
+export const deleteTask = (id: string) => apiFetch<{ success: true }>("/api/tasks/delete", { id });
+
+export type JournalBook = "burden" | "gratitude";
+export type JournalEntry = {
+    id: string;
+    book: JournalBook;
+    mood: string;
+    text: string | null;         // null for an example entry
+    exampleKey: string | null;
+    createdAt: string;
+};
+export const getJournal = () => apiFetch<{ entries: JournalEntry[] }>("/api/journal");
+export const addJournalEntry = (book: JournalBook, mood: string | undefined, text: string) =>
+    apiFetch<{ entry: JournalEntry }>("/api/journal", { book, mood, text });
+export const deleteJournalEntry = (id: string) => apiFetch<{ success: true }>("/api/journal/delete", { id });
