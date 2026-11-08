@@ -5,17 +5,21 @@ import {
     StyleSheet,
     Pressable,
     ScrollView,
-    TextInput,
     ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import TopBar from "../components/TopBar";
-import { useLang } from "../AppContext";
-import { T, LangCode, formatLongDate, formatEntryDateTime, formatTime } from "../translations";
+import TaskForm, { TaskFields } from "../components/TaskForm";
+import { timeLabel } from "../components/TimePicker";
+import { useApp } from "../AppContext";
+import { T, WEEKDAYS_SHORT, formatLongDate, formatEntryDateTime } from "../translations";
 import { TJ_T } from "../tasksJournalStrings";
 import { fill } from "../pageStrings";
-import { ApiError, Task, addTask, deleteTask, getTasks, setTaskDone } from "../api/client";
+import {
+    ApiError, Task, addTask, deleteTask, getTasks, setTaskDone, translateTasks, updateTask,
+} from "../api/client";
 import { confirmAction, shareText, showAlert } from "../api/platform";
+import { getItem, setItem } from "../api/storage";
 
 // ── Tokens ───────────────────────────────────────────────────────────
 const Color = {
@@ -44,29 +48,19 @@ const NAV_ITEMS = [
 
 // ── Tasks ─────────────────────────────────────────────────────────────
 // Tasks are saved on the server (per account). New users get a few example
-// tasks from the server, with one of these keys instead of a text.
+// tasks from the server, with one of these keys instead of a text; they go away
+// once the user has a task of their own.
 const EXAMPLE_KEYS = ["task1", "task2", "task3", "task4", "task5"] as const;
 type ExampleKey = (typeof EXAMPLE_KEYS)[number];
 const isExampleKey = (k: string | null): k is ExampleKey => (EXAMPLE_KEYS as readonly (string | null)[]).includes(k);
 
-/** "8:30", "08:30", "8.30", "8:30 pm", "8pm", "20:30" → "HH:MM"; "" → ""; anything else → null. */
-function parseTime(input: string): string | null {
-    const s = input.trim().toLowerCase().replace(/([ap])\.?\s*m\.?$/, "$1m").replace(".", ":");
-    if (!s) return "";
-    const m = s.match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/);
-    if (!m) return null;
-    let hours = Number(m[1]);
-    const minutes = Number(m[2] ?? 0);
-    if (m[3]) {
-        if (hours < 1 || hours > 12) return null;
-        hours = (hours % 12) + (m[3] === "pm" ? 12 : 0);
-    }
-    if (hours > 23 || minutes > 59) return null;
-    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
-}
+// Closing the reminder card is remembered on the device, for each account.
+const REMINDER_CLOSED_KEY = "careconnect.tasksReminderClosed";
 
 const minutesOf = (time: string) => Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5));
-const showTime = (time: string, lang: LangCode) => formatTime(Number(time.slice(0, 2)), Number(time.slice(3, 5)), lang);
+/** The user's day, "YYYY-MM-DD": a repeating task is ticked for this day. */
+const dayOf = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
 /** Open tasks: by time (tasks without a time last), then in the order they were added. */
 const byTime = (a: Task, b: Task) =>
@@ -79,24 +73,34 @@ type Props = { navigation?: any };
 
 export default function TasksScreen({ navigation }: Props) {
     const insets = useSafeAreaInsets();
-    const { lang } = useLang();
+    const { lang, user } = useApp();
     const t = T[lang];
     const tj = TJ_T[lang];
     const [tasks, setTasks] = React.useState<Task[] | null>(null);   // null = loading
     const [loadFailed, setLoadFailed] = React.useState(false);
     const [adding, setAdding] = React.useState(false);
-    const [newLabel, setNewLabel] = React.useState("");
-    const [newTime, setNewTime] = React.useState("");
+    const [editingId, setEditingId] = React.useState<string | null>(null);
     const [formError, setFormError] = React.useState<string | null>(null);
     const [saving, setSaving] = React.useState(false);
     const [showCompleted, setShowCompleted] = React.useState(false);
+    const [showOtherDays, setShowOtherDays] = React.useState(false);
     const [copiedId, setCopiedId] = React.useState<string | null>(null);
     const [now, setNow] = React.useState(() => new Date());
+    const [reminderOpen, setReminderOpen] = React.useState(false);
+    const reminderKey = `${REMINDER_CLOSED_KEY}.${user?.id ?? "guest"}`;
+
+    // Every change bumps this. A server answer is used only if nothing changed after
+    // it was asked for, so a slower, older answer can't undo a newer change.
+    const version = React.useRef(0);
+    const applyIfLatest = (asked: number, list: Task[]) => {
+        if (asked === version.current) setTasks(list);
+    };
 
     const load = React.useCallback(async () => {
+        const asked = version.current;
         setLoadFailed(false);
         try {
-            setTasks((await getTasks()).tasks);
+            applyIfLatest(asked, (await getTasks()).tasks);
         } catch {
             setLoadFailed(true);
         }
@@ -105,50 +109,84 @@ export default function TasksScreen({ navigation }: Props) {
         load();
     }, [load]);
 
-    // Keeps the date and the overdue marks right while the page stays open.
+    React.useEffect(() => {
+        getItem(reminderKey).then((closed) => setReminderOpen(closed !== "1"));
+    }, [reminderKey]);
+    const closeReminder = () => {
+        setReminderOpen(false);
+        setItem(reminderKey, "1");
+    };
+
+    // Keeps the date, today's repeating tasks and the overdue marks right while the page stays open.
     React.useEffect(() => {
         const timer = setInterval(() => setNow(new Date()), 60_000);
         return () => clearInterval(timer);
     }, []);
 
-    const labelOf = (task: Task) => task.label ?? (isExampleKey(task.exampleKey) ? t[task.exampleKey] : "");
-    const open = (tasks ?? []).filter((x) => !x.doneAt).sort(byTime);
-    const completed = (tasks ?? []).filter((x) => x.doneAt).sort(byDoneAt);
-    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    // Tasks written in another language are translated into the app language
+    // (the server keeps the translations, so each is translated only once).
+    const triedTranslating = React.useRef(new Set<string>());
+    React.useEffect(() => {
+        const missing = (tasks ?? []).filter((x) => x.label && x.lang !== lang && !x.translations[lang]);
+        const attempt = `${lang}:${missing.map((x) => x.id).join(",")}`;
+        if (!missing.length || triedTranslating.current.has(attempt)) return;
+        triedTranslating.current.add(attempt);
+        const asked = version.current;
+        translateTasks(lang)
+            .then(({ tasks: list }) => applyIfLatest(asked, list))
+            .catch(() => {});    // they stay in their own language
+    }, [tasks, lang]);
 
-    const replace = (task: Task) => setTasks((prev) => prev && prev.map((x) => (x.id === task.id ? task : x)));
+    const textOf = (task: Task) => {
+        if (isExampleKey(task.exampleKey)) return t[task.exampleKey];
+        if (!task.label || task.lang === lang) return task.label ?? "";
+        return task.translations[lang] ?? task.label;
+    };
+    const repeatText = (days: number[]) =>
+        days.length === 7 ? tj.repeatDaily : days.map((d) => WEEKDAYS_SHORT[lang][d]).join(", ");
+
+    const today = dayOf(now);
+    const weekday = now.getDay();
+    const all = tasks ?? [];
+    // Today: one-off tasks, and repeating tasks that are for today and not done today.
+    const open = all.filter((x) => !x.doneAt && (!x.days || x.days.includes(weekday)) && x.lastDoneOn !== today).sort(byTime);
+    const otherDays = all.filter((x) => !x.doneAt && x.days && !x.days.includes(weekday)).sort(byTime);
+    const completed = all.filter((x) => x.doneAt).sort(byDoneAt);
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
     const toggleTask = async (task: Task) => {
         const done = !task.doneAt;
-        replace({ ...task, doneAt: done ? new Date().toISOString() : null });   // at once; the server confirms
+        const asked = ++version.current;
+        // At once on the screen; the server's list then replaces it.
+        setTasks((prev) => prev && prev.flatMap((x) => {
+            if (x.id === task.id && task.days) return [{ ...x, lastDoneOn: today }];
+            if (x.id === task.id && task.fromTaskId) return [];   // a repeating task's day, unticked
+            if (x.id === task.fromTaskId && x.lastDoneOn === task.doneOn) return [{ ...x, lastDoneOn: null }];
+            if (x.id === task.id) return [{ ...x, doneAt: done ? new Date().toISOString() : null }];
+            return [x];
+        }));
         try {
-            replace((await setTaskDone(task.id, done)).task);
+            applyIfLatest(asked, (await setTaskDone(task.id, done, today)).tasks);
         } catch {
-            replace(task);
             showAlert(tj.saveError);
+            load();
         }
     };
 
     const closeForm = () => {
         setAdding(false);
-        setNewLabel("");
-        setNewTime("");
+        setEditingId(null);
         setFormError(null);
     };
 
-    const saveTask = async () => {
-        const label = newLabel.trim();
-        const time = parseTime(newTime);
-        if (!label || saving) return;
-        if (time === null) {
-            setFormError(tj.badTime);
-            return;
-        }
+    const saveTask = async (fields: TaskFields) => {
+        const asked = ++version.current;
         setSaving(true);
         setFormError(null);
         try {
-            const { task } = await addTask(label, time || null);
-            setTasks((prev) => [...(prev ?? []), task]);
+            const input = { ...fields, lang };
+            const { tasks: list } = editingId ? await updateTask(editingId, input) : await addTask(input);
+            applyIfLatest(asked, list);
             closeForm();
         } catch (err) {
             setFormError(err instanceof ApiError && err.code === "tooManyTasks" ? tj.tooManyTasks : tj.saveError);
@@ -159,9 +197,10 @@ export default function TasksScreen({ navigation }: Props) {
 
     const removeTask = async (task: Task) => {
         if (!(await confirmAction(tj.deleteTaskConfirm, tj.delete, tj.cancel))) return;
+        const asked = ++version.current;
         setTasks((prev) => prev && prev.filter((x) => x.id !== task.id));
         try {
-            await deleteTask(task.id);
+            applyIfLatest(asked, (await deleteTask(task.id)).tasks);
         } catch {
             showAlert(tj.saveError);
             load();
@@ -169,7 +208,7 @@ export default function TasksScreen({ navigation }: Props) {
     };
 
     const shareTask = async (task: Task) => {
-        const text = `${task.doneAt ? "✓ " : ""}${labelOf(task)}${task.time ? ` – ${showTime(task.time, lang)}` : ""}`;
+        const text = `${task.doneAt ? "✓ " : ""}${textOf(task)}${task.time ? ` – ${timeLabel(task.time, lang)}` : ""}`;
         if ((await shareText(text)) === "copied") {
             setCopiedId(task.id);
             setTimeout(() => setCopiedId((id) => (id === task.id ? null : id)), 2000);
@@ -177,24 +216,38 @@ export default function TasksScreen({ navigation }: Props) {
     };
 
     const renderTask = (task: Task) => {
+        if (task.id === editingId) {
+            return (
+                <TaskForm
+                    key={task.id}
+                    initial={{ label: textOf(task), time: task.time, days: task.days }}
+                    saving={saving}
+                    error={formError}
+                    onSave={saveTask}
+                    onCancel={closeForm}
+                />
+            );
+        }
         const done = !!task.doneAt;
-        const overdue = !done && !!task.time && minutesOf(task.time) < nowMinutes;
+        const forToday = !task.days || task.days.includes(weekday);
+        const overdue = !done && forToday && !!task.time && minutesOf(task.time) < nowMinutes;
         return (
             <View key={task.id} style={[s.taskItem, overdue && s.taskItemOverdue]}>
                 <Pressable
                     onPress={() => toggleTask(task)}
                     hitSlop={8}
+                    disabled={!done && !forToday}
                     accessibilityRole="checkbox"
-                    accessibilityState={{ checked: done }}
+                    accessibilityState={{ checked: done, disabled: !done && !forToday }}
                     accessibilityLabel={done ? tj.markNotDone : tj.markDone}
                 >
-                    <View style={[s.checkbox, done && s.checkboxDone]}>
+                    <View style={[s.checkbox, done && s.checkboxDone, !done && !forToday && s.checkboxOff]}>
                         {done && <Text style={s.checkmark}>✓</Text>}
                     </View>
                 </Pressable>
                 <View style={s.taskContent}>
-                    <Pressable onPress={() => toggleTask(task)}>
-                        <Text style={[s.taskLabel, done && s.taskLabelDone]}>{labelOf(task)}</Text>
+                    <Pressable onPress={() => toggleTask(task)} disabled={!done && !forToday}>
+                        <Text style={[s.taskLabel, done && s.taskLabelDone]}>{textOf(task)}</Text>
                     </Pressable>
                     <View style={s.taskFooter}>
                         <View style={s.taskMeta}>
@@ -203,11 +256,25 @@ export default function TasksScreen({ navigation }: Props) {
                                     {fill(tj.doneOn, { date: formatEntryDateTime(new Date(task.doneAt!), lang) })}
                                 </Text>
                             ) : task.time ? (
-                                <Text style={[s.taskTime, overdue && s.taskTimeOverdue]}>{showTime(task.time, lang)}</Text>
+                                <Text style={[s.taskTime, overdue && s.taskTimeOverdue]}>{timeLabel(task.time, lang)}</Text>
                             ) : null}
+                            {!!task.days && <Text style={s.taskTime}>🔁 {repeatText(task.days)}</Text>}
                             {!!task.exampleKey && <Text style={s.exampleBadge}>{tj.example}</Text>}
                         </View>
                         <View style={s.itemActions}>
+                            {!done && (
+                                <Pressable
+                                    onPress={() => {
+                                        setAdding(false);
+                                        setFormError(null);
+                                        setEditingId(task.id);
+                                    }}
+                                    hitSlop={6}
+                                    accessibilityRole="button"
+                                >
+                                    <Text style={s.actionText}>✏️ {tj.edit}</Text>
+                                </Pressable>
+                            )}
                             <Pressable onPress={() => shareTask(task)} hitSlop={6} accessibilityRole="button">
                                 <Text style={s.actionText}>{copiedId === task.id ? tj.copied : `📤 ${tj.share}`}</Text>
                             </Pressable>
@@ -238,64 +305,44 @@ export default function TasksScreen({ navigation }: Props) {
                     {formatLongDate(now, lang)}{tasks ? ` · ${open.length} ${t.pending}` : ""}
                 </Text>
 
-                {/* Reminder card */}
-                <View style={s.reminderCard}>
-                    <Text style={s.reminderIcon}>🧘</Text>
-                    <Text style={s.reminderText}>
-                        <Text style={s.reminderBold}>{t.reminder}</Text>
-                        {t.reminderBody}
-                    </Text>
-                </View>
+                {/* Reminder card (can be closed) */}
+                {reminderOpen && (
+                    <View style={s.reminderCard}>
+                        <Text style={s.reminderIcon}>🧘</Text>
+                        <Text style={s.reminderText}>
+                            <Text style={s.reminderBold}>{t.reminder}</Text>
+                            {t.reminderBody}
+                        </Text>
+                        <Pressable
+                            onPress={closeReminder}
+                            hitSlop={10}
+                            style={s.reminderClose}
+                            accessibilityRole="button"
+                            accessibilityLabel={tj.closeReminder}
+                        >
+                            <Text style={s.reminderCloseText}>✕</Text>
+                        </Pressable>
+                    </View>
+                )}
 
                 {/* Add a task */}
                 {adding ? (
-                    <View style={s.addCard}>
-                        <TextInput
-                            style={s.input}
-                            placeholder={tj.newTask}
-                            placeholderTextColor={Color.mako}
-                            value={newLabel}
-                            onChangeText={setNewLabel}
-                            maxLength={200}
-                            autoFocus
-                            returnKeyType="done"
-                            onSubmitEditing={saveTask}
-                        />
-                        <Text style={s.inputLabel}>{tj.time}</Text>
-                        <TextInput
-                            style={[s.input, s.timeInput]}
-                            placeholder={tj.timeHint}
-                            placeholderTextColor={Color.mako}
-                            value={newTime}
-                            onChangeText={(v) => {
-                                setNewTime(v);
-                                setFormError(null);
-                            }}
-                            maxLength={8}
-                            returnKeyType="done"
-                            onSubmitEditing={saveTask}
-                        />
-                        {formError && <Text style={s.formError}>{formError}</Text>}
-                        <View style={s.formButtons}>
-                            <Pressable style={s.cancelBtn} onPress={closeForm}>
-                                <Text style={s.cancelBtnText}>{tj.cancel}</Text>
-                            </Pressable>
-                            <Pressable
-                                style={[s.saveBtn, (!newLabel.trim() || saving) && s.btnDisabled]}
-                                disabled={!newLabel.trim() || saving}
-                                onPress={saveTask}
-                            >
-                                <Text style={s.saveBtnText}>{saving ? "…" : tj.save}</Text>
-                            </Pressable>
-                        </View>
-                    </View>
+                    <TaskForm saving={saving} error={formError} onSave={saveTask} onCancel={closeForm} />
                 ) : (
-                    <Pressable style={s.addBtn} onPress={() => setAdding(true)} accessibilityRole="button">
+                    <Pressable
+                        style={s.addBtn}
+                        onPress={() => {
+                            setEditingId(null);
+                            setFormError(null);
+                            setAdding(true);
+                        }}
+                        accessibilityRole="button"
+                    >
                         <Text style={s.addBtnText}>{tj.addTask}</Text>
                     </Pressable>
                 )}
 
-                {/* Task list */}
+                {/* Today's tasks */}
                 {tasks === null ? (
                     loadFailed ? (
                         <View style={s.notice}>
@@ -313,10 +360,20 @@ export default function TasksScreen({ navigation }: Props) {
                     <Text style={s.empty}>{tj.noTasks}</Text>
                 )}
 
+                {/* Repeating tasks that aren't for today */}
+                {otherDays.length > 0 && (
+                    <Pressable style={s.sectionBtn} onPress={() => setShowOtherDays((v) => !v)} accessibilityRole="button">
+                        <Text style={s.sectionBtnText}>
+                            {showOtherDays ? `▲ ${tj.hideOtherDays}` : `▼ ${fill(tj.otherDays, { n: String(otherDays.length) })}`}
+                        </Text>
+                    </Pressable>
+                )}
+                {showOtherDays && otherDays.length > 0 && <View style={s.taskList}>{otherDays.map(renderTask)}</View>}
+
                 {/* Completed tasks */}
                 {tasks !== null && (
-                    <Pressable style={s.completedBtn} onPress={() => setShowCompleted((v) => !v)} accessibilityRole="button">
-                        <Text style={s.completedBtnText}>
+                    <Pressable style={s.sectionBtn} onPress={() => setShowCompleted((v) => !v)} accessibilityRole="button">
+                        <Text style={s.sectionBtnText}>
                             {showCompleted ? `▲ ${tj.hideCompleted}` : `▼ ${fill(tj.completed, { n: String(completed.length) })}`}
                         </Text>
                     </Pressable>
@@ -395,35 +452,10 @@ const s = StyleSheet.create({
     reminderIcon: { fontSize: 20, marginTop: 1 },
     reminderText: { flex: 1, fontSize: 13, color: "#4c1d95", lineHeight: 19 },
     reminderBold: { fontWeight: "700" },
+    reminderClose: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: "#e9d5ff" },
+    reminderCloseText: { fontSize: 14, fontWeight: "700", color: "#4c1d95" },
     addBtn: { backgroundColor: Color.endeavour, borderRadius: 12, paddingVertical: 14, alignItems: "center" },
     addBtnText: { fontSize: 16, fontWeight: "700", color: Color.white },
-    addCard: {
-        backgroundColor: Color.white,
-        borderRadius: 12,
-        borderWidth: 1.5,
-        borderColor: Color.endeavour,
-        padding: 14,
-        gap: 8,
-    },
-    input: {
-        borderWidth: 1,
-        borderColor: Color.linkWater,
-        borderRadius: 10,
-        paddingHorizontal: 12,
-        paddingVertical: 10,
-        fontSize: 15,
-        color: Color.blackPearl,
-        backgroundColor: Color.aliceBlue,
-    },
-    inputLabel: { fontSize: 12, fontWeight: "600", color: Color.mako, marginTop: 2 },
-    timeInput: { width: 180 },
-    formError: { fontSize: 13, color: Color.red },
-    formButtons: { flexDirection: "row", justifyContent: "flex-end", gap: 10, marginTop: 4 },
-    cancelBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10 },
-    cancelBtnText: { fontSize: 15, fontWeight: "600", color: Color.mako },
-    saveBtn: { backgroundColor: Color.endeavour, paddingHorizontal: 22, paddingVertical: 10, borderRadius: 10 },
-    saveBtnText: { fontSize: 15, fontWeight: "700", color: Color.white },
-    btnDisabled: { opacity: 0.5 },
     notice: { alignItems: "center", gap: 8, paddingVertical: 8 },
     noticeText: { fontSize: 14, color: Color.mako, textAlign: "center" },
     retryText: { fontSize: 15, fontWeight: "700", color: Color.endeavour },
@@ -452,12 +484,14 @@ const s = StyleSheet.create({
         justifyContent: "center",
     },
     checkboxDone: { backgroundColor: Color.endeavour, borderColor: Color.endeavour },
+    // A repeating task on another day can't be ticked today.
+    checkboxOff: { borderStyle: "dashed" },
     checkmark: { fontSize: 13, color: Color.white, fontWeight: "700" },
     taskContent: { flex: 1 },
     taskLabel: { fontSize: 15, fontWeight: "600", color: Color.blackPearl },
     taskLabelDone: { color: Color.mako, textDecorationLine: "line-through" },
     taskFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginTop: 4 },
-    taskMeta: { flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1 },
+    taskMeta: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 8, flexShrink: 1 },
     taskTime: { fontSize: 12, color: Color.mako },
     taskTimeOverdue: { color: Color.endeavour, fontWeight: "600" },
     exampleBadge: {
@@ -473,8 +507,8 @@ const s = StyleSheet.create({
     itemActions: { flexDirection: "row", gap: 14, marginLeft: "auto" },
     actionText: { fontSize: 13, fontWeight: "600", color: Color.endeavour },
     deleteText: { color: Color.red },
-    completedBtn: { backgroundColor: Color.lightBlue, borderRadius: 12, paddingVertical: 14, alignItems: "center" },
-    completedBtnText: { fontSize: 15, fontWeight: "700", color: Color.endeavour },
+    sectionBtn: { backgroundColor: Color.lightBlue, borderRadius: 12, paddingVertical: 14, alignItems: "center" },
+    sectionBtnText: { fontSize: 15, fontWeight: "700", color: Color.endeavour },
     bottomNav: {
         flexDirection: "row",
         backgroundColor: Color.aliceBlue,

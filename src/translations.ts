@@ -50,6 +50,16 @@ const WEEKDAYS_FULL: Record<LangCode, string[]> = {
     ta: ["ஞாயிறு", "திங்கள்", "செவ்வாய்", "புதன்", "வியாழன்", "வெள்ளி", "சனி"],
 };
 
+/** Short day names, Sunday first (the Israeli week), e.g. for the days a task repeats on. */
+export const WEEKDAYS_SHORT: Record<LangCode, string[]> = {
+    en: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    tl: ["Lin", "Lun", "Mar", "Miy", "Huw", "Biy", "Sab"],
+    ml: ["ഞായർ", "തിങ്കൾ", "ചൊവ്വ", "ബുധൻ", "വ്യാഴം", "വെള്ളി", "ശനി"],
+    ru: ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"],
+    hi: ["रवि", "सोम", "मंगल", "बुध", "गुरु", "शुक्र", "शनि"],
+    ta: ["ஞாயிறு", "திங்கள்", "செவ்வாய்", "புதன்", "வியாழன்", "வெள்ளி", "சனி"],
+};
+
 function pluralRu(n: number, one: string, few: string, many: string): string {
     const mod10 = n % 10;
     const mod100 = n % 100;

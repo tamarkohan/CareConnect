@@ -9,8 +9,6 @@ type Strings = {
     addTask: string;
     newTask: string;             // placeholder of the task text
     time: string;
-    timeHint: string;            // placeholder of the time
-    badTime: string;
     save: string;
     cancel: string;
     noTasks: string;
@@ -22,10 +20,24 @@ type Strings = {
     markNotDone: string;
     deleteTaskConfirm: string;
     tooManyTasks: string;
+    edit: string;
+    noTime: string;
+    chooseTime: string;          // title of the list of times
+    repeat: string;
+    repeatNone: string;
+    repeatDaily: string;
+    repeatSomeDays: string;
+    chooseDays: string;
+    otherDays: string;           // {n} repeating tasks that aren't for today
+    hideOtherDays: string;
+    closeReminder: string;       // for screen readers
     // Journal
     deleteEntryConfirm: string;
     noEntries: string;
     journalFull: string;
+    chooseBook: string;
+    showAll: string;
+    noEntriesInBook: string;
     // Both
     example: string;
     share: string;
@@ -42,8 +54,6 @@ export const TJ_T: Record<LangCode, Strings> = {
         addTask: "+ Add task",
         newTask: "What needs to be done?",
         time: "Time (optional)",
-        timeHint: "e.g. 8:30 or 14:00",
-        badTime: "Write the time like 8:30 or 14:00, or leave it empty.",
         save: "Save",
         cancel: "Cancel",
         noTasks: "Nothing to do right now. Tap “+ Add task” to add one.",
@@ -55,9 +65,23 @@ export const TJ_T: Record<LangCode, Strings> = {
         markNotDone: "Mark as not done",
         deleteTaskConfirm: "Delete this task?",
         tooManyTasks: "You have 100 open tasks. Tick or delete some first.",
+        edit: "Edit",
+        noTime: "No time",
+        chooseTime: "Choose a time",
+        repeat: "Repeat",
+        repeatNone: "Doesn't repeat",
+        repeatDaily: "Every day",
+        repeatSomeDays: "On some days",
+        chooseDays: "Choose at least one day.",
+        otherDays: "Other days ({n})",
+        hideOtherDays: "Hide other days",
+        closeReminder: "Close",
         deleteEntryConfirm: "Delete this entry? It can't be brought back.",
         noEntries: "No entries yet. Write your first one above.",
         journalFull: "Your journal is full (1000 entries). Delete some old entries first.",
+        chooseBook: "Choose a book above to write in it.",
+        showAll: "Show all entries",
+        noEntriesInBook: "No entries in this book yet.",
         example: "Example",
         share: "Share",
         copied: "Copied ✓",
@@ -71,8 +95,6 @@ export const TJ_T: Record<LangCode, Strings> = {
         addTask: "+ Magdagdag ng gawain",
         newTask: "Ano ang kailangang gawin?",
         time: "Oras (hindi kailangan)",
-        timeHint: "hal. 8:30 o 14:00",
-        badTime: "Isulat ang oras tulad ng 8:30 o 14:00, o iwanang blangko.",
         save: "I-save",
         cancel: "Kanselahin",
         noTasks: "Wala pang gawain. Pindutin ang “+ Magdagdag ng gawain”.",
@@ -84,9 +106,23 @@ export const TJ_T: Record<LangCode, Strings> = {
         markNotDone: "Markahan bilang hindi pa tapos",
         deleteTaskConfirm: "Burahin ang gawaing ito?",
         tooManyTasks: "May 100 gawain ka pang hindi tapos. Tapusin o burahin muna ang ilan.",
+        edit: "I-edit",
+        noTime: "Walang oras",
+        chooseTime: "Pumili ng oras",
+        repeat: "Ulitin",
+        repeatNone: "Hindi inuulit",
+        repeatDaily: "Araw-araw",
+        repeatSomeDays: "Sa ilang araw",
+        chooseDays: "Pumili ng kahit isang araw.",
+        otherDays: "Ibang araw ({n})",
+        hideOtherDays: "Itago ang ibang araw",
+        closeReminder: "Isara",
         deleteEntryConfirm: "Burahin ang entry na ito? Hindi na ito maibabalik.",
         noEntries: "Wala pang entry. Isulat ang una mo sa itaas.",
         journalFull: "Puno na ang iyong talaarawan (1000 entry). Burahin muna ang ilang luma.",
+        chooseBook: "Pumili ng book sa itaas para makapagsulat.",
+        showAll: "Ipakita lahat ng entry",
+        noEntriesInBook: "Wala pang entry sa book na ito.",
         example: "Halimbawa",
         share: "Ibahagi",
         copied: "Nakopya ✓",
@@ -100,8 +136,6 @@ export const TJ_T: Record<LangCode, Strings> = {
         addTask: "+ ടാസ്ക് ചേർക്കുക",
         newTask: "എന്താണ് ചെയ്യേണ്ടത്?",
         time: "സമയം (നിർബന്ധമില്ല)",
-        timeHint: "ഉദാ. 8:30 അല്ലെങ്കിൽ 14:00",
-        badTime: "സമയം 8:30 അല്ലെങ്കിൽ 14:00 എന്നതുപോലെ എഴുതുക, അല്ലെങ്കിൽ ഒഴിച്ചിടുക.",
         save: "സേവ് ചെയ്യുക",
         cancel: "റദ്ദാക്കുക",
         noTasks: "ഇപ്പോൾ ടാസ്ക്കുകൾ ഒന്നുമില്ല. “+ ടാസ്ക് ചേർക്കുക” അമർത്തുക.",
@@ -113,9 +147,23 @@ export const TJ_T: Record<LangCode, Strings> = {
         markNotDone: "പൂർത്തിയായിട്ടില്ല എന്ന് അടയാളപ്പെടുത്തുക",
         deleteTaskConfirm: "ഈ ടാസ്ക് ഇല്ലാതാക്കണോ?",
         tooManyTasks: "പൂർത്തിയാകാത്ത 100 ടാസ്ക്കുകൾ ഉണ്ട്. ആദ്യം ചിലത് ടിക്ക് ചെയ്യുകയോ ഇല്ലാതാക്കുകയോ ചെയ്യുക.",
+        edit: "തിരുത്തുക",
+        noTime: "സമയമില്ല",
+        chooseTime: "സമയം തിരഞ്ഞെടുക്കുക",
+        repeat: "ആവർത്തനം",
+        repeatNone: "ആവർത്തിക്കില്ല",
+        repeatDaily: "എല്ലാ ദിവസവും",
+        repeatSomeDays: "ചില ദിവസങ്ങളിൽ",
+        chooseDays: "കുറഞ്ഞത് ഒരു ദിവസം തിരഞ്ഞെടുക്കുക.",
+        otherDays: "മറ്റ് ദിവസങ്ങൾ ({n})",
+        hideOtherDays: "മറ്റ് ദിവസങ്ങൾ മറയ്ക്കുക",
+        closeReminder: "അടയ്ക്കുക",
         deleteEntryConfirm: "ഈ എൻട്രി ഇല്ലാതാക്കണോ? ഇത് പിന്നീട് തിരികെ ലഭിക്കില്ല.",
         noEntries: "ഇതുവരെ എൻട്രികൾ ഇല്ല. ആദ്യത്തേത് മുകളിൽ എഴുതുക.",
         journalFull: "നിങ്ങളുടെ ജേർണൽ നിറഞ്ഞു (1000 എൻട്രികൾ). ആദ്യം ചില പഴയവ ഇല്ലാതാക്കുക.",
+        chooseBook: "എഴുതാൻ മുകളിൽ നിന്ന് ഒരു പുസ്തകം തിരഞ്ഞെടുക്കുക.",
+        showAll: "എല്ലാ എൻട്രികളും കാണിക്കുക",
+        noEntriesInBook: "ഈ പുസ്തകത്തിൽ ഇതുവരെ എൻട്രികൾ ഇല്ല.",
         example: "ഉദാഹരണം",
         share: "പങ്കിടുക",
         copied: "കോപ്പി ചെയ്തു ✓",
@@ -129,8 +177,6 @@ export const TJ_T: Record<LangCode, Strings> = {
         addTask: "+ Добавить задачу",
         newTask: "Что нужно сделать?",
         time: "Время (необязательно)",
-        timeHint: "напр. 8:30 или 14:00",
-        badTime: "Напишите время как 8:30 или 14:00 или оставьте пустым.",
         save: "Сохранить",
         cancel: "Отмена",
         noTasks: "Сейчас задач нет. Нажмите «+ Добавить задачу».",
@@ -142,9 +188,23 @@ export const TJ_T: Record<LangCode, Strings> = {
         markNotDone: "Отметить как невыполненную",
         deleteTaskConfirm: "Удалить эту задачу?",
         tooManyTasks: "У вас 100 невыполненных задач. Сначала отметьте или удалите некоторые.",
+        edit: "Изменить",
+        noTime: "Без времени",
+        chooseTime: "Выберите время",
+        repeat: "Повтор",
+        repeatNone: "Не повторять",
+        repeatDaily: "Каждый день",
+        repeatSomeDays: "В некоторые дни",
+        chooseDays: "Выберите хотя бы один день.",
+        otherDays: "Другие дни ({n})",
+        hideOtherDays: "Скрыть другие дни",
+        closeReminder: "Закрыть",
         deleteEntryConfirm: "Удалить эту запись? Её нельзя будет вернуть.",
         noEntries: "Записей пока нет. Напишите первую выше.",
         journalFull: "Дневник заполнен (1000 записей). Сначала удалите старые записи.",
+        chooseBook: "Выберите книгу выше, чтобы писать в ней.",
+        showAll: "Показать все записи",
+        noEntriesInBook: "В этой книге пока нет записей.",
         example: "Пример",
         share: "Поделиться",
         copied: "Скопировано ✓",
@@ -158,8 +218,6 @@ export const TJ_T: Record<LangCode, Strings> = {
         addTask: "+ नया काम जोड़ें",
         newTask: "क्या करना है?",
         time: "समय (ज़रूरी नहीं)",
-        timeHint: "जैसे 8:30 या 14:00",
-        badTime: "समय 8:30 या 14:00 की तरह लिखें, या खाली छोड़ दें।",
         save: "सहेजें",
         cancel: "रद्द करें",
         noTasks: "अभी कोई काम नहीं है। “+ नया काम जोड़ें” दबाएँ।",
@@ -171,9 +229,23 @@ export const TJ_T: Record<LangCode, Strings> = {
         markNotDone: "अधूरा मार्क करें",
         deleteTaskConfirm: "यह काम मिटाएँ?",
         tooManyTasks: "आपके 100 काम बाकी हैं। पहले कुछ पर टिक करें या उन्हें मिटाएँ।",
+        edit: "बदलें",
+        noTime: "कोई समय नहीं",
+        chooseTime: "समय चुनें",
+        repeat: "दोहराएँ",
+        repeatNone: "नहीं दोहराना",
+        repeatDaily: "हर दिन",
+        repeatSomeDays: "कुछ दिनों पर",
+        chooseDays: "कम से कम एक दिन चुनें।",
+        otherDays: "दूसरे दिन ({n})",
+        hideOtherDays: "दूसरे दिन छिपाएँ",
+        closeReminder: "बंद करें",
         deleteEntryConfirm: "यह बात मिटाएँ? यह वापस नहीं मिलेगी।",
         noEntries: "अभी कुछ नहीं लिखा गया। ऊपर अपनी पहली बात लिखें।",
         journalFull: "आपकी डायरी भर गई है (1000 बातें)। पहले कुछ पुरानी बातें मिटाएँ।",
+        chooseBook: "लिखने के लिए ऊपर से एक किताब चुनें।",
+        showAll: "सारी बातें दिखाएँ",
+        noEntriesInBook: "इस किताब में अभी कुछ नहीं लिखा गया।",
         example: "उदाहरण",
         share: "शेयर करें",
         copied: "कॉपी हो गया ✓",
@@ -187,8 +259,6 @@ export const TJ_T: Record<LangCode, Strings> = {
         addTask: "+ புதிய பணி சேர்",
         newTask: "என்ன செய்ய வேண்டும்?",
         time: "நேரம் (கட்டாயமில்லை)",
-        timeHint: "எ.கா. 8:30 அல்லது 14:00",
-        badTime: "நேரத்தை 8:30 அல்லது 14:00 போல எழுதுங்கள், அல்லது காலியாக விடுங்கள்.",
         save: "சேமி",
         cancel: "ரத்து",
         noTasks: "இப்போது எந்தப் பணியும் இல்லை. “+ புதிய பணி சேர்” என்பதை அழுத்துங்கள்.",
@@ -200,9 +270,23 @@ export const TJ_T: Record<LangCode, Strings> = {
         markNotDone: "முடியவில்லை எனக் குறி",
         deleteTaskConfirm: "இந்தப் பணியை நீக்கவா?",
         tooManyTasks: "முடிக்காத 100 பணிகள் உள்ளன. முதலில் சிலவற்றை டிக் செய்யுங்கள் அல்லது நீக்குங்கள்.",
+        edit: "திருத்து",
+        noTime: "நேரம் இல்லை",
+        chooseTime: "நேரத்தைத் தேர்ந்தெடுக்கவும்",
+        repeat: "மீண்டும் செய்",
+        repeatNone: "மீண்டும் செய்ய வேண்டாம்",
+        repeatDaily: "தினமும்",
+        repeatSomeDays: "சில நாட்களில்",
+        chooseDays: "குறைந்தது ஒரு நாளைத் தேர்ந்தெடுக்கவும்.",
+        otherDays: "மற்ற நாட்கள் ({n})",
+        hideOtherDays: "மற்ற நாட்களை மறை",
+        closeReminder: "மூடு",
         deleteEntryConfirm: "இந்தப் பதிவை நீக்கவா? இதைத் திரும்பப் பெற முடியாது.",
         noEntries: "இன்னும் பதிவுகள் இல்லை. உங்கள் முதல் பதிவை மேலே எழுதுங்கள்.",
         journalFull: "உங்கள் நாட்குறிப்பு நிரம்பிவிட்டது (1000 பதிவுகள்). முதலில் சில பழைய பதிவுகளை நீக்குங்கள்.",
+        chooseBook: "எழுத மேலே ஒரு புத்தகத்தைத் தேர்ந்தெடுக்கவும்.",
+        showAll: "எல்லாப் பதிவுகளையும் காட்டு",
+        noEntriesInBook: "இந்தப் புத்தகத்தில் இன்னும் பதிவுகள் இல்லை.",
         example: "உதாரணம்",
         share: "பகிர்",
         copied: "நகலெடுக்கப்பட்டது ✓",
