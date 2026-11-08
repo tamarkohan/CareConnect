@@ -238,7 +238,8 @@ export default function TasksScreen({ navigation }: Props) {
                     hitSlop={8}
                     disabled={!done && !forToday}
                     accessibilityRole="checkbox"
-                    accessibilityState={{ checked: done, disabled: !done && !forToday }}
+                    aria-checked={done}
+                    aria-disabled={!done && !forToday}
                     accessibilityLabel={done ? tj.markNotDone : tj.markDone}
                 >
                     <View style={[s.checkbox, done && s.checkboxDone, !done && !forToday && s.checkboxOff]}>

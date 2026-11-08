@@ -58,8 +58,8 @@ export default function TimePicker({ value, onChange, lang, noTimeLabel, title }
             key={key}
             style={[s.option, selected && s.optionSelected]}
             onPress={() => choose(time)}
-            accessibilityRole="button"
-            accessibilityState={{ selected }}
+            accessibilityRole="radio"
+            aria-checked={selected}
         >
             <Text style={[s.optionText, selected && s.optionTextSelected]}>{label}</Text>
         </Pressable>

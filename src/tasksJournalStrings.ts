@@ -35,6 +35,8 @@ type Strings = {
     deleteEntryConfirm: string;
     noEntries: string;
     journalFull: string;
+    allEntries: string;          // the first journal tab
+    allEntriesSub: string;
     chooseBook: string;
     showAll: string;
     noEntriesInBook: string;
@@ -79,6 +81,8 @@ export const TJ_T: Record<LangCode, Strings> = {
         deleteEntryConfirm: "Delete this entry? It can't be brought back.",
         noEntries: "No entries yet. Write your first one above.",
         journalFull: "Your journal is full (1000 entries). Delete some old entries first.",
+        allEntries: "All entries",
+        allEntriesSub: "(Both books)",
         chooseBook: "Choose a book above to write in it.",
         showAll: "Show all entries",
         noEntriesInBook: "No entries in this book yet.",
@@ -120,6 +124,8 @@ export const TJ_T: Record<LangCode, Strings> = {
         deleteEntryConfirm: "Burahin ang entry na ito? Hindi na ito maibabalik.",
         noEntries: "Wala pang entry. Isulat ang una mo sa itaas.",
         journalFull: "Puno na ang iyong talaarawan (1000 entry). Burahin muna ang ilang luma.",
+        allEntries: "Lahat ng entry",
+        allEntriesSub: "(Dalawang book)",
         chooseBook: "Pumili ng book sa itaas para makapagsulat.",
         showAll: "Ipakita lahat ng entry",
         noEntriesInBook: "Wala pang entry sa book na ito.",
@@ -161,6 +167,8 @@ export const TJ_T: Record<LangCode, Strings> = {
         deleteEntryConfirm: "ഈ എൻട്രി ഇല്ലാതാക്കണോ? ഇത് പിന്നീട് തിരികെ ലഭിക്കില്ല.",
         noEntries: "ഇതുവരെ എൻട്രികൾ ഇല്ല. ആദ്യത്തേത് മുകളിൽ എഴുതുക.",
         journalFull: "നിങ്ങളുടെ ജേർണൽ നിറഞ്ഞു (1000 എൻട്രികൾ). ആദ്യം ചില പഴയവ ഇല്ലാതാക്കുക.",
+        allEntries: "എല്ലാ എൻട്രികളും",
+        allEntriesSub: "(രണ്ട് പുസ്തകങ്ങളും)",
         chooseBook: "എഴുതാൻ മുകളിൽ നിന്ന് ഒരു പുസ്തകം തിരഞ്ഞെടുക്കുക.",
         showAll: "എല്ലാ എൻട്രികളും കാണിക്കുക",
         noEntriesInBook: "ഈ പുസ്തകത്തിൽ ഇതുവരെ എൻട്രികൾ ഇല്ല.",
@@ -202,6 +210,8 @@ export const TJ_T: Record<LangCode, Strings> = {
         deleteEntryConfirm: "Удалить эту запись? Её нельзя будет вернуть.",
         noEntries: "Записей пока нет. Напишите первую выше.",
         journalFull: "Дневник заполнен (1000 записей). Сначала удалите старые записи.",
+        allEntries: "Все записи",
+        allEntriesSub: "(Обе книги)",
         chooseBook: "Выберите книгу выше, чтобы писать в ней.",
         showAll: "Показать все записи",
         noEntriesInBook: "В этой книге пока нет записей.",
@@ -243,6 +253,8 @@ export const TJ_T: Record<LangCode, Strings> = {
         deleteEntryConfirm: "यह बात मिटाएँ? यह वापस नहीं मिलेगी।",
         noEntries: "अभी कुछ नहीं लिखा गया। ऊपर अपनी पहली बात लिखें।",
         journalFull: "आपकी डायरी भर गई है (1000 बातें)। पहले कुछ पुरानी बातें मिटाएँ।",
+        allEntries: "सारी बातें",
+        allEntriesSub: "(दोनों किताबें)",
         chooseBook: "लिखने के लिए ऊपर से एक किताब चुनें।",
         showAll: "सारी बातें दिखाएँ",
         noEntriesInBook: "इस किताब में अभी कुछ नहीं लिखा गया।",
@@ -284,6 +296,8 @@ export const TJ_T: Record<LangCode, Strings> = {
         deleteEntryConfirm: "இந்தப் பதிவை நீக்கவா? இதைத் திரும்பப் பெற முடியாது.",
         noEntries: "இன்னும் பதிவுகள் இல்லை. உங்கள் முதல் பதிவை மேலே எழுதுங்கள்.",
         journalFull: "உங்கள் நாட்குறிப்பு நிரம்பிவிட்டது (1000 பதிவுகள்). முதலில் சில பழைய பதிவுகளை நீக்குங்கள்.",
+        allEntries: "எல்லாப் பதிவுகளும்",
+        allEntriesSub: "(இரண்டு புத்தகங்களும்)",
         chooseBook: "எழுத மேலே ஒரு புத்தகத்தைத் தேர்ந்தெடுக்கவும்.",
         showAll: "எல்லாப் பதிவுகளையும் காட்டு",
         noEntriesInBook: "இந்தப் புத்தகத்தில் இன்னும் பதிவுகள் இல்லை.",

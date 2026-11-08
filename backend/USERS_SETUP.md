@@ -259,11 +259,11 @@ Both pages save to the server, per account, encrypted (`services/tasks.js`,
   language is different, the app asks the server to translate it (`POST /api/tasks/translate`,
   Gemini, one call for all the tasks missing that language). The translation is stored, so each
   task is translated into each language only once; editing a task drops its old translations.
-- **Journal:** with no book chosen, all entries show, newest first, and the page asks you to
-  choose a book to write in. Choosing the Burden or Gratitude Book shows only that book's entries
-  and the writing box for it; tapping it again, or "Show all entries", goes back to all. Every
-  entry has **Edit** (text and mood), **Share** and **Delete**, and stays in the language it was
-  written in.
+- **Journal:** three tabs: **All entries** (the start: both books together, newest first; the
+  page asks you to choose a book to write in), **Burden Book** and **Gratitude Book** (only that
+  book's entries, and the writing box for it). "Show all entries" above the list also goes back to
+  All entries. Every entry has **Edit** (text and mood), **Share** and **Delete**, and stays in the
+  language it was written in.
 - **Examples for new users:** the first time someone opens Tasks they get 3 example tasks
   (one completed, one repeating every day), and the first time they open the Journal 2 example
   entries. They are marked "Example" and show in the current app language (the texts are
