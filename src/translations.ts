@@ -143,7 +143,7 @@ export const T: Record<LangCode, {
     menu: string;
     settings: string;
     profile: string;
-    helpCenter: string;
+    appGuide: string;
     logout: string;
     appTitle: string;
 
@@ -282,7 +282,7 @@ export const T: Record<LangCode, {
         menu: "Menu",
         settings: "Settings",
         profile: "Profile",
-        helpCenter: "Help Center",
+        appGuide: "App Guide",
         logout: "Logout",
         appTitle: "CareConnect Israel",
         navHome: "Home",
@@ -406,7 +406,7 @@ export const T: Record<LangCode, {
         menu: "Menu",
         settings: "Mga Setting",
         profile: "Profile",
-        helpCenter: "Help Center",
+        appGuide: "Gabay sa App",
         logout: "Mag-logout",
         appTitle: "CareConnect Israel",
         navHome: "Home",
@@ -530,7 +530,7 @@ export const T: Record<LangCode, {
         menu: "മെനു",
         settings: "ക്രമീകരണങ്ങൾ",
         profile: "പ്രൊഫൈൽ",
-        helpCenter: "സഹായ കേന്ദ്രം",
+        appGuide: "ആപ്പ് ഗൈഡ്",
         logout: "ലോഗ്ഔട്ട്",
         appTitle: "കെയർകണക്ട് ഇസ്രായേൽ",
         navHome: "ഹോം",
@@ -654,7 +654,7 @@ export const T: Record<LangCode, {
         menu: "Меню",
         settings: "Настройки",
         profile: "Профиль",
-        helpCenter: "Центр помощи",
+        appGuide: "Как пользоваться",
         logout: "Выйти",
         appTitle: "CareConnect Израиль",
         navHome: "Главная",
@@ -777,7 +777,7 @@ export const T: Record<LangCode, {
         menu: "मेनू",
         settings: "सेटिंग्स",
         profile: "प्रोफ़ाइल",
-        helpCenter: "सहायता केंद्र",
+        appGuide: "ऐप गाइड",
         logout: "लॉग आउट",
         appTitle: "CareConnect Israel",
         navHome: "होम",
@@ -900,7 +900,7 @@ export const T: Record<LangCode, {
         menu: "மெனு",
         settings: "அமைப்புகள்",
         profile: "சுயவிவரம்",
-        helpCenter: "உதவி மையம்",
+        appGuide: "செயலி வழிகாட்டி",
         logout: "வெளியேறு",
         appTitle: "CareConnect Israel",
         navHome: "முகப்பு",

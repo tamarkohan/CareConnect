@@ -1,6 +1,6 @@
 // ── guideStrings.ts ──────────────────────────────────────────────────
 // Texts of the short welcome guide shown right after signing in (and from
-// Menu → Help Center). It explains the buttons of the bottom navigation bar.
+// Menu → App Guide). It explains the buttons of the bottom navigation bar.
 // The button names themselves come from translations.ts (navHome, …).
 // Tagalog, Malayalam, Russian, Hindi and Tamil should be checked by native speakers.
 import { LangCode } from "./translations";

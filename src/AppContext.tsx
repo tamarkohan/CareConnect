@@ -22,7 +22,7 @@ type AppCtx = {
     ready: boolean;
     signIn: (token: string, user: User) => Promise<void>;
     signOut: () => Promise<void>;
-    /** The short welcome guide (bottom-nav buttons): opens on every sign-in and from Menu → Help Center. */
+    /** The short welcome guide (bottom-nav buttons): opens on every sign-in and from Menu → App Guide. */
     guideOpen: boolean;
     setGuideOpen: (open: boolean) => void;
 };
