@@ -1,6 +1,6 @@
 // ── WelcomeGuide.tsx ─────────────────────────────────────────────────
 // A short guide shown right after signing in: one card that explains each
-// button of the bottom navigation bar. It opens again from Menu → Help Center.
+// button of the bottom navigation bar. It opens again from Menu → App Guide.
 // Open/closed state lives in AppContext (guideOpen), so it is rendered once in App.tsx.
 import * as React from "react";
 import { Modal, View, Text, Pressable, ScrollView, StyleSheet } from "react-native";

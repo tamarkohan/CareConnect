@@ -109,7 +109,7 @@ export default function TopBar({ title, navigation }: Props) {
                                     }}
                                 >
                                     <Text style={s.menuItemIcon}>❓</Text>
-                                    <Text style={s.menuItemText}>{t.helpCenter}</Text>
+                                    <Text style={s.menuItemText}>{t.appGuide}</Text>
                                 </Pressable>
 
                                 <View style={s.menuDivider} />
