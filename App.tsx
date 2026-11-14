@@ -14,6 +14,7 @@ import JournalScreen from "./src/screens/JournalScreen";
 import InfoScreen from "./src/screens/InfoScreen";
 import RemittanceScreen from "./src/screens/RemittanceScreen";
 import PayslipsScreen from "./src/screens/PayslipsScreen";
+import WelcomeGuide from "./src/components/WelcomeGuide";
 
 const Stack = createNativeStackNavigator();
 
@@ -49,6 +50,8 @@ function Screens() {
           <Stack.Screen name="Login" component={LoginScreen} />
         )}
       </Stack.Navigator>
+      {/* Short guide to the bottom-nav buttons, shown after signing in. */}
+      <WelcomeGuide />
     </NavigationContainer>
   );
 }

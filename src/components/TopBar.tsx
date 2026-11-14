@@ -35,7 +35,7 @@ type Props = {
 };
 
 export default function TopBar({ title, navigation }: Props) {
-    const { lang, setLang, signOut, user } = useLang();
+    const { lang, setLang, signOut, user, setGuideOpen } = useLang();
     const b = BOT_T[lang];
     // Shown in the menu so testers know which account they are using.
     const account = user
@@ -100,7 +100,14 @@ export default function TopBar({ title, navigation }: Props) {
                                     <Text style={s.menuItemText}>{t.profile}</Text>
                                 </Pressable>
 
-                                <Pressable style={s.menuItem} onPress={() => setShowMenu(false)}>
+                                <Pressable
+                                    style={s.menuItem}
+                                    onPress={() => {
+                                        setShowMenu(false);
+                                        // Opens the short guide to the bottom-nav buttons again.
+                                        setGuideOpen(true);
+                                    }}
+                                >
                                     <Text style={s.menuItemIcon}>❓</Text>
                                     <Text style={s.menuItemText}>{t.helpCenter}</Text>
                                 </Pressable>

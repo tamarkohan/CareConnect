@@ -22,6 +22,9 @@ type AppCtx = {
     ready: boolean;
     signIn: (token: string, user: User) => Promise<void>;
     signOut: () => Promise<void>;
+    /** The short welcome guide (bottom-nav buttons): opens on every sign-in and from Menu → Help Center. */
+    guideOpen: boolean;
+    setGuideOpen: (open: boolean) => void;
 };
 
 export const AppContext = React.createContext<AppCtx>({
@@ -32,12 +35,15 @@ export const AppContext = React.createContext<AppCtx>({
     ready: false,
     signIn: async () => { },
     signOut: async () => { },
+    guideOpen: false,
+    setGuideOpen: () => { },
 });
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
     const [lang, setLangState] = React.useState<LangCode>("en");
     const [user, setUser] = React.useState<User | null>(null);
     const [ready, setReady] = React.useState(false);
+    const [guideOpen, setGuideOpen] = React.useState(false);
 
     // Restore the language and the session saved on this device.
     React.useEffect(() => {
@@ -72,6 +78,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setAuthToken(token);
         await setItem(SESSION_KEY, token);
         setUser(u);
+        // Signing in (not reopening the app with a saved session) shows the short guide.
+        setGuideOpen(true);
     }, []);
 
     const signOut = React.useCallback(async () => {
@@ -83,10 +91,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setAuthToken(null);
         await removeItem(SESSION_KEY);
         setUser(null);
+        setGuideOpen(false);
     }, []);
 
     return (
-        <AppContext.Provider value={{ lang, setLang, user, setUser, ready, signIn, signOut }}>
+        <AppContext.Provider value={{ lang, setLang, user, setUser, ready, signIn, signOut, guideOpen, setGuideOpen }}>
             {children}
         </AppContext.Provider>
     );
