@@ -8,6 +8,7 @@ import * as React from "react";
 import { LangCode, LANGUAGES } from "./translations";
 import { User, getMe, updateMe, logout as apiLogout, setAuthToken } from "./api/client";
 import { getItem, setItem, removeItem } from "./api/storage";
+import { cancelTaskReminders } from "./reminders";
 
 const LANG_KEY = "careconnect.lang";
 const SESSION_KEY = "careconnect.session";
@@ -94,6 +95,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
         setAuthToken(null);
         await removeItem(SESSION_KEY);
+        await cancelTaskReminders();   // they belong to the account that signed out
         setUser(null);
         setGuideOpen(false);
     }, []);

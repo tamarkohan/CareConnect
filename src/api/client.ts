@@ -112,6 +112,14 @@ export const updateMe = (changes: { disclaimerVersion?: number; displayName?: st
 
 export const logout = () => apiFetch<{ success: true }>("/api/auth/logout", {});
 
+// ── Profile: a second way to sign in, deleting the account ───────────────────
+/** Sends a code to a phone / email to add to the account (code "alreadyUsed" if another account has it). */
+export const requestLinkCode = (id: Identifier) => apiFetch<{ sent: true }>("/api/auth/link/request-code", id);
+export const verifyLinkCode = (id: Identifier, code: string) =>
+    apiFetch<{ user: User }>("/api/auth/link/verify", { ...id, code });
+/** Deletes the account and everything in it, for good. */
+export const deleteAccount = () => apiFetch<{ success: true }>("/api/auth/delete-account", {});
+
 // ── Translate ─────────────────────────────────────────────────────────────────
 export type TranslationContext = "general" | "medical" | "transit" | "slang";
 
@@ -347,7 +355,7 @@ export const shareContactPhone = (requestId: string, phone: string) =>
 export type Task = {
     id: string;
     label: string | null;        // null for an example task
-    lang: LangCode | null;       // the language it was written in
+    lang: LangCode | null;       // the app language when it was written (not always the text's)
     translations: Partial<Record<LangCode, string>>;   // see translateTasks
     exampleKey: string | null;
     time: string | null;         // "HH:MM" (24 hours) or null
@@ -367,7 +375,7 @@ export const updateTask = (id: string, task: TaskInput) => apiFetch<{ tasks: Tas
 export const setTaskDone = (id: string, done: boolean, date: string) =>
     apiFetch<{ tasks: Task[] }>("/api/tasks/done", { id, done, date });
 export const deleteTask = (id: string) => apiFetch<{ tasks: Task[] }>("/api/tasks/delete", { id });
-/** Translates tasks written in other languages into `lang`; the server keeps the translations. */
+/** Translates the user's tasks into `lang` (once each: the server keeps the translations). */
 export const translateTasks = (lang: LangCode) => apiFetch<{ tasks: Task[] }>("/api/tasks/translate", { lang });
 
 export type JournalBook = "burden" | "gratitude";
@@ -375,8 +383,9 @@ export type JournalEntry = {
     id: string;
     book: JournalBook;
     mood: string;
-    text: string | null;         // null for an example entry
+    text: string | null;         // null for an example entry; as the user wrote it
     exampleKey: string | null;
+    translations: Partial<Record<LangCode, string>>;   // see translateJournal
     createdAt: string;
 };
 export const getJournal = () => apiFetch<{ entries: JournalEntry[] }>("/api/journal");
@@ -385,4 +394,7 @@ export const addJournalEntry = (book: JournalBook, mood: string | undefined, tex
 /** Changes the text and mood; the entry keeps its book and date. */
 export const updateJournalEntry = (id: string, mood: string | undefined, text: string) =>
     apiFetch<{ entry: JournalEntry }>("/api/journal/update", { id, mood, text });
+/** Translates up to 30 of the newest entries that aren't in `lang` yet; the server keeps them. Ask again for more. */
+export const translateJournal = (lang: LangCode) =>
+    apiFetch<{ translations: Record<string, string> }>("/api/journal/translate", { lang });
 export const deleteJournalEntry = (id: string) => apiFetch<{ success: true }>("/api/journal/delete", { id });

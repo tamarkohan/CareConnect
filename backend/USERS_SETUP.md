@@ -258,15 +258,17 @@ Both pages save to the server, per account, encrypted (`services/tasks.js`,
   Completed tasks and the task comes back on its next day ("today" is the phone's day). Repeating
   tasks that aren't for today are under **Other days**. Open tasks are sorted by time; one whose
   time has passed is outlined. The purple reminder card has ✕, remembered on the device per account.
-- **Tasks in other languages:** a task keeps the language it was written in. When the app
-  language is different, the app asks the server to translate it (`POST /api/tasks/translate`,
-  Gemini, one call for all the tasks missing that language). The translation is stored, so each
-  task is translated into each language only once; editing a task drops its old translations.
+- **Tasks and journal entries in the app language:** what users write is shown translated into
+  the app language (`POST /api/tasks/translate`, `POST /api/journal/translate`, Gemini, see
+  `services/translateItems.js`). People often type in another language than the app's, so every
+  text is sent; one already in that language comes back unchanged. Translations are stored
+  (encrypted, with the text), so each is translated into each language only once; editing drops
+  them. The journal translates the 30 newest entries at a time and has "Show original" on each
+  translated entry; editing an entry always starts from the words as written.
 - **Journal:** three tabs: **All entries** (the start: both books together, newest first; the
   page asks you to choose a book to write in), **Burden Book** and **Gratitude Book** (only that
   book's entries, and the writing box for it). "Show all entries" above the list also goes back to
-  All entries. Every entry has **Edit** (text and mood), **Share** and **Delete**, and stays in the
-  language it was written in.
+  All entries. Every entry has **Edit** (text and mood), **Share** and **Delete**.
 - **Examples for new users:** the first time someone opens Tasks they get 3 example tasks
   (one completed, one repeating every day), and the first time they open the Journal 2 example
   entries. They are marked "Example" and show in the current app language (the texts are
@@ -276,3 +278,27 @@ Both pages save to the server, per account, encrypted (`services/tasks.js`,
   (`users.tasks_examples_at` / `journal_examples_at`); `npm run demo:reset` resets this for the demo.
 - Texts of the buttons and messages: `src/tasksJournalStrings.ts`; the time list is
   `src/components/TimePicker.tsx`, the add / edit form `src/components/TaskForm.tsx`.
+
+## Menu: Profile and Settings
+
+- **Profile:** the name others see (the same editor as "Add name" on Home), and the ways to sign
+  in. A phone number and an email can both be on one account: "Add" sends a one-time code to the
+  new one (`POST /api/auth/link/request-code`, then `/link/verify`), and from then on either one
+  signs in to the same account. A phone or email that another account already uses is refused
+  ("already used by another account"); accounts are never merged. The menu's "Signed in as"
+  shows both. The demo account's sign-in can't be changed.
+- **Settings:** app language; **task reminders**; **Legal**: privacy policy, terms of use and the
+  legal assistant's disclaimer (info pages `privacy`, `terms`, `disclaimer` in
+  `src/infoPages.ts`; the privacy policy and terms are plain-language drafts written from how the
+  app really works – have them reviewed before real users); **Delete my account**
+  (`POST /api/auth/delete-account`): after a confirmation, the account and everything in it
+  (contract, chats, translations, payments, community, tasks, journal) are deleted for good –
+  every table references `users` with `ON DELETE CASCADE`. Not for the demo account.
+- **Task reminders** (`src/reminders.ts`): local notifications on the phone at the time of each
+  open task that has a time, also on its repeat days (not again on a day it was already ticked).
+  They are set for the next 7 days (at most 60) and set again whenever the task list changes or
+  reminders are turned on; turning them off or signing out removes them. On / off is kept on the
+  phone, per account. They need the phone app (`expo-notifications`); a web page can't remind
+  anyone once it's closed, so the web build shows that note instead of the switch. If the app isn't
+  opened for a week, reminders stop until it is opened again.
+- Texts: `src/menuStrings.ts`. Dark mode is planned as a separate change.

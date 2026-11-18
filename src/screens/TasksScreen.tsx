@@ -13,13 +13,15 @@ import TaskForm, { TaskFields } from "../components/TaskForm";
 import { timeLabel } from "../components/TimePicker";
 import { useApp } from "../AppContext";
 import { T, WEEKDAYS_SHORT, formatLongDate, formatEntryDateTime } from "../translations";
-import { TJ_T } from "../tasksJournalStrings";
+import { TJ_T, taskText } from "../tasksJournalStrings";
 import { fill } from "../pageStrings";
 import {
     ApiError, Task, addTask, deleteTask, getTasks, setTaskDone, translateTasks, updateTask,
 } from "../api/client";
 import { confirmAction, shareText, showAlert } from "../api/platform";
 import { getItem, setItem } from "../api/storage";
+import { scheduleTaskReminders } from "../reminders";
+import { MENU_T } from "../menuStrings";
 
 // ── Tokens ───────────────────────────────────────────────────────────
 const Color = {
@@ -48,11 +50,8 @@ const NAV_ITEMS = [
 
 // ── Tasks ─────────────────────────────────────────────────────────────
 // Tasks are saved on the server (per account). New users get a few example
-// tasks from the server, with one of these keys instead of a text; they go away
-// once the user has a task of their own.
-const EXAMPLE_KEYS = ["task1", "task2", "task3", "task4", "task5"] as const;
-type ExampleKey = (typeof EXAMPLE_KEYS)[number];
-const isExampleKey = (k: string | null): k is ExampleKey => (EXAMPLE_KEYS as readonly (string | null)[]).includes(k);
+// tasks from the server (see taskText); they go away once the user has a task
+// of their own.
 
 // Closing the reminder card is remembered on the device, for each account.
 const REMINDER_CLOSED_KEY = "careconnect.tasksReminderClosed";
@@ -123,27 +122,34 @@ export default function TasksScreen({ navigation }: Props) {
         return () => clearInterval(timer);
     }, []);
 
-    // Tasks written in another language are translated into the app language
-    // (the server keeps the translations, so each is translated only once).
-    const triedTranslating = React.useRef(new Set<string>());
+    // The user's tasks are shown in the app language: each is translated into it
+    // once (the server keeps the translations). We don't know which language a task
+    // was typed in, so all are sent; one already in that language comes back as it is.
+    const triedTranslating = React.useRef(new Map<string, number>());   // attempt → tries
+    const [retryTranslating, setRetryTranslating] = React.useState(0);
     React.useEffect(() => {
-        const missing = (tasks ?? []).filter((x) => x.label && x.lang !== lang && !x.translations[lang]);
+        const missing = (tasks ?? []).filter((x) => x.label && !x.translations[lang]);
         const attempt = `${lang}:${missing.map((x) => x.id).join(",")}`;
-        if (!missing.length || triedTranslating.current.has(attempt)) return;
-        triedTranslating.current.add(attempt);
+        const tries = triedTranslating.current.get(attempt) ?? 0;
+        if (!missing.length || tries >= 2) return;
+        triedTranslating.current.set(attempt, tries + 1);
         const asked = version.current;
         translateTasks(lang)
             .then(({ tasks: list }) => applyIfLatest(asked, list))
-            .catch(() => {});    // they stay in their own language
-    }, [tasks, lang]);
+            // Gemini busy: try once more a little later; until then they show as written.
+            .catch(() => setTimeout(() => setRetryTranslating((n) => n + 1), 20_000));
+    }, [tasks, lang, retryTranslating]);
 
-    const textOf = (task: Task) => {
-        if (isExampleKey(task.exampleKey)) return t[task.exampleKey];
-        if (!task.label || task.lang === lang) return task.label ?? "";
-        return task.translations[lang] ?? task.label;
-    };
+    const textOf = (task: Task) => taskText(task, lang);
     const repeatText = (days: number[]) =>
         days.length === 7 ? tj.repeatDaily : days.map((d) => WEEKDAYS_SHORT[lang][d]).join(", ");
+
+    // Task reminders (if turned on in Settings) follow every change of the list.
+    React.useEffect(() => {
+        if (!tasks || !user) return;
+        const m = MENU_T[lang];
+        scheduleTaskReminders(user.id, tasks, textOf, m.remindBody, m.remindersTitle);
+    }, [tasks, lang, user?.id]);
 
     const today = dayOf(now);
     const weekday = now.getDay();

@@ -6,6 +6,8 @@
 // native speakers. Phone numbers and links were checked in October 2026.
 import { LangCode } from "./translations";
 import { more, moreList } from "./i18n/moreLanguages";
+import { MENU_T } from "./menuStrings";
+import { BOT_T } from "./botStrings";
 
 export type Txt = Record<LangCode, string>;
 export type InfoLink = { label: Txt; url: string };
@@ -23,6 +25,10 @@ export type InfoPage = { title: Txt; icon: string; intro?: Txt; sections: InfoSe
 // Hindi and Tamil come from the dictionaries in src/i18n (looked up by the English text).
 const t = (en: string, tl: string, ml: string, ru: string): Txt => ({ en, tl, ml, ru, ...more(en) });
 const list = (en: string[], tl: string[], ml: string[], ru: string[]) => ({ en, tl, ml, ru, ...moreList(en) });
+// Texts that already exist in every language elsewhere (page titles, the legal disclaimer).
+const LANGS: LangCode[] = ["en", "tl", "ml", "ru", "hi", "ta"];
+const fromMenu = (key: "privacy" | "terms" | "disclaimer"): Txt => Object.fromEntries(LANGS.map((l) => [l, MENU_T[l][key]])) as Txt;
+const fromBot = (key: "disclaimerTitle" | "disclaimerBody"): Txt => Object.fromEntries(LANGS.map((l) => [l, BOT_T[l][key]])) as Txt;
 
 /** App-store search, so the link always finds the current app. */
 const playSearch = (q: string) => `https://play.google.com/store/search?q=${encodeURIComponent(q)}&c=apps`;
@@ -255,6 +261,196 @@ export const INFO_PAGES = {
             },
             COMING_SOON,
         ],
+    },
+
+    // ── Settings → Legal (plain-language drafts, to be reviewed before real users) ──
+    privacy: {
+        icon: "🔒",
+        title: fromMenu("privacy"),
+        sections: [
+            {
+                title: t(
+                    "What we keep",
+                    "Ano ang itinatago namin",
+                    "ഞങ്ങൾ സൂക്ഷിക്കുന്നത്",
+                    "Что мы храним"
+                ),
+                bullets: list(
+                    ["Your phone number and/or email, to sign you in.", "Your name, if you add one.", "What you save in the app: your contract and legal chat, your last 10 translations, payment documents, tasks and journal.", "If you join the caregivers list: the name and city you chose, and a phone number you share after accepting someone."],
+                    ["Ang phone number at/o email mo, para makapag-sign in ka.", "Ang pangalan mo, kung magdagdag ka.", "Ang sine-save mo sa app: ang kontrata at legal chat mo, ang huling 10 salin mo, mga dokumento ng bayad, mga gawain at talaarawan.", "Kung sasali ka sa listahan ng caregivers: ang pangalan at lungsod na pinili mo, at phone number na ibibigay mo kapag tinanggap mo ang isang tao."],
+                    ["സൈൻ ഇൻ ചെയ്യാൻ നിങ്ങളുടെ ഫോൺ നമ്പറും/അല്ലെങ്കിൽ ഇമെയിലും.", "നിങ്ങൾ ചേർത്താൽ നിങ്ങളുടെ പേര്.", "ആപ്പിൽ നിങ്ങൾ സേവ് ചെയ്യുന്നവ: നിങ്ങളുടെ കരാറും ലീഗൽ ചാറ്റും, അവസാന 10 വിവർത്തനങ്ങൾ, പേയ്‌മെന്റ് രേഖകൾ, ടാസ്ക്കുകൾ, ജേർണൽ.", "കെയർഗിവർ ലിസ്റ്റിൽ ചേർന്നാൽ: നിങ്ങൾ തിരഞ്ഞെടുത്ത പേരും നഗരവും, ഒരാളെ സ്വീകരിച്ച ശേഷം നിങ്ങൾ പങ്കിടുന്ന ഫോൺ നമ്പറും."],
+                    ["Ваш номер телефона и/или email – для входа.", "Ваше имя, если вы его добавите.", "То, что вы сохраняете в приложении: договор и юридический чат, последние 10 переводов, платёжные документы, задачи и дневник.", "Если вы в списке сиделок: выбранные имя и город, а также номер телефона, которым вы делитесь, приняв чей-то запрос."]
+                ),
+            },
+            {
+                title: t(
+                    "How it is protected",
+                    "Paano ito pinoprotektahan",
+                    "എങ്ങനെ സംരക്ഷിക്കുന്നു",
+                    "Как это защищено"
+                ),
+                body: t(
+                    "Everything personal is stored encrypted, so the database shows only unreadable data. We don't sell your data and there are no ads.",
+                    "Naka-encrypt ang lahat ng personal na impormasyon, kaya hindi mababasa ang laman ng database. Hindi namin ibinebenta ang data mo at walang ads.",
+                    "വ്യക്തിപരമായ എല്ലാ വിവരങ്ങളും എൻക്രിപ്റ്റ് ചെയ്താണ് സൂക്ഷിക്കുന്നത്, അതിനാൽ ഡാറ്റാബേസിൽ വായിക്കാനാകാത്ത വിവരങ്ങൾ മാത്രമേ കാണൂ. ഞങ്ങൾ നിങ്ങളുടെ വിവരങ്ങൾ വിൽക്കുന്നില്ല, പരസ്യങ്ങളുമില്ല.",
+                    "Всё личное хранится в зашифрованном виде, поэтому в базе данных видны только нечитаемые данные. Мы не продаём ваши данные, и рекламы нет."
+                ),
+            },
+            {
+                title: t(
+                    "Who sees what",
+                    "Sino ang nakakakita ng ano",
+                    "ആര് എന്ത് കാണുന്നു",
+                    "Кто что видит"
+                ),
+                bullets: list(
+                    ["Other caregivers see only what you show on the caregivers list: your name and city – never your location, phone or photo.", "Your phone number goes only to someone whose request you accepted, and only if you type it in."],
+                    ["Ang nakikita lang ng ibang caregiver ay ang ipinakita mo sa listahan: ang pangalan at lungsod mo – hindi ang location, phone o picture mo.", "Ang phone number mo ay napupunta lang sa taong tinanggap mo ang request, at kung ita-type mo lang ito."],
+                    ["കെയർഗിവർ ലിസ്റ്റിൽ നിങ്ങൾ കാണിക്കുന്നത് മാത്രമേ മറ്റുള്ളവർ കാണൂ: നിങ്ങളുടെ പേരും നഗരവും – ഒരിക്കലും നിങ്ങളുടെ ലൊക്കേഷനോ ഫോണോ ഫോട്ടോയോ അല്ല.", "നിങ്ങൾ സ്വീകരിച്ച അഭ്യർത്ഥനയുടെ ആൾക്ക് മാത്രമേ നിങ്ങളുടെ ഫോൺ നമ്പർ ലഭിക്കൂ, അതും നിങ്ങൾ ടൈപ്പ് ചെയ്താൽ മാത്രം."],
+                    ["Другие сиделки видят только то, что вы показываете в списке: имя и город – никогда ваше местоположение, телефон или фото.", "Ваш номер телефона получает только тот, чей запрос вы приняли, и только если вы сами его введёте."]
+                ),
+            },
+            {
+                title: t(
+                    "AI services",
+                    "Mga AI service",
+                    "AI സേവനങ്ങൾ",
+                    "Сервисы ИИ"
+                ),
+                body: t(
+                    "To translate, answer your questions and explain documents, the texts you send for that – and your contract, when you ask about it – go to Google's Gemini AI service. Google's terms apply to that service.",
+                    "Para magsalin, sumagot sa mga tanong mo at magpaliwanag ng mga dokumento, ang mga text na ipinapadala mo para dito – at ang kontrata mo, kapag nagtanong ka tungkol dito – ay napupunta sa Gemini AI service ng Google. Ang mga tuntunin ng Google ang sinusunod para sa serbisyong iyon.",
+                    "വിവർത്തനം ചെയ്യാനും ചോദ്യങ്ങൾക്ക് ഉത്തരം നൽകാനും രേഖകൾ വിശദീകരിക്കാനും, അതിനായി നിങ്ങൾ അയയ്ക്കുന്ന വാചകങ്ങളും – നിങ്ങൾ ചോദിക്കുമ്പോൾ നിങ്ങളുടെ കരാറും – Google-ന്റെ Gemini AI സേവനത്തിലേക്ക് പോകുന്നു. ആ സേവനത്തിന് Google-ന്റെ നിബന്ധനകൾ ബാധകമാണ്.",
+                    "Чтобы переводить, отвечать на вопросы и объяснять документы, тексты, которые вы для этого отправляете, – и ваш договор, когда вы о нём спрашиваете, – передаются сервису Google Gemini. К нему применяются условия Google."
+                ),
+            },
+            {
+                title: t(
+                    "How long we keep it",
+                    "Gaano katagal namin ito itinatago",
+                    "എത്ര കാലം സൂക്ഷിക്കുന്നു",
+                    "Как долго мы храним"
+                ),
+                bullets: list(
+                    ["Translations: your last 10.", "Legal chat: your last 100 messages.", "Your contract: deleted after 90 days without use.", "Accounts not used for a year are deleted with all their data."],
+                    ["Mga salin: ang huling 10 mo.", "Legal chat: ang huling 100 mensahe mo.", "Ang kontrata mo: binubura pagkalipas ng 90 araw na hindi ginagamit.", "Ang mga account na hindi nagamit nang isang taon ay binubura kasama ang lahat ng data nito."],
+                    ["വിവർത്തനങ്ങൾ: നിങ്ങളുടെ അവസാന 10.", "ലീഗൽ ചാറ്റ്: നിങ്ങളുടെ അവസാന 100 സന്ദേശങ്ങൾ.", "നിങ്ങളുടെ കരാർ: 90 ദിവസം ഉപയോഗിക്കാതിരുന്നാൽ ഇല്ലാതാക്കും.", "ഒരു വർഷം ഉപയോഗിക്കാത്ത അക്കൗണ്ടുകൾ എല്ലാ വിവരങ്ങളോടും കൂടി ഇല്ലാതാക്കും."],
+                    ["Переводы: последние 10.", "Юридический чат: последние 100 сообщений.", "Ваш договор: удаляется через 90 дней без использования.", "Аккаунты, не использовавшиеся год, удаляются со всеми данными."]
+                ),
+            },
+            {
+                title: t(
+                    "Your choices",
+                    "Ang mga pagpipilian mo",
+                    "നിങ്ങളുടെ തിരഞ്ഞെടുപ്പുകൾ",
+                    "Ваш выбор"
+                ),
+                bullets: list(
+                    ["Delete any task, journal entry, payment document or your contract at any time.", "Delete your whole account in Settings: everything in it goes, for good."],
+                    ["Burahin ang kahit anong gawain, entry sa talaarawan, dokumento ng bayad o ang kontrata mo anumang oras.", "Burahin ang buong account mo sa Settings: mawawala nang tuluyan ang lahat ng laman nito."],
+                    ["ഏത് ടാസ്ക്കും ജേർണൽ എൻട്രിയും പേയ്‌മെന്റ് രേഖയും നിങ്ങളുടെ കരാറും എപ്പോൾ വേണമെങ്കിലും ഇല്ലാതാക്കാം.", "സെറ്റിംഗ്സിൽ നിങ്ങളുടെ മുഴുവൻ അക്കൗണ്ടും ഇല്ലാതാക്കാം: അതിലുള്ളതെല്ലാം എന്നെന്നേക്കുമായി പോകും."],
+                    ["Удаляйте любую задачу, запись дневника, платёжный документ или договор в любое время.", "Удалите весь аккаунт в Настройках: всё в нём исчезнет навсегда."]
+                ),
+            },
+            {
+                title: t(
+                    "About this page",
+                    "Tungkol sa page na ito",
+                    "ഈ പേജിനെക്കുറിച്ച്",
+                    "Об этой странице"
+                ),
+                body: t(
+                    "CareConnect is a research project of the University of Haifa. Last updated: November 2026.",
+                    "Ang CareConnect ay isang research project ng University of Haifa. Huling update: Nobyembre 2026.",
+                    "CareConnect ഹൈഫ സർവകലാശാലയുടെ ഒരു ഗവേഷണ പദ്ധതിയാണ്. അവസാനം പുതുക്കിയത്: നവംബർ 2026.",
+                    "CareConnect – исследовательский проект Хайфского университета. Обновлено: ноябрь 2026."
+                ),
+            },
+        ],
+    },
+
+    terms: {
+        icon: "📜",
+        title: fromMenu("terms"),
+        sections: [
+            {
+                title: t(
+                    "About CareConnect",
+                    "Tungkol sa CareConnect",
+                    "CareConnect-നെക്കുറിച്ച്",
+                    "О CareConnect"
+                ),
+                body: t(
+                    "CareConnect is a free app made by a research project of the University of Haifa for foreign caregivers in Israel. By using it, you agree to these terms.",
+                    "Ang CareConnect ay libreng app na gawa ng isang research project ng University of Haifa para sa mga foreign caregiver sa Israel. Sa paggamit nito, sumasang-ayon ka sa mga tuntuning ito.",
+                    "ഇസ്രായേലിലെ വിദേശ കെയർഗിവർമാർക്കായി ഹൈഫ സർവകലാശാലയുടെ ഒരു ഗവേഷണ പദ്ധതി ഉണ്ടാക്കിയ സൗജന്യ ആപ്പാണ് CareConnect. ഇത് ഉപയോഗിക്കുന്നതിലൂടെ നിങ്ങൾ ഈ നിബന്ധനകൾ അംഗീകരിക്കുന്നു.",
+                    "CareConnect – бесплатное приложение исследовательского проекта Хайфского университета для иностранных сиделок в Израиле. Пользуясь им, вы соглашаетесь с этими условиями."
+                ),
+            },
+            {
+                title: t(
+                    "Information, not advice",
+                    "Impormasyon, hindi payo",
+                    "വിവരം മാത്രം, ഉപദേശമല്ല",
+                    "Информация, а не консультация"
+                ),
+                bullets: list(
+                    ["The legal assistant and the guides explain your rights, but they are not legal advice. For a decision about your own case, talk to a labour lawyer or Kav LaOved.", "Translations and explanations are made by AI and can be wrong. For medicines and medical instructions, always check with the doctor or the family.", "Some content is an example (marked DEMO) and doesn't open anything yet."],
+                    ["Ipinapaliwanag ng legal assistant at ng mga gabay ang mga karapatan mo, pero hindi ito legal na payo. Para sa desisyon tungkol sa sarili mong kaso, kumausap ng labor lawyer o ng Kav LaOved.", "Gawa ng AI ang mga salin at paliwanag at maaaring magkamali. Para sa gamot at medical na tagubilin, laging magtanong sa doktor o sa pamilya.", "Halimbawa lang ang ilang nilalaman (may markang DEMO) at hindi pa ito nagbubukas ng kahit ano."],
+                    ["ലീഗൽ അസിസ്റ്റന്റും ഗൈഡുകളും നിങ്ങളുടെ അവകാശങ്ങൾ വിശദീകരിക്കുന്നു, പക്ഷേ അവ നിയമോപദേശമല്ല. നിങ്ങളുടെ സ്വന്തം കേസിലെ തീരുമാനത്തിന്, ഒരു തൊഴിൽ അഭിഭാഷകനോടോ Kav LaOved-നോടോ സംസാരിക്കുക.", "വിവർത്തനങ്ങളും വിശദീകരണങ്ങളും AI ഉണ്ടാക്കുന്നതാണ്, തെറ്റുകൾ ഉണ്ടാകാം. മരുന്നുകൾക്കും മെഡിക്കൽ നിർദ്ദേശങ്ങൾക്കും എപ്പോഴും ഡോക്ടറോടോ കുടുംബത്തോടോ ഉറപ്പുവരുത്തുക.", "ചില ഉള്ളടക്കം ഉദാഹരണം മാത്രമാണ് (DEMO എന്ന് അടയാളപ്പെടുത്തിയത്), ഇതുവരെ ഒന്നും തുറക്കില്ല."],
+                    ["Юридический помощник и справки объясняют ваши права, но это не юридическая консультация. Для решения по вашему делу обратитесь к юристу по трудовому праву или в Кав ЛаОвед.", "Переводы и объяснения делает ИИ, и они могут быть ошибочными. По лекарствам и медицинским указаниям всегда уточняйте у врача или семьи.", "Часть материалов – примеры (с пометкой DEMO), они пока ничего не открывают."]
+                ),
+            },
+            {
+                title: t(
+                    "In an emergency",
+                    "Sa emergency",
+                    "അടിയന്തര സാഹചര്യത്തിൽ",
+                    "В экстренной ситуации"
+                ),
+                body: t(
+                    "Don't wait for the app: call 101 (ambulance), 100 (police) or 102 (fire).",
+                    "Huwag hintayin ang app: tumawag sa 101 (ambulansya), 100 (pulis) o 102 (bumbero).",
+                    "ആപ്പിനായി കാത്തിരിക്കരുത്: 101 (ആംബുലൻസ്), 100 (പോലീസ്) അല്ലെങ്കിൽ 102 (അഗ്നിശമന സേന) വിളിക്കുക.",
+                    "Не ждите приложения: звоните 101 (скорая), 100 (полиция) или 102 (пожарные)."
+                ),
+            },
+            {
+                title: t(
+                    "Using the app kindly",
+                    "Gamitin ang app nang mabuti",
+                    "ആപ്പ് മാന്യമായി ഉപയോഗിക്കുക",
+                    "Уважительное использование"
+                ),
+                bullets: list(
+                    ["Use the caregivers list and invitations with respect. Don't share other people's details without their permission.", "Accounts that are misused can be removed."],
+                    ["Gamitin nang may paggalang ang listahan ng caregivers at mga imbitasyon. Huwag ibahagi ang detalye ng ibang tao nang walang pahintulot nila.", "Ang mga account na mali ang paggamit ay maaaring tanggalin."],
+                    ["കെയർഗിവർ ലിസ്റ്റും ക്ഷണങ്ങളും ബഹുമാനത്തോടെ ഉപയോഗിക്കുക. മറ്റുള്ളവരുടെ വിവരങ്ങൾ അവരുടെ അനുമതിയില്ലാതെ പങ്കിടരുത്.", "ദുരുപയോഗം ചെയ്യുന്ന അക്കൗണ്ടുകൾ നീക്കം ചെയ്തേക്കാം."],
+                    ["Пользуйтесь списком сиделок и приглашениями уважительно. Не передавайте чужие данные без разрешения.", "Аккаунты, используемые во вред, могут быть удалены."]
+                ),
+            },
+            {
+                title: t(
+                    "Changes",
+                    "Mga pagbabago",
+                    "മാറ്റങ്ങൾ",
+                    "Изменения"
+                ),
+                bullets: list(
+                    ["The app is offered as it is and may change. We work to keep it right and available, but can't promise it always will be.", "Last updated: November 2026."],
+                    ["Ibinibigay ang app nang ganito at maaaring magbago. Sinisikap naming panatilihin itong tama at gumagana, pero hindi namin maipapangako na palagi itong ganoon.", "Huling update: Nobyembre 2026."],
+                    ["ആപ്പ് ഇപ്പോഴുള്ളതുപോലെ നൽകുന്നു, മാറ്റങ്ങൾ വരാം. അത് ശരിയായും ലഭ്യമായും നിലനിർത്താൻ ഞങ്ങൾ ശ്രമിക്കുന്നു, പക്ഷേ എപ്പോഴും അങ്ങനെയായിരിക്കുമെന്ന് ഉറപ്പ് നൽകാനാവില്ല.", "അവസാനം പുതുക്കിയത്: നവംബർ 2026."],
+                    ["Приложение предоставляется как есть и может меняться. Мы стараемся, чтобы оно работало и было точным, но не можем гарантировать этого всегда.", "Обновлено: ноябрь 2026."]
+                ),
+            },
+        ],
+    },
+
+    // The legal assistant's own disclaimer (botStrings.ts), to read again any time.
+    disclaimer: {
+        icon: "⚖️",
+        title: fromMenu("disclaimer"),
+        sections: [{ title: fromBot("disclaimerTitle"), body: fromBot("disclaimerBody") }],
     },
 } satisfies Record<string, InfoPage>;
 

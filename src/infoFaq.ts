@@ -16,6 +16,10 @@ const qa = (q: [string, string, string, string], a: [string, string, string, str
 });
 
 export const FAQ: Record<InfoPageId | "remittance" | "payslips", Faq[]> = {
+    // The legal pages from Settings have no popular questions.
+    privacy: [],
+    terms: [],
+    disclaimer: [],
     agency: [
         qa(
             ["What do I say when I call 101 if I don't speak Hebrew?", "Ano ang sasabihin ko kapag tumawag sa 101 at hindi ako marunong mag-Hebrew?", "ഹീബ്രു അറിയില്ലെങ്കിൽ 101-ൽ വിളിക്കുമ്പോൾ എന്ത് പറയണം?", "Что сказать, если я звоню в 101 и не говорю на иврите?"],

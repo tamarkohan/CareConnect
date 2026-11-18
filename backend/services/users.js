@@ -111,6 +111,37 @@ async function updateUser(userId, { disclaimerVersion, displayName, guideSeen })
   return rows[0];
 }
 
+/**
+ * Adds (or changes) the user's phone or email, so they can sign in with either one.
+ * @returns the updated user row, or null if that phone / email belongs to another account
+ */
+async function linkIdentifier(userId, id) {
+  const column = id.kind === "phone" ? "phone" : "email";
+  try {
+    const { rows } = await db.query(`UPDATE users SET ${column} = $2 WHERE id = $1 RETURNING *`, [userId, id.value]);
+    return rows[0];
+  } catch (err) {
+    if (err.code === "23505") return null;   // unique: another account has it
+    throw err;
+  }
+}
+
+/** The account that uses this phone / email, if any. */
+async function findUserByIdentifier(id) {
+  const column = id.kind === "phone" ? "phone" : "email";
+  const { rows } = await db.query(`SELECT * FROM users WHERE ${column} = $1`, [id.value]);
+  return rows[0] ?? null;
+}
+
+/**
+ * Deletes the account for good. Everything that belongs to it (contract, chats,
+ * translations, payslips, community, tasks, journal, sessions) goes with it:
+ * every table references users ON DELETE CASCADE.
+ */
+async function deleteUser(userId) {
+  await db.query("DELETE FROM users WHERE id = $1", [userId]);
+}
+
 async function purgeExpiredSessions() {
   const { rowCount } = await db.query("DELETE FROM sessions WHERE expires_at <= now()");
   return rowCount;
@@ -147,5 +178,6 @@ function requireAuth(req, res, next) {
 module.exports = {
   normaliseIdentifier, isDemoIdentifier, publicUser,
   findOrCreateUser, createSession, userForToken, deleteSession, updateUser,
+  linkIdentifier, findUserByIdentifier, deleteUser,
   purgeExpiredSessions, optionalAuth, requireAuth, DEMO_PHONE,
 };

@@ -14,7 +14,7 @@ import { useLang } from "../AppContext";
 import { T, formatEntryDateTime } from "../translations";
 import { TJ_T } from "../tasksJournalStrings";
 import {
-    ApiError, JournalBook, JournalEntry, addJournalEntry, deleteJournalEntry, getJournal, updateJournalEntry,
+    ApiError, JournalBook, JournalEntry, addJournalEntry, deleteJournalEntry, getJournal, translateJournal, updateJournalEntry,
 } from "../api/client";
 import { confirmAction, shareText, showAlert } from "../api/platform";
 
@@ -94,7 +94,44 @@ export default function JournalScreen({ navigation }: Props) {
         load();
     }, [load]);
 
-    const textOf = (entry: JournalEntry) => entry.text ?? (isExampleKey(entry.exampleKey) ? t[entry.exampleKey] : "");
+    // The user's entries are shown in the app language: each is translated into it once
+    // (the server keeps the translations, 30 newest at a time). "Show original" shows
+    // the words as they were written.
+    const [showingOriginal, setShowingOriginal] = React.useState<Set<string>>(new Set());
+    const triedTranslating = React.useRef(new Map<string, number>());   // attempt → tries
+    const [retryTranslating, setRetryTranslating] = React.useState(0);
+    React.useEffect(() => {
+        const missing = (entries ?? []).filter((e) => e.text && !e.translations?.[lang]);
+        const attempt = `${lang}:${missing.map((e) => e.id).join(",")}`;
+        const tries = triedTranslating.current.get(attempt) ?? 0;
+        if (!missing.length || tries >= 2) return;
+        triedTranslating.current.set(attempt, tries + 1);
+        translateJournal(lang)
+            .then(({ translations }) =>
+                setEntries((prev) => prev && prev.map((e) =>
+                    translations[e.id] ? { ...e, translations: { ...e.translations, [lang]: translations[e.id] } } : e
+                ))
+            )
+            // Gemini busy: try once more a little later; until then they show as written.
+            .catch(() => setTimeout(() => setRetryTranslating((n) => n + 1), 20_000));
+    }, [entries, lang, retryTranslating]);
+
+    const translationOf = (entry: JournalEntry) => {
+        const translated = entry.translations?.[lang];
+        return translated && translated !== entry.text ? translated : null;
+    };
+    const textOf = (entry: JournalEntry) => {
+        if (isExampleKey(entry.exampleKey)) return t[entry.exampleKey];
+        if (showingOriginal.has(entry.id)) return entry.text ?? "";
+        return translationOf(entry) ?? entry.text ?? "";
+    };
+    const toggleOriginal = (id: string) =>
+        setShowingOriginal((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
     const bookLabel = (book: JournalBook) => (book === "burden" ? t.burdenBookLabel : t.gratitudeBookLabel);
     // Like the translator: the user's first own entry replaces the examples.
     const own = (entries ?? []).filter((e) => !e.exampleKey);
@@ -131,7 +168,7 @@ export default function JournalScreen({ navigation }: Props) {
 
     const startEdit = (entry: JournalEntry) => {
         setEditingId(entry.id);
-        setEditText(textOf(entry));
+        setEditText(entry.text ?? textOf(entry));   // the words as written, not a translation
         setEditMood(entry.mood);
     };
 
@@ -332,6 +369,13 @@ export default function JournalScreen({ navigation }: Props) {
                                         <Text style={s.entryBody}>{textOf(entry)}</Text>
                                         <View style={s.entryFooter}>
                                             {!!entry.exampleKey && <Text style={s.exampleBadge}>{tj.example}</Text>}
+                                            {!!translationOf(entry) && (
+                                                <Pressable onPress={() => toggleOriginal(entry.id)} hitSlop={6} accessibilityRole="button">
+                                                    <Text style={s.originalText}>
+                                                        🌐 {showingOriginal.has(entry.id) ? tj.showTranslation : tj.showOriginal}
+                                                    </Text>
+                                                </Pressable>
+                                            )}
                                             <View style={s.itemActions}>
                                                 {/* Examples can't be edited: they stay examples until the user writes their own. */}
                                                 {!entry.exampleKey && (
@@ -493,6 +537,7 @@ const s = StyleSheet.create({
     },
     itemActions: { flexDirection: "row", gap: 14, marginLeft: "auto" },
     actionText: { fontSize: 13, fontWeight: "600", color: Color.endeavour },
+    originalText: { fontSize: 12, color: Color.mako },
     deleteText: { color: Color.pinkText },
     bottomNav: {
         flexDirection: "row",

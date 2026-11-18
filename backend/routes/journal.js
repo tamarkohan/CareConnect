@@ -8,6 +8,9 @@
  * POST /api/journal          Body: { book: "burden" | "gratitude", mood, text } → { entry }
  * POST /api/journal/update   Body: { id, mood, text } → { entry }   (not for examples)
  * POST /api/journal/delete   Body: { id } → { success: true }
+ * POST /api/journal/translate  Body: { lang } → { translations: { <id>: text } }
+ *                              translates up to 30 of the newest entries that have no translation
+ *                              into lang yet (the server keeps them); the app asks again for more
  */
 
 const express = require("express");
@@ -23,8 +26,8 @@ const handle = (fn) => async (req, res) => {
     await fn(req, res);
   } catch (err) {
     if (err.expose) return res.status(err.status || 400).json({ error: err.message, code: err.code });
-    console.error("[journal] Error:", err.message);
-    res.status(500).json({ error: "Something went wrong. Please try again." });
+    console.error("[journal] Error:", err.cause?.message || err.message);
+    res.status(err.status === 503 ? 503 : 500).json({ error: "Something went wrong. Please try again." });
   }
 };
 const validId = (id) => /^\d+$/.test(String(id || ""));
@@ -44,6 +47,10 @@ router.post("/update", handle(async (req, res) => {
   const entry = await journal.updateEntry(req.user.id, String(id), { mood, text });
   if (!entry) return res.status(404).json({ error: "This entry was deleted." });
   res.json({ entry });
+}));
+
+router.post("/translate", handle(async (req, res) => {
+  res.json({ translations: await journal.translateEntries(req.user.id, req.body?.lang) });
 }));
 
 router.post("/delete", handle(async (req, res) => {
