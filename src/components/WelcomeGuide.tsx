@@ -1,5 +1,5 @@
 // ── WelcomeGuide.tsx ─────────────────────────────────────────────────
-// A short guide shown right after signing in: one card that explains each
+// A short guide shown after an account's first sign-in: one card that explains each
 // button of the bottom navigation bar. It opens again from Menu → App Guide.
 // Open/closed state lives in AppContext (guideOpen), so it is rendered once in App.tsx.
 import * as React from "react";

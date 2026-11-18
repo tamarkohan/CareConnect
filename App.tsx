@@ -50,7 +50,7 @@ function Screens() {
           <Stack.Screen name="Login" component={LoginScreen} />
         )}
       </Stack.Navigator>
-      {/* Short guide to the bottom-nav buttons, shown after signing in. */}
+      {/* Short guide to the bottom-nav buttons, shown after an account's first sign-in. */}
       <WelcomeGuide />
     </NavigationContainer>
   );

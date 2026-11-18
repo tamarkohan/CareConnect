@@ -6,7 +6,7 @@
 // is kept in secure storage so the user stays signed in.
 import * as React from "react";
 import { LangCode, LANGUAGES } from "./translations";
-import { User, getMe, logout as apiLogout, setAuthToken } from "./api/client";
+import { User, getMe, updateMe, logout as apiLogout, setAuthToken } from "./api/client";
 import { getItem, setItem, removeItem } from "./api/storage";
 
 const LANG_KEY = "careconnect.lang";
@@ -22,7 +22,7 @@ type AppCtx = {
     ready: boolean;
     signIn: (token: string, user: User) => Promise<void>;
     signOut: () => Promise<void>;
-    /** The short welcome guide (bottom-nav buttons): opens on every sign-in and from Menu → App Guide. */
+    /** The short welcome guide (bottom-nav buttons): opens after an account's first sign-in, and from Menu → App Guide. */
     guideOpen: boolean;
     setGuideOpen: (open: boolean) => void;
 };
@@ -78,8 +78,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setAuthToken(token);
         await setItem(SESSION_KEY, token);
         setUser(u);
-        // Signing in (not reopening the app with a saved session) shows the short guide.
-        setGuideOpen(true);
+        // The first sign-in of an account shows the short guide, once; the server
+        // remembers it was seen, so later sign-ins (on any device) don't.
+        if (!u.guideSeen) {
+            setGuideOpen(true);
+            updateMe({ guideSeen: true }).then((r) => setUser(r.user)).catch(() => { });
+        }
     }, []);
 
     const signOut = React.useCallback(async () => {

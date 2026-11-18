@@ -9,8 +9,9 @@
  *                               → { token, user }
  * POST /api/auth/verify-code    { phone | email, code }        → { token, user }
  * GET  /api/auth/me             (signed in)                    → { user }
- * POST /api/auth/me             { disclaimerVersion?, displayName? } → { user }
+ * POST /api/auth/me             { disclaimerVersion?, displayName?, guideSeen?: true } → { user }
  *                               displayName: first name, spelled in every app language (services/names.js)
+ *                               guideSeen: the welcome guide was shown, so it doesn't open at the next sign-in
  * POST /api/auth/logout         (signed in)                    → { success: true }
  *
  * Environment variables:
@@ -101,11 +102,11 @@ router.get("/me", users.requireAuth, async (req, res, next) => {
 
 router.post("/me", users.requireAuth, async (req, res, next) => {
   try {
-    const { disclaimerVersion, displayName } = req.body || {};
+    const { disclaimerVersion, displayName, guideSeen } = req.body || {};
     if (disclaimerVersion !== undefined && !(Number.isInteger(disclaimerVersion) && disclaimerVersion > 0)) {
       return res.status(400).json({ error: "disclaimerVersion must be a positive integer." });
     }
-    const user = await users.updateUser(req.user.id, { disclaimerVersion, displayName });
+    const user = await users.updateUser(req.user.id, { disclaimerVersion, displayName, guideSeen });
     res.json({ user: users.publicUser(user) });
   } catch (err) {
     if (err.expose) return res.status(err.status || 400).json({ error: err.message, code: err.code });

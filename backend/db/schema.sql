@@ -226,6 +226,10 @@ CREATE INDEX IF NOT EXISTS journal_entries_user_idx ON journal_entries (user_id,
 ALTER TABLE users ADD COLUMN IF NOT EXISTS tasks_examples_at   TIMESTAMPTZ;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS journal_examples_at TIMESTAMPTZ;
 
+-- When the user first saw the welcome guide (the bottom-nav buttons), so it opens
+-- only after their first sign-in. Menu → App Guide opens it any time.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS guide_seen_at TIMESTAMPTZ;
+
 -- ── Lock the tables down for Supabase's API roles ───────────────────────────
 -- Row Level Security on with no policies = anon/authenticated see nothing.
 -- (The backend connects as the database owner, which bypasses RLS.)

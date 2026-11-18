@@ -13,7 +13,9 @@ Supabase → **SQL Editor** → **New query** → paste all of [`db/schema.sql`]
 tables (`users`, `sessions`, `legal_messages`, `translations`, `payslips`, `payslip_files`) are added.
 **Run it again after updating to the version with the Payslips page**, or uploading a
 payslip fails, and **after updating to the version where tasks and the journal are saved**
-(it adds `tasks` and `journal_entries`), or those pages show "Couldn't load".
+(it adds `tasks` and `journal_entries`), or those pages show "Couldn't load", and **after updating
+to the version where the welcome guide opens only after the first sign-in** (it adds
+`users.guide_seen_at`), or the guide keeps opening at every sign-in.
 
 Until this is done, sign-in fails with "Internal server error".
 

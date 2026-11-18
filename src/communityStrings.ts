@@ -9,7 +9,10 @@ type Strings = {
     openMap: string;
     searchOnMap: string;
     pickCityFirst: string;
-    mapCategory: Record<"clinics" | "taxis" | "atms", string>;   // what to search on the map
+    mapCategory: Record<"clinics" | "taxis" | "atms" | "religious", string>;   // what to search on the map
+    findTitle: string;             // above the category chips
+    religious: string;             // category chips (the others are in translations.ts)
+    social: string;
     // Caregivers list
     joinTitle: string;
     joinBody: string;
@@ -78,7 +81,10 @@ export const COMMUNITY_T: Record<LangCode, Strings> = {
         openMap: "Open in Google Maps",
         searchOnMap: "Search on the map",
         pickCityFirst: "Choose your city below to see the map.",
-        mapCategory: { clinics: "clinic", taxis: "taxi station", atms: "ATM or bank" },
+        mapCategory: { clinics: "clinic", taxis: "taxi station", atms: "ATM or bank", religious: "place of worship" },
+        findTitle: "Find:",
+        religious: "Religious places",
+        social: "Social networks",
         joinTitle: "Meet caregivers in your city",
         joinBody: "Join the list to let other caregivers ask to connect with you – in your city and on the places you want to visit. Others see only your name and the city and neighborhood you chose – never your location, phone or photo.",
         firstName: "Your name",
@@ -141,7 +147,10 @@ export const COMMUNITY_T: Record<LangCode, Strings> = {
         openMap: "Buksan sa Google Maps",
         searchOnMap: "Hanapin sa mapa",
         pickCityFirst: "Piliin ang lungsod mo sa ibaba para makita ang mapa.",
-        mapCategory: { clinics: "clinic", taxis: "taxi station", atms: "ATM or bank" },
+        mapCategory: { clinics: "clinic", taxis: "taxi station", atms: "ATM or bank", religious: "place of worship" },
+        findTitle: "Hanapin:",
+        religious: "Relihiyosong lugar",
+        social: "Mga social network",
         joinTitle: "Kilalanin ang mga caregiver sa lungsod mo",
         joinBody: "Sumali sa listahan para makahingi ng connect ang ibang caregiver – sa lungsod mo at sa mga lugar na gusto mong puntahan. Ang makikita lang nila ay ang pangalan mo at ang lungsod at lugar na pinili mo – hindi ang location, phone o picture mo.",
         firstName: "Pangalan mo",
@@ -204,7 +213,10 @@ export const COMMUNITY_T: Record<LangCode, Strings> = {
         openMap: "ഗൂഗിൾ മാപ്സിൽ തുറക്കുക",
         searchOnMap: "മാപ്പിൽ തിരയുക",
         pickCityFirst: "മാപ്പ് കാണാൻ താഴെ നിങ്ങളുടെ നഗരം തിരഞ്ഞെടുക്കുക.",
-        mapCategory: { clinics: "clinic", taxis: "taxi station", atms: "ATM or bank" },
+        mapCategory: { clinics: "clinic", taxis: "taxi station", atms: "ATM or bank", religious: "place of worship" },
+        findTitle: "കണ്ടെത്തുക:",
+        religious: "മതപരമായ സ്ഥലങ്ങൾ",
+        social: "സോഷ്യൽ നെറ്റ്‌വർക്കുകൾ",
         joinTitle: "നിങ്ങളുടെ നഗരത്തിലെ പരിചാരകരെ പരിചയപ്പെടുക",
         joinBody: "ലിസ്റ്റിൽ ചേരുക, മറ്റ് പരിചാരകർക്ക് നിങ്ങളുമായി ബന്ധപ്പെടാൻ അഭ്യർത്ഥിക്കാം – നിങ്ങളുടെ നഗരത്തിലും നിങ്ങൾ പോകാൻ ആഗ്രഹിക്കുന്ന സ്ഥലങ്ങളിലും. നിങ്ങളുടെ പേരും നിങ്ങൾ തിരഞ്ഞെടുത്ത നഗരവും പ്രദേശവും മാത്രമേ അവർ കാണൂ – നിങ്ങളുടെ ലൊക്കേഷനോ ഫോണോ ഫോട്ടോയോ ഒരിക്കലും കാണില്ല.",
         firstName: "നിങ്ങളുടെ പേര്",
@@ -267,7 +279,10 @@ export const COMMUNITY_T: Record<LangCode, Strings> = {
         openMap: "Открыть в Google Maps",
         searchOnMap: "Искать на карте",
         pickCityFirst: "Выберите город ниже, чтобы увидеть карту.",
-        mapCategory: { clinics: "clinic", taxis: "taxi station", atms: "ATM or bank" },
+        mapCategory: { clinics: "clinic", taxis: "taxi station", atms: "ATM or bank", religious: "place of worship" },
+        findTitle: "Найти:",
+        religious: "Религиозные места",
+        social: "Соцсети",
         joinTitle: "Познакомьтесь с сиделками в вашем городе",
         joinBody: "Присоединитесь к списку, и другие сиделки смогут попросить связаться с вами – в вашем городе и в местах, куда вы хотите поехать. Они видят только ваше имя и выбранные город и район – никогда ваше местоположение, телефон или фото.",
         firstName: "Ваше имя",
@@ -330,7 +345,10 @@ export const COMMUNITY_T: Record<LangCode, Strings> = {
         openMap: "Google Maps में खोलें",
         searchOnMap: "नक्शे पर खोजें",
         pickCityFirst: "नक्शा देखने के लिए नीचे अपना शहर चुनें।",
-        mapCategory: { clinics: "clinic", taxis: "taxi station", atms: "ATM or bank" },
+        mapCategory: { clinics: "clinic", taxis: "taxi station", atms: "ATM or bank", religious: "place of worship" },
+        findTitle: "खोजें:",
+        religious: "धार्मिक स्थल",
+        social: "सोशल नेटवर्क",
         joinTitle: "अपने शहर के केयरगिवर से मिलें",
         joinBody: "सूची में शामिल हों ताकि दूसरे केयरगिवर आपसे जुड़ने का अनुरोध कर सकें – आपके शहर में और उन जगहों पर जहाँ आप जाना चाहते हैं। दूसरों को सिर्फ़ आपका नाम और आपका चुना हुआ शहर व इलाका दिखता है – कभी आपकी लोकेशन, फ़ोन या फ़ोटो नहीं।",
         firstName: "आपका नाम",
@@ -393,7 +411,10 @@ export const COMMUNITY_T: Record<LangCode, Strings> = {
         openMap: "Google Maps-இல் திற",
         searchOnMap: "வரைபடத்தில் தேடு",
         pickCityFirst: "வரைபடத்தைப் பார்க்க கீழே உங்கள் நகரத்தைத் தேர்வு செய்யுங்கள்.",
-        mapCategory: { clinics: "clinic", taxis: "taxi station", atms: "ATM or bank" },
+        mapCategory: { clinics: "clinic", taxis: "taxi station", atms: "ATM or bank", religious: "place of worship" },
+        findTitle: "கண்டறி:",
+        religious: "வழிபாட்டுத் தலங்கள்",
+        social: "சமூக வலைதளங்கள்",
         joinTitle: "உங்கள் நகரப் பராமரிப்பாளர்களைச் சந்தியுங்கள்",
         joinBody: "பட்டியலில் சேருங்கள், மற்ற பராமரிப்பாளர்கள் உங்களுடன் இணைய கோரிக்கை அனுப்பலாம் – உங்கள் நகரத்திலும் நீங்கள் போக விரும்பும் இடங்களிலும். மற்றவர்கள் உங்கள் பெயரையும் நீங்கள் தேர்ந்தெடுத்த நகரம், பகுதியையும் மட்டுமே பார்ப்பார்கள் – உங்கள் இருப்பிடம், தொலைபேசி அல்லது புகைப்படம் ஒருபோதும் இல்லை.",
         firstName: "உங்கள் பெயர்",

@@ -7,6 +7,7 @@
  *     with its summary, so the demo starts with a contract already there
  *   - adds three example translations
  *   - deletes its tasks and journal, so the example ones come back on the next visit
+ *   - shows the welcome guide again at the next sign-in
  *   - shows the legal disclaimer again on the next visit
  *
  * Run it before each interview so earlier testers' messages are gone.
@@ -61,7 +62,7 @@ async function main() {
 
   const user = await users.findOrCreateUser({ kind: "phone", value: users.DEMO_PHONE });
   await db.query(
-    "UPDATE users SET disclaimer_version = NULL, tasks_examples_at = NULL, journal_examples_at = NULL WHERE id = $1",
+    "UPDATE users SET disclaimer_version = NULL, tasks_examples_at = NULL, journal_examples_at = NULL, guide_seen_at = NULL WHERE id = $1",
     [user.id]
   );
   await legalHistory.clearMessages(user.id);
