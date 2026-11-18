@@ -132,6 +132,32 @@ const translationCache: Record<string, string> = {};
 
 const approxBytes = (base64: string) => Math.floor((base64.length * 3) / 4);
 
+// ── The chat, kept outside the screen ────────────────────────────────
+// Each visit to the Assistant from the bottom bar opens a new copy of this screen.
+// Keeping the chat here means that a question still waiting for its answer – with
+// the "thinking" dots – is still there when the user comes back, and the answer
+// shows up as soon as it arrives. It belongs to one account and starts empty when
+// another account opens the Assistant.
+type ChatState = {
+    owner: string | null | undefined;   // the account's id (null: no account; undefined: nobody yet)
+    loaded: boolean;                     // the saved chat was loaded from the server
+    messages: Message[];
+    sending: boolean;                    // a question is waiting for its answer
+};
+let chat: ChatState = { owner: undefined, loaded: false, messages: [], sending: false };
+const chatListeners = new Set<() => void>();
+function updateChat(change: Partial<ChatState>) {
+    chat = { ...chat, ...change };
+    chatListeners.forEach((listener) => listener());
+}
+const subscribeChat = (listener: () => void) => {
+    chatListeners.add(listener);
+    return () => {
+        chatListeners.delete(listener);
+    };
+};
+const NO_MESSAGES: Message[] = [];
+
 // ════════════════════════════════════════════════════════════════════
 type Props = { navigation?: any };
 
@@ -143,7 +169,14 @@ export default function AssistantScreen({ navigation }: Props) {
     const responseLang = LANG_NAMES[lang] ?? "English";
 
     // Messages are kept as written: switching the app language never resets them.
-    const [messages, setMessages] = React.useState<Message[]>([]);
+    // They live in `chat` (above), so they stay when the user leaves and comes back.
+    const owner = user?.id ?? null;
+    const chatNow = React.useSyncExternalStore(subscribeChat, () => chat);
+    const mine = chatNow.owner === owner;
+    const messages = mine ? chatNow.messages : NO_MESSAGES;
+    const isSending = mine && chatNow.sending;
+    const setMessages = (next: Message[] | ((prev: Message[]) => Message[])) =>
+        updateChat({ messages: typeof next === "function" ? next(chat.messages) : next });
     const [loadingHistory, setLoadingHistory] = React.useState(false);
 
     const [inputText, setInputText] = React.useState("");
@@ -154,7 +187,6 @@ export default function AssistantScreen({ navigation }: Props) {
     const [guestToken, setGuestToken] = React.useState<string | null>(null);
     const contractUploaded = contract !== null || guestToken !== null;
     const [showSummary, setShowSummary] = React.useState(false);
-    const [isSending, setIsSending] = React.useState(false);
     const scrollRef = React.useRef<ScrollView>(null);
     const inputRef = React.useRef<TextInput>(null);
 
@@ -194,18 +226,26 @@ export default function AssistantScreen({ navigation }: Props) {
         setMessages((prev) => [...prev, { id: `${Date.now()}-${prev.length}`, role: "assistant", text: "", noticeKey }]);
 
     // Load the saved contract and chat (signed in) or the guest's contract token.
+    // The chat is loaded from the server once; coming back to the page shows it as it
+    // is, with a question that is still waiting for its answer.
     React.useEffect(() => {
         let cancelled = false;
+        if (chat.owner !== owner) updateChat({ owner, loaded: false, messages: [], sending: false });
         (async () => {
             if (user) {
-                setLoadingHistory(true);
+                const needHistory = !chat.loaded;
+                if (needHistory) setLoadingHistory(true);
                 try {
-                    const [c, h] = await Promise.all([getContract(), getLegalHistory()]);
+                    const [c, h] = await Promise.all([getContract(), needHistory ? getLegalHistory() : null]);
                     if (cancelled) return;
                     setContract(c.contract);
-                    setMessages(
-                        h.messages.map((m) => ({ id: m.id, role: m.role, text: m.text, sources: m.sources, lang: m.language }))
-                    );
+                    if (h && chat.owner === owner && !chat.loaded) {
+                        const saved = h.messages.map((m): Message => ({
+                            id: m.id, role: m.role, text: m.text, sources: m.sources, lang: m.language,
+                        }));
+                        // Keep anything added while it was loading (e.g. a question just asked).
+                        updateChat({ loaded: true, messages: [...saved, ...chat.messages] });
+                    }
                     scrollToEnd(150);
                 } catch (err: any) {
                     if (!cancelled) addBotMessage(`⚠ ${err?.status ? err.message : b.errAsk}`, true);
@@ -213,6 +253,7 @@ export default function AssistantScreen({ navigation }: Props) {
                     if (!cancelled) setLoadingHistory(false);
                 }
             } else {
+                updateChat({ loaded: true });   // without an account nothing is saved on the server
                 const token = await loadContractToken();
                 if (!cancelled && token) setGuestToken(token);
             }
@@ -576,9 +617,12 @@ export default function AssistantScreen({ navigation }: Props) {
             lang: responseLang,
         };
 
+        // The answer goes to this account's chat, even if the user has left the page by then.
+        const askedBy = chat.owner;
+        const stillSameChat = () => chat.owner === askedBy;
         setMessages((prev) => [...prev, userMsg]);
         setInputText("");
-        setIsSending(true);
+        updateChat({ sending: true });
 
         // Scroll to bottom
         scrollToEnd();
@@ -604,11 +648,11 @@ export default function AssistantScreen({ navigation }: Props) {
                 sources: res.sources,
                 lang: res.language,
             };
-            setMessages((prev) => [...prev, botMsg]);
+            if (stillSameChat()) setMessages((prev) => [...prev, botMsg]);
         } catch (err: any) {
-            addBotMessage(`⚠ ${err?.status ? err.message : b.errAsk}`, true);
+            if (stillSameChat()) addBotMessage(`⚠ ${err?.status ? err.message : b.errAsk}`, true);
         } finally {
-            setIsSending(false);
+            if (stillSameChat()) updateChat({ sending: false });
             scrollToEnd(100);
         }
     };
