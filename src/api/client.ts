@@ -263,7 +263,8 @@ export type LegalMessage = {
 export const translateMessages = (language: string, messages: { id: string; text: string }[]) =>
     apiFetch<{ translations: Record<string, string> }>("/api/legal/translate-messages", { language, messages });
 
-export const getLegalHistory = () => apiFetch<{ messages: LegalMessage[] }>("/api/legal/history");
+/** waiting: the server is still answering a question (saved already, the answer not yet). */
+export const getLegalHistory = () => apiFetch<{ messages: LegalMessage[]; waiting?: boolean }>("/api/legal/history");
 
 export const clearLegalHistory = () => apiFetch<{ success: true }>("/api/legal/clear-history", {});
 

@@ -43,6 +43,7 @@ type Strings = {
     errUpload: string;
     contractReady: string;
     contractDeleted: string;
+    noAnswer: string;          // a saved question whose answer never came
     summaryTitle: string;
     concernsTitle: string;
     summaryUnavailable: string;
@@ -132,6 +133,7 @@ export const BOT_T: Record<LangCode, Strings> = {
         errUpload: "We couldn't read this file. Please try again.",
         contractReady: "✅ Your contract is saved. You can now ask me questions about your rights based on it.",
         contractDeleted: "🗑 Your contract was deleted from our server.",
+        noAnswer: "⚠ No answer came for this question. Please ask again.",
         summaryTitle: "Your contract at a glance",
         concernsTitle: "Please check these points",
         summaryUnavailable: "The summary isn't ready, but you can still ask questions about your contract.",
@@ -232,6 +234,7 @@ export const BOT_T: Record<LangCode, Strings> = {
         errUpload: "Hindi namin mabasa ang file na ito. Subukan muli.",
         contractReady: "✅ Naka-save ang iyong kontrata. Maaari ka nang magtanong tungkol sa iyong mga karapatan batay dito.",
         contractDeleted: "🗑 Nabura na ang iyong kontrata sa aming server.",
+        noAnswer: "⚠ Walang dumating na sagot sa tanong na ito. Pakitanong ulit.",
         summaryTitle: "Ang iyong kontrata sa madaling sabi",
         concernsTitle: "Pakisuri ang mga puntong ito",
         summaryUnavailable: "Hindi pa handa ang buod, pero maaari ka pa ring magtanong tungkol sa iyong kontrata.",
@@ -332,6 +335,7 @@ export const BOT_T: Record<LangCode, Strings> = {
         errUpload: "ഈ ഫയൽ വായിക്കാനായില്ല. വീണ്ടും ശ്രമിക്കുക.",
         contractReady: "✅ നിങ്ങളുടെ കരാർ സേവ് ചെയ്തു. ഇതിനെ അടിസ്ഥാനമാക്കി നിങ്ങളുടെ അവകാശങ്ങളെക്കുറിച്ച് ചോദിക്കാം.",
         contractDeleted: "🗑 നിങ്ങളുടെ കരാർ ഞങ്ങളുടെ സെർവറിൽ നിന്ന് ഇല്ലാതാക്കി.",
+        noAnswer: "⚠ ഈ ചോദ്യത്തിന് ഉത്തരം ലഭിച്ചില്ല. ദയവായി വീണ്ടും ചോദിക്കുക.",
         summaryTitle: "നിങ്ങളുടെ കരാർ ഒറ്റനോട്ടത്തിൽ",
         concernsTitle: "ഈ കാര്യങ്ങൾ പരിശോധിക്കുക",
         summaryUnavailable: "സംഗ്രഹം തയ്യാറായിട്ടില്ല, എങ്കിലും കരാറിനെക്കുറിച്ച് ചോദിക്കാം.",
@@ -432,6 +436,7 @@ export const BOT_T: Record<LangCode, Strings> = {
         errUpload: "Не удалось прочитать файл. Попробуйте ещё раз.",
         contractReady: "✅ Ваш договор сохранён. Теперь можно задавать вопросы о ваших правах на его основе.",
         contractDeleted: "🗑 Ваш договор удалён с нашего сервера.",
+        noAnswer: "⚠ Ответ на этот вопрос не пришёл. Пожалуйста, спросите ещё раз.",
         summaryTitle: "Ваш договор вкратце",
         concernsTitle: "Проверьте эти пункты",
         summaryUnavailable: "Краткое содержание не готово, но вы можете задавать вопросы о договоре.",
@@ -532,6 +537,7 @@ export const BOT_T: Record<LangCode, Strings> = {
         errUpload: "हम यह फ़ाइल नहीं पढ़ सके। कृपया फिर कोशिश करें।",
         contractReady: "✅ आपका अनुबंध सहेज लिया गया। अब आप इसके आधार पर अपने अधिकारों के बारे में सवाल पूछ सकते हैं।",
         contractDeleted: "🗑 आपका अनुबंध हमारे सर्वर से मिटा दिया गया।",
+        noAnswer: "⚠ इस सवाल का जवाब नहीं आया। कृपया दोबारा पूछें।",
         summaryTitle: "आपका अनुबंध एक नज़र में",
         concernsTitle: "कृपया ये बातें जाँचें",
         summaryUnavailable: "सारांश तैयार नहीं है, लेकिन आप फिर भी अपने अनुबंध के बारे में सवाल पूछ सकते हैं।",
@@ -632,6 +638,7 @@ export const BOT_T: Record<LangCode, Strings> = {
         errUpload: "இந்தக் கோப்பைப் படிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
         contractReady: "✅ உங்கள் ஒப்பந்தம் சேமிக்கப்பட்டது. இனி அதன் அடிப்படையில் உங்கள் உரிமைகள் பற்றி கேட்கலாம்.",
         contractDeleted: "🗑 உங்கள் ஒப்பந்தம் எங்கள் சர்வரிலிருந்து நீக்கப்பட்டது.",
+        noAnswer: "⚠ இந்தக் கேள்விக்குப் பதில் வரவில்லை. மீண்டும் கேளுங்கள்.",
         summaryTitle: "உங்கள் ஒப்பந்தம் ஒரே பார்வையில்",
         concernsTitle: "இந்த விஷயங்களைச் சரிபார்க்கவும்",
         summaryUnavailable: "சுருக்கம் தயாராகவில்லை, ஆனாலும் உங்கள் ஒப்பந்தம் பற்றி கேள்விகள் கேட்கலாம்.",

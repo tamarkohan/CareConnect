@@ -39,6 +39,7 @@ import {
     ContractInfo,
     ContractFile,
     LegalAskResponse,
+    LegalMessage,
     LegalSource,
     SUMMARY_FIELDS,
 } from "../api/client";
@@ -97,7 +98,7 @@ type Message = {
     /** Language it was written in ("English"…); null/undefined = unknown. */
     lang?: string | null;
     /** App notices ("contract saved"…) are shown from botStrings in the current language. */
-    noticeKey?: "contractReady" | "contractDeleted";
+    noticeKey?: "contractReady" | "contractDeleted" | "noAnswer";
 };
 
 /**
@@ -157,6 +158,46 @@ const subscribeChat = (listener: () => void) => {
     };
 };
 const NO_MESSAGES: Message[] = [];
+
+const fromServer = (m: LegalMessage): Message => ({
+    id: m.id, role: m.role, text: m.text, sources: m.sources, lang: m.language,
+});
+// The last question has no answer and none is coming (e.g. the server restarted).
+const noAnswerNotice = (): Message => ({ id: `noanswer-${Date.now()}`, role: "assistant", text: "", noticeKey: "noAnswer", isError: true });
+const endsWithQuestion = (list: Message[]) => list.length > 0 && list[list.length - 1].role === "user";
+
+// After a restart of the app the saved chat may end with a question the server is
+// still answering. Show it with "thinking" and check every few seconds until the
+// answer is saved (at most a few minutes), wherever the user is in the app.
+const CHECK_EVERY_MS = 3000;
+const GIVE_UP_AFTER_MS = 3 * 60 * 1000;
+let waitingFor: string | null | undefined;   // the account being checked for
+async function waitForAnswer(owner: string | null) {
+    if (waitingFor === owner) return;
+    waitingFor = owner;
+    const giveUpAt = Date.now() + GIVE_UP_AFTER_MS;
+    try {
+        while (Date.now() < giveUpAt) {
+            await new Promise((r) => setTimeout(r, CHECK_EVERY_MS));
+            if (chat.owner !== owner || !chat.sending) return;   // another account, or answered here
+            try {
+                const h = await getLegalHistory();
+                if (chat.owner !== owner) return;
+                if (!h.waiting) {
+                    const known = new Set(chat.messages.map((m) => m.id));
+                    const messages = [...chat.messages, ...h.messages.filter((m) => !known.has(m.id)).map(fromServer)];
+                    updateChat({ messages: endsWithQuestion(messages) ? [...messages, noAnswerNotice()] : messages, sending: false });
+                    return;
+                }
+            } catch {
+                // No connection right now: try again.
+            }
+        }
+        if (chat.owner === owner) updateChat({ messages: [...chat.messages, noAnswerNotice()], sending: false });
+    } finally {
+        waitingFor = undefined;
+    }
+}
 
 // ════════════════════════════════════════════════════════════════════
 type Props = { navigation?: any };
@@ -240,11 +281,16 @@ export default function AssistantScreen({ navigation }: Props) {
                     if (cancelled) return;
                     setContract(c.contract);
                     if (h && chat.owner === owner && !chat.loaded) {
-                        const saved = h.messages.map((m): Message => ({
-                            id: m.id, role: m.role, text: m.text, sources: m.sources, lang: m.language,
-                        }));
-                        // Keep anything added while it was loading (e.g. a question just asked).
-                        updateChat({ loaded: true, messages: [...saved, ...chat.messages] });
+                        const saved = h.messages.map(fromServer);
+                        // Keep anything added while it was loading (e.g. a notice).
+                        const messages = [...saved, ...chat.messages];
+                        if (h.waiting) {
+                            // A question asked before the app was closed or reloaded: still being answered.
+                            updateChat({ loaded: true, messages, sending: true });
+                            waitForAnswer(owner);
+                        } else {
+                            updateChat({ loaded: true, messages: endsWithQuestion(saved) && !chat.messages.length ? [...messages, noAnswerNotice()] : messages });
+                        }
                     }
                     scrollToEnd(150);
                 } catch (err: any) {
@@ -608,7 +654,8 @@ export default function AssistantScreen({ navigation }: Props) {
     // ── Send question ─────────────────────────────────────────────────
     const sendMessage = async (overrideText?: string) => {
         const trimmed = (overrideText ?? inputText).trim();
-        if (!trimmed || isSending) return;
+        // Not while the saved chat is loading: it may hold a question still being answered.
+        if (!trimmed || isSending || loadingHistory) return;
 
         const userMsg: Message = {
             id: Date.now().toString(),

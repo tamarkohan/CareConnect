@@ -137,6 +137,15 @@ the AI again.
 "Files or Google Drive" opens the phone's own file chooser: Google Drive
 (and iCloud on iPhone) appear there when their apps are installed.
 
+## A question waiting for its answer
+
+A signed-in user's question is saved as soon as it is asked, and the answer when it
+comes. Until then the chat shows the question with the "thinking" dots – also after
+leaving the page, reloading it, or closing and reopening the app (the app checks every
+few seconds until the answer is saved). If the answer fails, the question isn't kept and
+the app shows the error. If the backend restarts while answering (e.g. a new deploy),
+that answer is lost: the chat shows "No answer came for this question. Please ask again."
+
 ## Changing language, exporting
 
 - Switching the app language translates the earlier chat messages in **one**

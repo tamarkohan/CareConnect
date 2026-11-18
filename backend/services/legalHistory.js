@@ -11,14 +11,17 @@ const { encryptJson, decryptJson } = require("./crypto");
 const MAX_MESSAGES = 100;
 const context = (userId) => `msg:${userId}`;
 
+/** Saves messages in order. @returns {Promise<string[]>} their ids */
 async function addMessages(userId, messages) {
+  const ids = [];
   await db.withTransaction(async (client) => {
     for (const { role, text, sources, language } of messages) {
       const { ciphertext, iv, authTag } = encryptJson({ text, sources: sources || [], language }, context(userId));
-      await client.query(
-        "INSERT INTO legal_messages (user_id, role, ciphertext, iv, auth_tag) VALUES ($1, $2, $3, $4, $5)",
+      const { rows } = await client.query(
+        "INSERT INTO legal_messages (user_id, role, ciphertext, iv, auth_tag) VALUES ($1, $2, $3, $4, $5) RETURNING id",
         [userId, role, ciphertext, iv, authTag]
       );
+      ids.push(String(rows[0].id));
     }
     await client.query(
       `DELETE FROM legal_messages WHERE user_id = $1 AND id < (
@@ -27,7 +30,28 @@ async function addMessages(userId, messages) {
       [userId, MAX_MESSAGES - 1]
     );
   });
+  return ids;
 }
+
+async function hasMessage(userId, id) {
+  const { rows } = await db.query("SELECT 1 FROM legal_messages WHERE user_id = $1 AND id = $2", [userId, id]);
+  return rows.length > 0;
+}
+
+async function deleteMessage(userId, id) {
+  await db.query("DELETE FROM legal_messages WHERE user_id = $1 AND id = $2", [userId, id]);
+}
+
+// Questions being answered right now (kept in this server's memory: there is one
+// backend instance). Lets the app show "thinking" for a saved question after a
+// restart, and tell it apart from one whose answer never came (server restarted).
+const answering = new Map();   // userId → Set of question ids
+const startAnswering = (userId, id) => answering.set(userId, (answering.get(userId) ?? new Set()).add(id));
+function doneAnswering(userId, id) {
+  answering.get(userId)?.delete(id);
+  if (!answering.get(userId)?.size) answering.delete(userId);
+}
+const isAnswering = (userId) => answering.has(userId);
 
 /** @returns {Promise<Array<{ id, role, text, sources, language, createdAt }>>} oldest first */
 async function listMessages(userId, limit = MAX_MESSAGES) {
@@ -50,4 +74,7 @@ async function clearMessages(userId) {
   await db.query("DELETE FROM legal_messages WHERE user_id = $1", [userId]);
 }
 
-module.exports = { addMessages, listMessages, clearMessages, MAX_MESSAGES };
+module.exports = {
+  addMessages, listMessages, clearMessages, hasMessage, deleteMessage,
+  startAnswering, doneAnswering, isAnswering, MAX_MESSAGES,
+};
