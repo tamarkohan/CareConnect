@@ -34,10 +34,15 @@ type AppCtx = {
     ready: boolean;
     signIn: (token: string, user: User) => Promise<void>;
     signOut: () => Promise<void>;
-    /** The short welcome guide (bottom-nav buttons): opens after an account's first sign-in, and from Menu → App Guide. */
-    guideOpen: boolean;
-    setGuideOpen: (open: boolean) => void;
+    /**
+     * The guide to the bottom-nav buttons: "welcome" after an account's first sign-in
+     * (short), "menu" from Menu → App Guide (with "More" tips for each page), null when closed.
+     */
+    guideOpen: GuideMode | null;
+    setGuideOpen: (mode: GuideMode | null) => void;
 };
+
+export type GuideMode = "welcome" | "menu";
 
 export const AppContext = React.createContext<AppCtx>({
     lang: "en",
@@ -50,7 +55,7 @@ export const AppContext = React.createContext<AppCtx>({
     ready: false,
     signIn: async () => { },
     signOut: async () => { },
-    guideOpen: false,
+    guideOpen: null,
     setGuideOpen: () => { },
 });
 
@@ -58,7 +63,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const [lang, setLangState] = React.useState<LangCode>("en");
     const [user, setUser] = React.useState<User | null>(null);
     const [ready, setReady] = React.useState(false);
-    const [guideOpen, setGuideOpen] = React.useState(false);
+    const [guideOpen, setGuideOpen] = React.useState<GuideMode | null>(null);
     const [appearance, setAppearanceState] = React.useState<Appearance>("system");
     const phoneScheme = useColorScheme();
     const dark = appearance === "dark" || (appearance === "system" && phoneScheme === "dark");
@@ -108,7 +113,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         // The first sign-in of an account shows the short guide, once; the server
         // remembers it was seen, so later sign-ins (on any device) don't.
         if (!u.guideSeen) {
-            setGuideOpen(true);
+            setGuideOpen("welcome");
             updateMe({ guideSeen: true }).then((r) => setUser(r.user)).catch(() => { });
         }
     }, []);
@@ -123,7 +128,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         await removeItem(SESSION_KEY);
         await cancelTaskReminders();   // they belong to the account that signed out
         setUser(null);
-        setGuideOpen(false);
+        setGuideOpen(null);
     }, []);
 
     return (
