@@ -23,7 +23,7 @@
  *   of the chat, and asks Gemini acting as an Israeli labour-law expert.
  *   Returns the answer and its sources. Signed-in users' chats are saved.
  *
- * GET  /api/legal/history             (signed in) → { messages: [...] }
+ * GET  /api/legal/history             (signed in) → { messages: [...], waiting } (waiting: a question is being answered)
  *   Each message has the app language it was written in ("English", "Tagalog"…).
  *
  * POST /api/legal/translate-messages
@@ -209,6 +209,9 @@ router.get("/contract", requireAuth, async (req, res) => {
 
 // ── POST /api/legal/ask ───────────────────────────────────────────────────────
 router.post("/ask", async (req, res) => {
+  // Signed in: the question is saved as soon as it's asked, so the chat shows it (with
+  // "thinking") even if the app is closed or reloaded before the answer comes.
+  let questionId = null;
   try {
     const { question, language, contractToken } = req.body;
 
@@ -230,6 +233,11 @@ router.post("/ask", async (req, res) => {
         : contractToken ? contracts.getContract(contractToken).then((text) => text && { text }) : null,
       req.user ? history.listMessages(req.user.id, CONTEXT_MESSAGES) : [],
     ]);
+
+    if (req.user) {
+      [questionId] = await history.addMessages(req.user.id, [{ role: "user", text: q, language }]);
+      history.startAnswering(req.user.id, questionId);
+    }
 
     // A short follow-up ("and on Saturdays?") finds better sources together
     // with the question before it.
@@ -267,11 +275,9 @@ router.post("/ask", async (req, res) => {
     }
     const publicSources = sources.map(({ id, title, url }) => ({ id, title, url }));
 
-    if (req.user) {
-      await history.addMessages(req.user.id, [
-        { role: "user", text: q, language },
-        { role: "assistant", text: answer, sources: publicSources, language },
-      ]);
+    // Not if the chat was cleared in the meantime (the question is gone too).
+    if (questionId && (await history.hasMessage(req.user.id, questionId))) {
+      await history.addMessages(req.user.id, [{ role: "assistant", text: answer, sources: publicSources, language }]);
     }
 
     return res.json({
@@ -283,16 +289,24 @@ router.post("/ask", async (req, res) => {
     });
   } catch (err) {
     console.error("[legal/ask] Error:", err.cause?.message || err.message);
+    // No answer: don't keep the question in the chat (the app shows the error).
+    if (questionId) await history.deleteMessage(req.user.id, questionId).catch(() => {});
     return res
       .status(err.status === 503 ? 503 : 500)
       .json({ error: err.status === 503 ? err.message : "Legal query failed." });
+  } finally {
+    if (questionId) history.doneAnswering(req.user.id, questionId);
   }
 });
 
 // ── Chat history ──────────────────────────────────────────────────────────────
 router.get("/history", requireAuth, async (req, res) => {
   try {
-    return res.json({ messages: await history.listMessages(req.user.id) });
+    return res.json({
+      messages: await history.listMessages(req.user.id),
+      // A question is still being answered: the app shows "thinking" and checks again.
+      waiting: history.isAnswering(req.user.id),
+    });
   } catch (err) {
     console.error("[legal/history] Error:", err.message);
     return res.status(500).json({ error: "Could not load your chat." });
