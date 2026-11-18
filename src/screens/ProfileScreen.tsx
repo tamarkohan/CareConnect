@@ -11,6 +11,7 @@ import { BOT_T } from "../botStrings";
 import { MENU_T } from "../menuStrings";
 import { PageFrame } from "../components/InfoSections";
 import NameEditor from "../components/NameEditor";
+import EmailInput from "../components/EmailInput";
 import { getAuthOptions, requestLinkCode, verifyLinkCode, Identifier } from "../api/client";
 import { themedColors, themedStyles } from "../theme";
 
@@ -109,14 +110,25 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
             {added === kind && <Text style={s.ok}>{m.linked}</Text>}
             {adding === kind && (
                 <View style={s.form}>
-                    {step === "id" ? (
-                        <TextInput
+                    {step === "id" && kind === "email" ? (
+                        // Offers @gmail.com, @campus.haifa.ac.il… while typing; still free text.
+                        <EmailInput
                             style={s.input}
-                            placeholder={kind === "phone" ? t.phonePh : t.emailPh}
+                            placeholder={t.emailPh}
                             placeholderTextColor={C.muted}
                             value={value}
                             onChangeText={setValue}
-                            keyboardType={kind === "phone" ? "phone-pad" : "email-address"}
+                            autoFocus
+                            onSubmitEditing={sendCode}
+                        />
+                    ) : step === "id" ? (
+                        <TextInput
+                            style={s.input}
+                            placeholder={t.phonePh}
+                            placeholderTextColor={C.muted}
+                            value={value}
+                            onChangeText={setValue}
+                            keyboardType="phone-pad"
                             autoCapitalize="none"
                             autoCorrect={false}
                             autoFocus
