@@ -351,7 +351,8 @@ Both pages save to the server, per account, encrypted (`services/tasks.js`,
   text for each page. From **Menu → App Guide** it has a "More" button on each page with a few
   tips (`GUIDE_DETAILS` in `src/guideStrings.ts`). A tap outside the card closes it, like the menu.
 - **Appearance (dark mode):** Light, Dark or "Same as phone" (the default: it follows the phone's
-  setting, also when it changes while the app is open). The choice is kept on the device
+  setting, also when it changes while the app is open). The sign-in page has a quick switch too
+  (top left, "🌙 Dark" / "☀️ Light"): it sets Light or Dark, the same choice as in Settings. The choice is kept on the device
   (`careconnect.appearance`). The status bar, the phone's window and, on the web, the browser page
   behind the app follow it too. "Same as phone" needs `"userInterfaceStyle": "automatic"` in
   `app.json` (with `expo-system-ui` for Android); with `"light"` the phone always reports light.
