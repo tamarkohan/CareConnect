@@ -119,8 +119,8 @@ export default function TopBar({ title, navigation }: Props) {
                                     style={s.menuItem}
                                     onPress={() => {
                                         setShowMenu(false);
-                                        // Opens the short guide to the bottom-nav buttons again.
-                                        setGuideOpen(true);
+                                        // The guide to the bottom-nav buttons, with "More" tips for each page.
+                                        setGuideOpen("menu");
                                     }}
                                 >
                                     <Text style={s.menuItemIcon}>❓</Text>

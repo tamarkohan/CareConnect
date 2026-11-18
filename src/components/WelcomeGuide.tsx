@@ -1,10 +1,11 @@
 // ── WelcomeGuide.tsx ─────────────────────────────────────────────────
-// A short guide shown after an account's first sign-in: one card that explains each
-// button of the bottom navigation bar, with "More" for a few tips on each page.
-// It opens again from Menu → App Guide.
+// One card that explains each button of the bottom navigation bar.
+// - After an account's first sign-in: just the short texts, to keep it simple.
+// - From Menu → App Guide: the same, with "More" for a few tips on each page.
+// Tapping outside the card closes it, like the menu.
 // Open/closed state lives in AppContext (guideOpen), so it is rendered once in App.tsx.
 import * as React from "react";
-import { Modal, View, Text, Pressable, ScrollView } from "react-native";
+import { Modal, View, Text, Pressable, ScrollView, StyleSheet } from "react-native";
 import { useApp } from "../AppContext";
 import { T } from "../translations";
 import { GUIDE_T, GUIDE_DETAILS } from "../guideStrings";
@@ -33,15 +34,21 @@ export default function WelcomeGuide() {
     const { lang, user, guideOpen, setGuideOpen } = useApp();
     const t = T[lang];
     const g = GUIDE_T[lang];
+    // Kept while the card fades out after closing, so it doesn't change on the way out.
+    const mode = React.useRef(guideOpen);
+    if (guideOpen) mode.current = guideOpen;
+    const withTips = mode.current === "menu";
     const [openPage, setOpenPage] = React.useState<string | null>(null);   // the page whose tips show
     const close = () => {
-        setGuideOpen(false);
+        setGuideOpen(null);
         setOpenPage(null);
     };
 
     return (
-        <Modal visible={!!user && guideOpen} transparent animationType="fade" onRequestClose={close}>
+        <Modal visible={!!user && !!guideOpen} transparent animationType="fade" onRequestClose={close}>
             <View style={s.overlay}>
+                {/* Tapping anywhere outside the card closes it. */}
+                <Pressable style={StyleSheet.absoluteFill} onPress={close} accessibilityRole="button" accessibilityLabel={g.gotIt} />
                 <View style={s.card}>
                     <Text style={s.title}>{g.title}</Text>
                     <Text style={s.intro}>{g.intro}</Text>
@@ -55,21 +62,23 @@ export default function WelcomeGuide() {
                                 <View style={s.rowText}>
                                     <Text style={s.name}>{t[item.nameKey]}</Text>
                                     <Text style={s.desc}>{g[item.textKey]}</Text>
-                                    {openPage === item.textKey &&
+                                    {withTips && openPage === item.textKey &&
                                         GUIDE_DETAILS[lang][item.textKey].map((tip, i) => (
                                             <View key={i} style={s.tipRow}>
                                                 <Text style={s.tipDot}>•</Text>
                                                 <Text style={s.tipText}>{tip}</Text>
                                             </View>
                                         ))}
-                                    <Pressable
-                                        onPress={() => setOpenPage(openPage === item.textKey ? null : item.textKey)}
-                                        hitSlop={6}
-                                        accessibilityRole="button"
-                                        aria-expanded={openPage === item.textKey}
-                                    >
-                                        <Text style={s.more}>{openPage === item.textKey ? g.less : g.more}</Text>
-                                    </Pressable>
+                                    {withTips && (
+                                        <Pressable
+                                            onPress={() => setOpenPage(openPage === item.textKey ? null : item.textKey)}
+                                            hitSlop={6}
+                                            accessibilityRole="button"
+                                            aria-expanded={openPage === item.textKey}
+                                        >
+                                            <Text style={s.more}>{openPage === item.textKey ? g.less : g.more}</Text>
+                                        </Pressable>
+                                    )}
                                 </View>
                             </View>
                         ))}
