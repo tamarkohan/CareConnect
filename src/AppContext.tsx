@@ -1,21 +1,32 @@
 // ── AppContext.tsx ───────────────────────────────────────────────────
-// Provides the app language and the signed-in user to all screens.
+// Provides the app language, the look (light / dark) and the signed-in user to
+// all screens.
 //
-// The language only changes the screens: it is remembered on this device and
-// can be switched at any time without touching saved data. The session token
-// is kept in secure storage so the user stays signed in.
+// The language and the look only change the screens: they are remembered on
+// this device and can be switched at any time without touching saved data. The
+// session token is kept in secure storage so the user stays signed in.
 import * as React from "react";
+import { useColorScheme } from "react-native";
 import { LangCode, LANGUAGES } from "./translations";
 import { User, getMe, updateMe, logout as apiLogout, setAuthToken } from "./api/client";
 import { getItem, setItem, removeItem } from "./api/storage";
 import { cancelTaskReminders } from "./reminders";
+import { setDarkMode } from "./theme";
 
 const LANG_KEY = "careconnect.lang";
+const APPEARANCE_KEY = "careconnect.appearance";
+export type Appearance = "system" | "light" | "dark";
+const APPEARANCES: Appearance[] = ["system", "light", "dark"];
 const SESSION_KEY = "careconnect.session";
 
 type AppCtx = {
     lang: LangCode;
     setLang: (l: LangCode) => void;
+    /** Menu → Settings → Appearance; "system" follows the phone's light / dark setting. */
+    appearance: Appearance;
+    setAppearance: (a: Appearance) => void;
+    /** The dark look is on (see theme.ts). */
+    dark: boolean;
     /** The signed-in user, or null for a guest (nothing is saved on the server). */
     user: User | null;
     setUser: (u: User | null) => void;
@@ -31,6 +42,9 @@ type AppCtx = {
 export const AppContext = React.createContext<AppCtx>({
     lang: "en",
     setLang: () => { },
+    appearance: "system",
+    setAppearance: () => { },
+    dark: false,
     user: null,
     setUser: () => { },
     ready: false,
@@ -45,12 +59,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = React.useState<User | null>(null);
     const [ready, setReady] = React.useState(false);
     const [guideOpen, setGuideOpen] = React.useState(false);
+    const [appearance, setAppearanceState] = React.useState<Appearance>("system");
+    const phoneScheme = useColorScheme();
+    const dark = appearance === "dark" || (appearance === "system" && phoneScheme === "dark");
+    // Before the screens render, so their colours and styles come in the right look.
+    setDarkMode(dark);
 
-    // Restore the language and the session saved on this device.
+    // Restore the language, the look and the session saved on this device.
     React.useEffect(() => {
         (async () => {
             const savedLang = await getItem(LANG_KEY);
             if (savedLang && LANGUAGES.some((l) => l.code === savedLang)) setLangState(savedLang as LangCode);
+            const savedAppearance = await getItem(APPEARANCE_KEY);
+            if (APPEARANCES.includes(savedAppearance as Appearance)) setAppearanceState(savedAppearance as Appearance);
 
             const token = await getItem(SESSION_KEY);
             if (token) {
@@ -73,6 +94,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const setLang = React.useCallback((l: LangCode) => {
         setLangState(l);
         setItem(LANG_KEY, l);
+    }, []);
+
+    const setAppearance = React.useCallback((a: Appearance) => {
+        setAppearanceState(a);
+        setItem(APPEARANCE_KEY, a);
     }, []);
 
     const signIn = React.useCallback(async (token: string, u: User) => {
@@ -101,7 +127,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     return (
-        <AppContext.Provider value={{ lang, setLang, user, setUser, ready, signIn, signOut, guideOpen, setGuideOpen }}>
+        <AppContext.Provider value={{ lang, setLang, appearance, setAppearance, dark, user, setUser, ready, signIn, signOut, guideOpen, setGuideOpen }}>
             {children}
         </AppContext.Provider>
     );

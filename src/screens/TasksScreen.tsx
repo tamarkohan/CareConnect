@@ -2,7 +2,6 @@ import * as React from "react";
 import {
     View,
     Text,
-    StyleSheet,
     Pressable,
     ScrollView,
     ActivityIndicator,
@@ -22,9 +21,10 @@ import { confirmAction, shareText, showAlert } from "../api/platform";
 import { getItem, setItem } from "../api/storage";
 import { scheduleTaskReminders } from "../reminders";
 import { MENU_T } from "../menuStrings";
+import { themedColors, themedStyles } from "../theme";
 
 // ── Tokens ───────────────────────────────────────────────────────────
-const Color = {
+const Color = themedColors({
     aliceBlue: "#f3faff",
     blackPearl: "#071e27",
     endeavour: "#005dac",
@@ -36,7 +36,7 @@ const Color = {
     purple: "#7c3aed",
     lightBlue: "#e8f4ff",
     red: "#c62828",
-};
+});
 
 // ── Nav items ─────────────────────────────────────────────────────────
 const NAV_ITEMS = [
@@ -422,7 +422,7 @@ export default function TasksScreen({ navigation }: Props) {
 }
 
 // ════════════════════════════════════════════════════════════════════
-const s = StyleSheet.create({
+const s = themedStyles({
     root: { flex: 1, backgroundColor: Color.aliceBlue },
     topBar: {
         flexDirection: "row",

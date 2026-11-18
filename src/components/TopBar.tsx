@@ -8,7 +8,6 @@ import * as React from "react";
 import {
     View,
     Text,
-    StyleSheet,
     Pressable,
     Modal,
     TouchableWithoutFeedback,
@@ -17,8 +16,9 @@ import {
 import { useLang } from "../AppContext";
 import { LANGUAGES, T } from "../translations";
 import { BOT_T } from "../botStrings";
+import { themedColors, themedStyles } from "../theme";
 
-const Color = {
+const Color = themedColors({
     aliceBlue: "#f3faff",
     blackPearl: "#071e27",
     endeavour: "#005dac",
@@ -27,7 +27,7 @@ const Color = {
     white: "#fff",
     red: "#c62828",
     lightRed: "#fff0f0",
-};
+});
 
 type Props = {
     title: string;
@@ -192,7 +192,7 @@ export default function TopBar({ title, navigation }: Props) {
 }
 
 // ════════════════════════════════════════════════════════════════════
-const s = StyleSheet.create({
+const s = themedStyles({
     topBar: {
         flexDirection: "row",
         alignItems: "center",

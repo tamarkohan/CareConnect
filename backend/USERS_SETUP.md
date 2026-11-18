@@ -287,7 +287,7 @@ Both pages save to the server, per account, encrypted (`services/tasks.js`,
   signs in to the same account. A phone or email that another account already uses is refused
   ("already used by another account"); accounts are never merged. The menu's "Signed in as"
   shows both. The demo account's sign-in can't be changed.
-- **Settings:** app language; **task reminders**; **Legal**: privacy policy, terms of use and the
+- **Settings:** app language; **appearance** (light, dark or the phone's setting, see below); **task reminders**; **Legal**: privacy policy, terms of use and the
   legal assistant's disclaimer (info pages `privacy`, `terms`, `disclaimer` in
   `src/infoPages.ts`; the privacy policy and terms are plain-language drafts written from how the
   app really works – have them reviewed before real users); **Delete my account**
@@ -301,4 +301,28 @@ Both pages save to the server, per account, encrypted (`services/tasks.js`,
   phone, per account. They need the phone app (`expo-notifications`); a web page can't remind
   anyone once it's closed, so the web build shows that note instead of the switch. If the app isn't
   opened for a week, reminders stop until it is opened again.
-- Texts: `src/menuStrings.ts`. Dark mode is planned as a separate change.
+- **Appearance (dark mode):** Light, Dark or "Same as phone" (the default: it follows the phone's
+  setting, also when it changes while the app is open). The choice is kept on the device
+  (`careconnect.appearance`). The status bar, the phone's window and, on the web, the browser page
+  behind the app follow it too. "Same as phone" needs `"userInterfaceStyle": "automatic"` in
+  `app.json` (with `expo-system-ui` for Android); with `"light"` the phone always reports light.
+- Texts: `src/menuStrings.ts`.
+
+### How dark mode works in the code (`src/theme.ts`)
+
+Each screen still writes its colours and styles once, for the light look. `themedColors({...})`
+(the screen's colour list) and `themedStyles({...})` (in place of `StyleSheet.create`) give back
+the same names, but while the dark look is on every colour is swapped for its dark partner: the
+`DARK` table in `src/theme.ts` for the app's own colours (page background, cards, lines, text,
+blues, reds, greens…), a computed one for any other colour. Dark see-through layers behind
+pop-ups stay as they are. `AppContext` switches the look before the screens draw, and every
+screen re-draws when it changes; the light look is exactly as before.
+
+When adding a screen or a colour:
+- Put colours in the screen's colour list or style sheet, and use `themedStyles`. A colour written
+  straight into the JSX goes through `tc("#...")`.
+- Don't read a colour once at the top of a file (e.g. `const X = { bg: Color.blue }`): it would
+  stay in the look the app started with. Read it while drawing.
+- A new light colour gets a computed dark partner; to choose it yourself, add it to `DARK`.
+- Something that must look different from the swap (e.g. white text on a photo, which stays
+  white) goes in `themedStyles`'s second argument: `themedStyles(styles, { creditText: { color: "#fff" } })`.

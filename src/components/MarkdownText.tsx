@@ -4,7 +4,8 @@
 // Lines like "***" or "---" are dropped. Citations such as [1] or [1, 2] can
 // be made tappable with onCitation.
 import * as React from "react";
-import { View, Text, StyleSheet, TextStyle, StyleProp } from "react-native";
+import { View, Text, TextStyle, StyleProp } from "react-native";
+import { themedStyles } from "../theme";
 
 type Props = {
     children: string;
@@ -109,7 +110,7 @@ export default function MarkdownText({ children, style, citationStyle, onCitatio
     );
 }
 
-const s = StyleSheet.create({
+const s = themedStyles({
     root: { gap: 8 },
     bold: { fontWeight: "700" },
     italic: { fontStyle: "italic" },

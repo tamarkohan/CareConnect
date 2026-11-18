@@ -27,9 +27,10 @@ import {
     getTranslationHistory,
     clearTranslationHistory,
 } from "../api/client";
+import { tc, themedColors, themedStyles } from "../theme";
 
 // ── Tokens ───────────────────────────────────────────────────────────
-const Color = {
+const Color = themedColors({
     aliceBlue: "#f3faff",
     blackPearl: "#071e27",
     endeavour: "#005dac",
@@ -58,7 +59,7 @@ const Color = {
     recordingBg: "#ffebee",
     recordingText: "#c62828",
     recordingPulse: "#ef5350",
-};
+});
 
 // ── Nav items ─────────────────────────────────────────────────────────
 const NAV_ITEMS = [
@@ -73,10 +74,11 @@ const NAV_ITEMS = [
 // ── Translation history data model ────────────────────────────────────
 type TranslationCategory = "medical" | "slang" | "transit";
 
-const CATEGORY_STYLE: Record<TranslationCategory, { bg: string; text: string }> = {
-    medical: { bg: Color.medicalBg, text: Color.medicalText },
-    slang: { bg: Color.slanBg, text: Color.slanText },
-    transit: { bg: Color.transitBg, text: Color.transitText },
+// Read when drawn (not once at start), so the tags follow the light/dark look.
+const CATEGORY_STYLE: Record<TranslationCategory, { readonly bg: string; readonly text: string }> = {
+    medical: { get bg() { return Color.medicalBg; }, get text() { return Color.medicalText; } },
+    slang: { get bg() { return Color.slanBg; }, get text() { return Color.slanText; } },
+    transit: { get bg() { return Color.transitBg; }, get text() { return Color.transitText; } },
 };
 
 const CATEGORY_LABEL_KEY: Record<TranslationCategory, "catMedical" | "catSlang" | "catTransit"> = {
@@ -611,8 +613,8 @@ export default function TranslatorScreen({ navigation }: Props) {
                                     tagLabel = t[CATEGORY_LABEL_KEY[item.category]];
                                 } else if (item.tag) {
                                     tagLabel = item.tag;
-                                    if (item.tagBg) tagBg = item.tagBg;
-                                    if (item.tagText) tagTextColor = item.tagText;
+                                    if (item.tagBg) tagBg = tc(item.tagBg);
+                                    if (item.tagText) tagTextColor = tc(item.tagText);
                                 }
 
                                 const original = item.hebrewText;
@@ -802,7 +804,7 @@ export default function TranslatorScreen({ navigation }: Props) {
 }
 
 // ════════════════════════════════════════════════════════════════════
-const s = StyleSheet.create({
+const s = themedStyles({
     root: { flex: 1, backgroundColor: Color.aliceBlue },
     scroll: { flex: 1 },
     scrollContent: {

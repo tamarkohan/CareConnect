@@ -25,6 +25,10 @@ type Strings = {
     demoLocked: string;
     // Settings
     languageTitle: string;
+    appearanceTitle: string;
+    appearanceLight: string;
+    appearanceDark: string;
+    appearanceSystem: string;
     remindersTitle: string;
     remindersHint: string;
     remindersOnlyApp: string;
@@ -61,6 +65,10 @@ export const MENU_T: Record<LangCode, Strings> = {
         alreadyYours: "This is already on your account.",
         demoLocked: "The demo account's sign-in can't be changed.",
         languageTitle: "App language",
+        appearanceTitle: "Appearance",
+        appearanceLight: "Light",
+        appearanceDark: "Dark",
+        appearanceSystem: "Same as phone",
         remindersTitle: "Task reminders",
         remindersHint: "A reminder at the time of each task that has a time, also on its repeat days.",
         remindersOnlyApp: "Reminders work in the CareConnect phone app. A web page can't remind you when it's closed.",
@@ -95,6 +103,10 @@ export const MENU_T: Record<LangCode, Strings> = {
         alreadyYours: "Nasa account mo na ito.",
         demoLocked: "Hindi mababago ang sign-in ng demo account.",
         languageTitle: "Wika ng app",
+        appearanceTitle: "Itsura",
+        appearanceLight: "Maliwanag",
+        appearanceDark: "Madilim",
+        appearanceSystem: "Kapareho ng phone",
         remindersTitle: "Paalala sa mga gawain",
         remindersHint: "Paalala sa oras ng bawat gawaing may oras, pati sa mga araw na inuulit ito.",
         remindersOnlyApp: "Gumagana ang mga paalala sa CareConnect phone app. Hindi makapagpaalala ang web page kapag sarado ito.",
@@ -129,6 +141,10 @@ export const MENU_T: Record<LangCode, Strings> = {
         alreadyYours: "ഇത് ഇതിനകം നിങ്ങളുടെ അക്കൗണ്ടിലുണ്ട്.",
         demoLocked: "ഡെമോ അക്കൗണ്ടിന്റെ സൈൻ ഇൻ മാറ്റാൻ കഴിയില്ല.",
         languageTitle: "ആപ്പിന്റെ ഭാഷ",
+        appearanceTitle: "രൂപം",
+        appearanceLight: "ലൈറ്റ്",
+        appearanceDark: "ഡാർക്ക്",
+        appearanceSystem: "ഫോണിലേതുപോലെ",
         remindersTitle: "ടാസ്ക് ഓർമ്മപ്പെടുത്തലുകൾ",
         remindersHint: "സമയമുള്ള ഓരോ ടാസ്ക്കിനും ആ സമയത്ത് ഒരു ഓർമ്മപ്പെടുത്തൽ, ആവർത്തിക്കുന്ന ദിവസങ്ങളിലും.",
         remindersOnlyApp: "ഓർമ്മപ്പെടുത്തലുകൾ CareConnect ഫോൺ ആപ്പിലാണ് പ്രവർത്തിക്കുന്നത്. വെബ് പേജ് അടച്ചിരിക്കുമ്പോൾ അതിന് ഓർമ്മിപ്പിക്കാൻ കഴിയില്ല.",
@@ -163,6 +179,10 @@ export const MENU_T: Record<LangCode, Strings> = {
         alreadyYours: "Это уже есть в вашем аккаунте.",
         demoLocked: "Вход в демо-аккаунт изменить нельзя.",
         languageTitle: "Язык приложения",
+        appearanceTitle: "Оформление",
+        appearanceLight: "Светлое",
+        appearanceDark: "Тёмное",
+        appearanceSystem: "Как на телефоне",
         remindersTitle: "Напоминания о задачах",
         remindersHint: "Напоминание во время каждой задачи со временем, и в её дни повтора.",
         remindersOnlyApp: "Напоминания работают в приложении CareConnect на телефоне. Веб-страница не может напомнить, когда она закрыта.",
@@ -197,6 +217,10 @@ export const MENU_T: Record<LangCode, Strings> = {
         alreadyYours: "यह पहले से आपके अकाउंट में है।",
         demoLocked: "डेमो अकाउंट का साइन इन नहीं बदला जा सकता।",
         languageTitle: "ऐप की भाषा",
+        appearanceTitle: "रूप",
+        appearanceLight: "हल्का",
+        appearanceDark: "गहरा",
+        appearanceSystem: "फ़ोन जैसा",
         remindersTitle: "काम की याद",
         remindersHint: "समय वाले हर काम के समय पर याद दिलाना, दोहराने वाले दिनों पर भी।",
         remindersOnlyApp: "याद दिलाना CareConnect फ़ोन ऐप में काम करता है। वेब पेज बंद होने पर याद नहीं दिला सकता।",
@@ -231,6 +255,10 @@ export const MENU_T: Record<LangCode, Strings> = {
         alreadyYours: "இது ஏற்கனவே உங்கள் கணக்கில் உள்ளது.",
         demoLocked: "டெமோ கணக்கின் உள்நுழைவை மாற்ற முடியாது.",
         languageTitle: "ஆப்பின் மொழி",
+        appearanceTitle: "தோற்றம்",
+        appearanceLight: "வெளிர்",
+        appearanceDark: "இருள்",
+        appearanceSystem: "தொலைபேசியைப் போல",
         remindersTitle: "பணி நினைவூட்டல்கள்",
         remindersHint: "நேரம் உள்ள ஒவ்வொரு பணிக்கும் அந்த நேரத்தில் நினைவூட்டல், மீண்டும் வரும் நாட்களிலும்.",
         remindersOnlyApp: "நினைவூட்டல்கள் CareConnect தொலைபேசி ஆப்பில் வேலை செய்யும். இணையப் பக்கம் மூடியிருக்கும்போது நினைவூட்ட முடியாது.",

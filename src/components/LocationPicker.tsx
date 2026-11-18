@@ -13,6 +13,7 @@ import { LangCode } from "../translations";
 import { ISRAEL_PLACES } from "../data/israelPlaces";
 import { AREAS, searchPlaces } from "../data/placeSearch";
 import { getItem, setItem, removeItem } from "../api/storage";
+import { themedStyles } from "../theme";
 
 export type UserLocation = { city: string; neighborhood: string };
 // Before, one location was shared by every account on the device; it's dropped.
@@ -176,7 +177,7 @@ function ListPicker({ visible, title, search, cancel, find, noMatch, fallback, o
     );
 }
 
-const s = StyleSheet.create({
+const s = themedStyles({
     box: { backgroundColor: "#e8f5e9", paddingHorizontal: 12, paddingVertical: 10, gap: 8 },
     where: { fontSize: 14, fontWeight: "700", color: "#2e7d32" },
     row: { flexDirection: "row", gap: 8, flexWrap: "wrap" },

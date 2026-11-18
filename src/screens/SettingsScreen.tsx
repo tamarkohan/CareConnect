@@ -1,9 +1,10 @@
 // ── SettingsScreen.tsx ───────────────────────────────────────────────
-// Menu → Settings: app language, task reminders (phone app only, see
+// Menu → Settings: app language, appearance (light / dark / as the phone,
+// see theme.ts), task reminders (phone app only, see
 // reminders.ts), the legal pages (privacy, terms, the legal assistant's
 // disclaimer – info pages in infoPages.ts) and deleting the account.
 import * as React from "react";
-import { View, Text, Pressable, Switch, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, Switch, ActivityIndicator } from "react-native";
 import { useApp } from "../AppContext";
 import { LANGUAGES, T } from "../translations";
 import { BOT_T } from "../botStrings";
@@ -15,11 +16,12 @@ import { taskText } from "../tasksJournalStrings";
 import {
     remindersSupported, getRemindersEnabled, setRemindersEnabled, scheduleTaskReminders,
 } from "../reminders";
+import { themedColors, themedStyles } from "../theme";
 
-const C = { blue: "#005dac", ink: "#071e27", muted: "#414752", line: "#cfe6f2", bg: "#f3faff", white: "#fff", red: "#c62828", lightRed: "#fff0f0" };
+const C = themedColors({ blue: "#005dac", ink: "#071e27", muted: "#414752", line: "#cfe6f2", bg: "#f3faff", white: "#fff", red: "#c62828", lightRed: "#fff0f0" });
 
 export default function SettingsScreen({ navigation }: { navigation: any }) {
-    const { lang, setLang, user, signOut } = useApp();
+    const { lang, setLang, appearance, setAppearance, user, signOut } = useApp();
     const t = T[lang];
     const m = MENU_T[lang];
     const [reminders, setReminders] = React.useState(false);
@@ -92,6 +94,28 @@ export default function SettingsScreen({ navigation }: { navigation: any }) {
                 </View>
             </View>
 
+            {/* Appearance: light, dark, or as the phone is set */}
+            <View style={s.card}>
+                <Text style={s.cardTitle}>🌓 {m.appearanceTitle}</Text>
+                <View style={s.chips}>
+                    {([
+                        ["light", `☀️ ${m.appearanceLight}`],
+                        ["dark", `🌙 ${m.appearanceDark}`],
+                        ["system", `📱 ${m.appearanceSystem}`],
+                    ] as const).map(([value, label]) => (
+                        <Pressable
+                            key={value}
+                            style={[s.chip, appearance === value && s.chipActive]}
+                            onPress={() => setAppearance(value)}
+                            accessibilityRole="radio"
+                            aria-checked={appearance === value}
+                        >
+                            <Text style={[s.chipText, appearance === value && s.chipTextActive]}>{label}</Text>
+                        </Pressable>
+                    ))}
+                </View>
+            </View>
+
             {/* Task reminders */}
             <View style={s.card}>
                 <View style={s.switchRow}>
@@ -135,7 +159,7 @@ export default function SettingsScreen({ navigation }: { navigation: any }) {
     );
 }
 
-const s = StyleSheet.create({
+const s = themedStyles({
     card: { backgroundColor: C.white, borderRadius: 12, borderWidth: 1, borderColor: C.line, padding: 16, gap: 10 },
     cardTitle: { fontSize: 16, fontWeight: "700", color: C.ink },
     hint: { fontSize: 13, color: C.muted, lineHeight: 18 },

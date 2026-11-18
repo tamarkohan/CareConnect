@@ -4,19 +4,20 @@
 // It opens again from Menu → App Guide.
 // Open/closed state lives in AppContext (guideOpen), so it is rendered once in App.tsx.
 import * as React from "react";
-import { Modal, View, Text, Pressable, ScrollView, StyleSheet } from "react-native";
+import { Modal, View, Text, Pressable, ScrollView } from "react-native";
 import { useApp } from "../AppContext";
 import { T } from "../translations";
 import { GUIDE_T, GUIDE_DETAILS } from "../guideStrings";
+import { themedColors, themedStyles } from "../theme";
 
-const Color = {
+const Color = themedColors({
     aliceBlue: "#f3faff",
     blackPearl: "#071e27",
     endeavour: "#005dac",
     linkWater: "#cfe6f2",
     mako: "#414752",
     white: "#fff",
-};
+});
 
 // Same order and emojis as the bottom navigation bar on the screens.
 const ITEMS = [
@@ -83,7 +84,7 @@ export default function WelcomeGuide() {
     );
 }
 
-const s = StyleSheet.create({
+const s = themedStyles({
     overlay: {
         flex: 1,
         backgroundColor: "rgba(7,30,39,0.45)",

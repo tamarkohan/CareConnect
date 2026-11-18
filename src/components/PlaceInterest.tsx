@@ -6,7 +6,7 @@
 // right here (JoinListModal). Phone numbers only after an invitation is
 // accepted (see backend/services/community.js).
 import * as React from "react";
-import { View, Text, Pressable, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, ActivityIndicator } from "react-native";
 import { useLang } from "../AppContext";
 import { COMMUNITY_T, MESSAGES, fillC } from "../communityStrings";
 import { nameIn } from "../nameStrings";
@@ -16,8 +16,9 @@ import {
     setPlaceInterest, getPlacePeople, sendContactRequest, respondContactRequest, CommunityPerson,
 } from "../api/client";
 import { showAlert, confirmAction } from "../api/platform";
+import { themedColors, themedStyles } from "../theme";
 
-const C = { blue: "#005dac", ink: "#071e27", muted: "#414752", line: "#cfe6f2", bg: "#f3faff", white: "#fff", green: "#2e7d32" };
+const C = themedColors({ blue: "#005dac", ink: "#071e27", muted: "#414752", line: "#cfe6f2", bg: "#f3faff", white: "#fff", green: "#2e7d32" });
 
 export default function PlaceInterest({ placeKey, placeName, count, mine, location, onChanged, onRequestsChanged, onOpenConnection, onChooseCity }: {
     placeKey: string;
@@ -181,7 +182,7 @@ function Btn({ label, onPress, primary, disabled }: { label: string; onPress: ()
     );
 }
 
-const s = StyleSheet.create({
+const s = themedStyles({
     wrap: { gap: 6, borderTopWidth: 1, borderTopColor: C.line, paddingTop: 8 },
     row: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
     want: { borderRadius: 20, borderWidth: 1, borderColor: C.line, backgroundColor: C.bg, paddingHorizontal: 14, paddingVertical: 8 },

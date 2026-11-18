@@ -17,9 +17,10 @@ import {
     ActivityIndicator,
     Modal,
 } from "react-native";
+import { themedColors, themedStyles } from "../theme";
 
 // ── Tokens ───────────────────────────────────────────────────────────
-const Color = {
+const Color = themedColors({
     aliceBlue: "#f3faff",
     blackPearl: "#071e27",
     endeavour: "#005dac",
@@ -29,7 +30,7 @@ const Color = {
     silver: "#c1c6d4",
     error: "#ba1a1a",
     lightGray: "#f5f5f5",
-};
+});
 
 // ── Supported languages ──────────────────────────────────────────────
 const LANGUAGES = [
@@ -395,7 +396,7 @@ export default function LoginScreen({ navigation }: Props) {
 }
 
 // ════════════════════════════════════════════════════════════════════
-const s = StyleSheet.create({
+const s = themedStyles({
     root: { flex: 1, backgroundColor: Color.aliceBlue },
 
     // Hero

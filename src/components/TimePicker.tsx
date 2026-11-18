@@ -5,8 +5,9 @@
 import * as React from "react";
 import { View, Text, Pressable, Modal, ScrollView, StyleSheet } from "react-native";
 import { LangCode, formatTime } from "../translations";
+import { themedColors, themedStyles } from "../theme";
 
-const Color = {
+const Color = themedColors({
     blackPearl: "#071e27",
     endeavour: "#005dac",
     linkWater: "#cfe6f2",
@@ -14,7 +15,7 @@ const Color = {
     white: "#fff",
     aliceBlue: "#f3faff",
     selected: "#dcebf7",
-};
+});
 
 const STEP_MINUTES = 15;
 const ROW_HEIGHT = 44;
@@ -87,7 +88,7 @@ export default function TimePicker({ value, onChange, lang, noTimeLabel, title }
     );
 }
 
-const s = StyleSheet.create({
+const s = themedStyles({
     field: {
         flexDirection: "row",
         alignItems: "center",

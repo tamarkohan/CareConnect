@@ -44,9 +44,10 @@ import {
 } from "../api/client";
 import { loadContractToken, saveContractToken, clearContractToken } from "../api/contractToken";
 import { getItem, setItem } from "../api/storage";
+import { themedColors, themedStyles } from "../theme";
 
 // ── Tokens ───────────────────────────────────────────────────────────
-const Color = {
+const Color = themedColors({
     aliceBlue: "#f3faff",
     blackPearl: "#071e27",
     endeavour: "#005dac",
@@ -60,7 +61,7 @@ const Color = {
     lightBlue: "#e8f4ff",
     errorBg: "#ffebee",
     errorText: "#c62828",
-};
+});
 
 // Bump when the disclaimer text changes, so everyone sees it again once.
 const DISCLAIMER_VERSION = 1;
@@ -1223,7 +1224,7 @@ export default function AssistantScreen({ navigation }: Props) {
 }
 
 // ════════════════════════════════════════════════════════════════════
-const s = StyleSheet.create({
+const s = themedStyles({
     root: { flex: 1, backgroundColor: Color.aliceBlue },
     scroll: { flex: 1 },
     scrollContent: {

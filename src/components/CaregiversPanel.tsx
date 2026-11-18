@@ -17,11 +17,12 @@ import {
     respondContactRequest, shareContactPhone, CommunityProfile, CommunityPerson, ContactRequest,
 } from "../api/client";
 import { showAlert, confirmAction } from "../api/platform";
+import { themedColors, themedStyles } from "../theme";
 
-const C = {
+const C = themedColors({
     blue: "#005dac", ink: "#071e27", muted: "#414752", line: "#cfe6f2", bg: "#f3faff",
     white: "#fff", green: "#2e7d32", lightGreen: "#e8f5e9", red: "#c62828",
-};
+});
 /** A request's fixed message; "visit together" names its place (e.g. Nazareth). */
 const messageText = (key: string, placeId: string | null, lang: LangCode) => {
     const placeName = RELIGIOUS_PLACES.find((p) => p.key === placeId)?.name.replace(/\s*\(.*\)$/, "") ?? "";
@@ -372,7 +373,7 @@ function Btn({ label, onPress, primary, danger, disabled }: { label: string; onP
     );
 }
 
-const s = StyleSheet.create({
+const s = themedStyles({
     wrap: { gap: 10 },
     card: { backgroundColor: C.white, borderRadius: 12, borderWidth: 1, borderColor: C.line, padding: 12, gap: 8 },
     title: { fontSize: 15, fontWeight: "700", color: C.ink },

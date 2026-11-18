@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Text, StyleSheet, View, Pressable } from "react-native";
+import { Text, View, Pressable } from "react-native";
 import { Image } from "expo-image";
 import Spanmaterialsymbolsoutlined3 from "../assets/span-material-symbols-outlined3.svg";
 import Guides from "./Guides";
@@ -16,6 +16,7 @@ import {
     Border,
     BoxShadow,
 } from "../GlobalStyles";
+import { themedStyles } from "../theme";
 
 const Divflex = () => {
     return (
@@ -165,7 +166,7 @@ const Divflex = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
     divflex2FlexBox: {
         flexDirection: "row",
         alignItems: "center",

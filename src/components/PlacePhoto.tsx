@@ -4,8 +4,9 @@
 // on the user's device; if it can't be loaded, the old icon is shown. The
 // caption links to the article, which credits the photographer.
 import * as React from "react";
-import { View, Text, Pressable, Linking, StyleSheet } from "react-native";
+import { View, Text, Pressable, Linking } from "react-native";
 import { Image } from "expo-image";
+import { themedStyles } from "../theme";
 
 type Photo = { src: string; page: string } | null;
 const cache = new Map<string, Promise<Photo>>();
@@ -54,10 +55,12 @@ export default function PlacePhoto({ wiki, name }: { wiki?: string; name: string
     );
 }
 
-const s = StyleSheet.create({
+const s = themedStyles({
     box: { height: 140, backgroundColor: "#c8dfc8", alignItems: "center", justifyContent: "center", overflow: "hidden" },
     emoji: { fontSize: 40 },
     img: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
     credit: { position: "absolute", right: 6, bottom: 6, backgroundColor: "rgba(0,0,0,0.45)", borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
     creditText: { fontSize: 10, color: "#fff" },
+}, {
+    creditText: { color: "#fff" },   // on the photo: stays white in the dark look too
 });

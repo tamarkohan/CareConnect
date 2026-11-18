@@ -1,3 +1,4 @@
+import { themedColors } from "./theme";
 /* Fonts */
 export const FontFamily = {
     atkinsonHyperlegibleNext: "Atkinson Hyperlegible Next",
@@ -16,7 +17,7 @@ export const FontSize = {
     fs_32: 32,
 };
 /* Colors */
-export const Color = {
+export const Color = themedColors({
     aliceBlue: "#f3faff",
     blackPearl: "#071e27",
     cinnamon: "#775800",
@@ -30,7 +31,7 @@ export const Color = {
     mako: "#414752",
     white: "#fff",
     white02: "rgba(255, 255, 255, 0)",
-};
+});
 /* Gaps */
 export const Gap = {
     gap_10: 10,
