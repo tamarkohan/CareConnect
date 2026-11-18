@@ -84,6 +84,8 @@ export type User = {
     phone: string | null;
     email: string | null;
     disclaimerVersion: number | null;
+    /** The welcome guide was shown already (it opens only after the first sign-in). */
+    guideSeen?: boolean;
     isDemo: boolean;
     /** First name as typed, and spelled in every app language's letters (e.g. hi: "रोहित"). */
     displayName: string | null;
@@ -105,7 +107,7 @@ export const verifyCode = (id: Identifier, code: string) =>
 
 export const getMe = () => apiFetch<{ user: User }>("/api/auth/me");
 
-export const updateMe = (changes: { disclaimerVersion?: number; displayName?: string }) =>
+export const updateMe = (changes: { disclaimerVersion?: number; displayName?: string; guideSeen?: true }) =>
     apiFetch<{ user: User }>("/api/auth/me", changes);
 
 export const logout = () => apiFetch<{ success: true }>("/api/auth/logout", {});

@@ -54,8 +54,18 @@ const NAV_ITEMS = [
     { labelKey: "navJournal" as const, emoji: "📓", screen: "Journal" },
 ];
 
-// ── Map filter tabs ───────────────────────────────────────────────────
-const MAP_FILTERS: MapFilterId[] = ["caregivers", "clinics", "taxis", "atms"];
+// ── Categories ("Find:") ──────────────────────────────────────────────
+// Every category but "social" shows the map; "social" shows support groups and
+// videos instead (examples until there are real links).
+type Category = MapFilterId | "religious" | "social";
+const CATEGORIES: { id: Category; emoji: string }[] = [
+    { id: "caregivers", emoji: "👥" },
+    { id: "clinics", emoji: "🏥" },
+    { id: "taxis", emoji: "🚕" },
+    { id: "atms", emoji: "🏧" },
+    { id: "religious", emoji: "🙏" },
+    { id: "social", emoji: "💬" },
+];
 
 // ════════════════════════════════════════════════════════════════════
 type Props = { navigation?: any };
@@ -64,7 +74,7 @@ export default function CommunityScreen({ navigation }: Props) {
     const insets = useSafeAreaInsets();
     const { lang, user } = useLang();
     const t = T[lang];
-    const [activeFilter, setActiveFilter] = React.useState<MapFilterId>("caregivers");
+    const [activeFilter, setActiveFilter] = React.useState<Category>("caregivers");
     const [searchText, setSearchText] = React.useState("");
     const [location, setLocation, locationLoaded] = useSavedLocation();
 
@@ -73,9 +83,11 @@ export default function CommunityScreen({ navigation }: Props) {
     // What the map shows: the chosen place, or e.g. "ATM near Ahuza, Haifa".
     const where = location?.city === ANYWHERE ? "Israel"
         : location?.city ? `${location.neighborhood ? `${location.neighborhood}, ` : ""}${location.city}, Israel` : "";
-    const mapQuery = !where ? null
+    const showsMap = activeFilter !== "social";
+    const mapQuery = !where || !showsMap ? null
         : activeFilter === "caregivers" ? where
         : `${c.mapCategory[activeFilter]} near ${where}`;
+    const categoryLabel = (id: Category) => (id === "religious" || id === "social" ? c[id] : t[id]);
     const searchMap = () => {
         const q = searchText.trim();
         if (q) Linking.openURL(mapsSearchUrl(where ? `${q} near ${where}` : `${q}, Israel`));
@@ -132,38 +144,54 @@ export default function CommunityScreen({ navigation }: Props) {
                 contentContainerStyle={s.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
-                {/* Near You map – first on the page */}
-                <View style={s.nearYouHeader}>
-                    <Text style={s.sectionTitle}>{t.nearYou}</Text>
-                    {/* One line of chips; on a narrow screen or long labels it scrolls sideways. */}
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filterRow}>
-                        {MAP_FILTERS.map((f) => (
+                {/* "Find:" and the categories – first on the page. They wrap, so all of them show. */}
+                <View style={s.findHeader}>
+                    <Text style={s.sectionTitle}>{c.findTitle}</Text>
+                    <View style={s.filterRow}>
+                        {CATEGORIES.map(({ id, emoji }) => (
                             <Pressable
-                                key={f}
-                                style={[s.filterChip, activeFilter === f && s.filterChipActive]}
-                                onPress={() => setActiveFilter(f)}
+                                key={id}
+                                style={[s.filterChip, activeFilter === id && s.filterChipActive]}
+                                onPress={() => setActiveFilter(id)}
+                                accessibilityRole="tab"
+                                aria-selected={activeFilter === id}
                             >
-                                <Text
-                                    style={[s.filterChipText, activeFilter === f && s.filterChipTextActive]}
-                                    numberOfLines={1}
-                                    adjustsFontSizeToFit
-                                    minimumFontScale={0.75}
-                                >
-                                    {t[f]}
+                                <Text style={[s.filterChipText, activeFilter === id && s.filterChipTextActive]} numberOfLines={1}>
+                                    {emoji} {categoryLabel(id)}
                                 </Text>
                             </Pressable>
                         ))}
-                    </ScrollView>
+                    </View>
                 </View>
 
-                {/* Real map (free Google Maps embed) + where the user is */}
-                <View style={s.mapContainer}>
-                    <CommunityMap query={mapQuery} emptyText={c.pickCityFirst} openLabel={c.openMap} />
-                    <LocationPicker value={location} onChange={setLocation} />
-                </View>
+                {showsMap && (
+                    <>
+                        {/* Real map (free Google Maps embed) + where the user is */}
+                        <View style={s.mapContainer}>
+                            <CommunityMap query={mapQuery} emptyText={c.pickCityFirst} openLabel={c.openMap} />
+                            <LocationPicker value={location} onChange={setLocation} />
+                        </View>
+
+                        {/* Search the map for anything else */}
+                        <View style={s.searchRow}>
+                            <TextInput
+                                style={s.searchInput}
+                                placeholder={t.communitySearch}
+                                placeholderTextColor={Color.mako}
+                                value={searchText}
+                                onChangeText={setSearchText}
+                                onSubmitEditing={searchMap}
+                                returnKeyType="search"
+                            />
+                            <Pressable style={s.searchBtn} onPress={searchMap} accessibilityLabel={c.searchOnMap}>
+                                <Text style={s.searchIcon}>🔍</Text>
+                            </Pressable>
+                        </View>
+                    </>
+                )}
 
                 {/* Caregivers: join the list, contact requests (no chat, no location) */}
-                {activeFilter === "caregivers" ? (
+                {activeFilter === "caregivers" && (
                     <View onLayout={(e) => { panelY.current = e.nativeEvent.layout.y; }}>
                         <CaregiversPanel
                             key={requestsVersion}
@@ -177,106 +205,95 @@ export default function CommunityScreen({ navigation }: Props) {
                             }}
                         />
                     </View>
-                ) : null}
+                )}
 
-                <Text style={s.subheading}>{t.communityHeading}</Text>
-
-                {/* Search */}
-                <View style={s.searchRow}>
-                    <TextInput
-                        style={s.searchInput}
-                        placeholder={t.communitySearch}
-                        placeholderTextColor={Color.mako}
-                        value={searchText}
-                        onChangeText={setSearchText}
-                        onSubmitEditing={searchMap}
-                        returnKeyType="search"
-                    />
-                    <Pressable style={s.searchBtn} onPress={searchMap} accessibilityLabel={c.searchOnMap}>
-                        <Text style={s.searchIcon}>🔍</Text>
-                    </Pressable>
-                </View>
-
-                {/* Local Support Networks */}
-                <Text style={s.sectionTitle}>{t.localNetworks}</Text>
-                <View style={s.networkRow}>
-                    {SUPPORT_NETWORKS.map((n) => (
-                        <Pressable key={n.id} style={[s.networkCard, s.demoCard, { backgroundColor: n.bg }]} onPress={demo}>
-                            <Text style={s.demoBadge}>{c.demo}</Text>
-                            <Text style={s.networkEmoji}>{n.emoji}</Text>
-                            <Text style={s.networkName}>{n.name}</Text>
-                            <Text style={s.networkType} numberOfLines={2}>{t[n.typeKey]}</Text>
-                        </Pressable>
-                    ))}
-                </View>
-                <Pressable onPress={demo}>
-                    <Text style={s.seeMore}>{t.seeMore}</Text>
-                </Pressable>
-
-                {/* Learn from Influencers */}
-                <Text style={s.sectionTitle}>{t.learnInfluencers}</Text>
-                <View style={s.influencerRow}>
-                    {INFLUENCERS.map((item) => (
-                        <Pressable key={item.id} style={[s.influencerCard, s.demoCard]} onPress={demo}>
-                            <Text style={s.demoBadge}>{c.demo}</Text>
-                            <View style={s.influencerThumb}>
-                                <View style={s.playCircle}>
-                                    <Text style={s.playIcon}>▶</Text>
-                                </View>
-                            </View>
-                            <Text style={s.influencerTitle}>{item.title[lang]}</Text>
-                            <Text style={s.influencerAuthor} numberOfLines={1}>
-                                {item.author} • {item.platform}
-                            </Text>
-                        </Pressable>
-                    ))}
-                </View>
-                <Pressable onPress={demo}>
-                    <Text style={s.seeMore}>{t.seeMore}</Text>
-                </Pressable>
-
-                {/* Popular Religious Places */}
-                <Text style={s.sectionTitle}>{t.popularReligious}</Text>
-                <View style={s.religiousList}>
-                    {RELIGIOUS_PLACES.map((place) => (
-                        <View key={place.id} style={s.religiousCard}>
-                            {/* Image placeholder */}
-                            <PlacePhoto wiki={place.wiki} name={place.name} />
-                            <View style={s.religiousBody}>
-                                <View style={s.religiousTagRow}>
-                                    <View style={[s.religiousTag, { backgroundColor: Color.lightYellow }]}>
-                                        <Text style={[s.religiousTagText, { color: "#b45309" }]}>
-                                            {t.religiousSiteTag}
-                                        </Text>
+                {/* Religious places: popular places to visit, alone or together */}
+                {activeFilter === "religious" && (
+                    <>
+                        <Text style={s.sectionTitle}>{t.popularReligious}</Text>
+                        <View style={s.religiousList}>
+                            {RELIGIOUS_PLACES.map((place) => (
+                                <View key={place.id} style={s.religiousCard}>
+                                    {/* Image placeholder */}
+                                    <PlacePhoto wiki={place.wiki} name={place.name} />
+                                    <View style={s.religiousBody}>
+                                        <View style={s.religiousTagRow}>
+                                            <View style={[s.religiousTag, { backgroundColor: Color.lightYellow }]}>
+                                                <Text style={[s.religiousTagText, { color: "#b45309" }]}>
+                                                    {t.religiousSiteTag}
+                                                </Text>
+                                            </View>
+                                            <Text style={s.religiousDistrict} numberOfLines={1}>
+                                                {t[place.districtKey]}
+                                            </Text>
+                                            <Pressable style={s.bookmarkBtn} onPress={() => toggleSaved(place.id)} accessibilityLabel={saved.includes(place.id) ? c.saved : c.save}>
+                                                <Text style={[s.bookmarkIcon, !saved.includes(place.id) && { opacity: 0.35 }]}>🔖</Text>
+                                            </Pressable>
+                                        </View>
+                                        <Text style={s.religiousName}>{place.name}</Text>
+                                        <Text style={s.religiousDesc}>{place.desc[lang]}</Text>
+                                        <PlaceInterest
+                                            placeKey={place.key}
+                                            placeName={place.name.replace(/\s*\(.*\)$/, "")}
+                                            count={places.counts[place.key] || 0}
+                                            mine={places.mine.includes(place.key)}
+                                            location={location}
+                                            onChanged={loadPlaces}
+                                            onRequestsChanged={() => setRequestsVersion((v) => v + 1)}
+                                            onOpenConnection={openConnection}
+                                            onChooseCity={goCaregivers}
+                                        />
+                                        <Pressable style={s.moovitBtn} onPress={() => Linking.openURL(mapsDirectionsUrl(place.name.replace(/\s*\(.*\)$/, "") + ", Israel"))}>
+                                            <Text style={s.moovitIcon}>🚌</Text>
+                                            <Text style={s.moovitText}>{c.directions}</Text>
+                                        </Pressable>
                                     </View>
-                                    <Text style={s.religiousDistrict} numberOfLines={1}>
-                                        {t[place.districtKey]}
-                                    </Text>
-                                    <Pressable style={s.bookmarkBtn} onPress={() => toggleSaved(place.id)} accessibilityLabel={saved.includes(place.id) ? c.saved : c.save}>
-                                        <Text style={[s.bookmarkIcon, !saved.includes(place.id) && { opacity: 0.35 }]}>🔖</Text>
-                                    </Pressable>
                                 </View>
-                                <Text style={s.religiousName}>{place.name}</Text>
-                                <Text style={s.religiousDesc}>{place.desc[lang]}</Text>
-                                <PlaceInterest
-                                    placeKey={place.key}
-                                    placeName={place.name.replace(/\s*\(.*\)$/, "")}
-                                    count={places.counts[place.key] || 0}
-                                    mine={places.mine.includes(place.key)}
-                                    location={location}
-                                    onChanged={loadPlaces}
-                                    onRequestsChanged={() => setRequestsVersion((v) => v + 1)}
-                                    onOpenConnection={openConnection}
-                                    onChooseCity={goCaregivers}
-                                />
-                                <Pressable style={s.moovitBtn} onPress={() => Linking.openURL(mapsDirectionsUrl(place.name.replace(/\s*\(.*\)$/, "") + ", Israel"))}>
-                                    <Text style={s.moovitIcon}>🚌</Text>
-                                    <Text style={s.moovitText}>{c.directions}</Text>
-                                </Pressable>
-                            </View>
+                            ))}
                         </View>
-                    ))}
-                </View>
+                    </>
+                )}
+
+                {/* Social networks: support groups and videos (examples, no real links yet) */}
+                {activeFilter === "social" && (
+                    <>
+                        <Text style={s.sectionTitle}>{t.localNetworks}</Text>
+                        <View style={s.networkRow}>
+                            {SUPPORT_NETWORKS.map((n) => (
+                                <Pressable key={n.id} style={[s.networkCard, s.demoCard, { backgroundColor: n.bg }]} onPress={demo}>
+                                    <Text style={s.demoBadge}>{c.demo}</Text>
+                                    <Text style={s.networkEmoji}>{n.emoji}</Text>
+                                    <Text style={s.networkName}>{n.name}</Text>
+                                    <Text style={s.networkType} numberOfLines={2}>{t[n.typeKey]}</Text>
+                                </Pressable>
+                            ))}
+                        </View>
+                        <Pressable onPress={demo}>
+                            <Text style={s.seeMore}>{t.seeMore}</Text>
+                        </Pressable>
+
+                        <Text style={s.sectionTitle}>{t.learnInfluencers}</Text>
+                        <View style={s.influencerRow}>
+                            {INFLUENCERS.map((item) => (
+                                <Pressable key={item.id} style={[s.influencerCard, s.demoCard]} onPress={demo}>
+                                    <Text style={s.demoBadge}>{c.demo}</Text>
+                                    <View style={s.influencerThumb}>
+                                        <View style={s.playCircle}>
+                                            <Text style={s.playIcon}>▶</Text>
+                                        </View>
+                                    </View>
+                                    <Text style={s.influencerTitle}>{item.title[lang]}</Text>
+                                    <Text style={s.influencerAuthor} numberOfLines={1}>
+                                        {item.author} • {item.platform}
+                                    </Text>
+                                </Pressable>
+                            ))}
+                        </View>
+                        <Pressable onPress={demo}>
+                            <Text style={s.seeMore}>{t.seeMore}</Text>
+                        </Pressable>
+                    </>
+                )}
             </ScrollView>
 
             {/* ── Bottom navigation ── */}
@@ -347,8 +364,8 @@ const s = StyleSheet.create({
     playIcon: { fontSize: 14, color: Color.endeavour },
     influencerTitle: { fontSize: 13, fontWeight: "700", color: Color.blackPearl, lineHeight: 17 },
     influencerAuthor: { fontSize: 11, color: Color.mako },
-    nearYouHeader: { gap: 8 },
-    filterRow: { flexDirection: "row", gap: 6 },
+    findHeader: { gap: 8 },
+    filterRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
     filterChip: { paddingHorizontal: 11, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: Color.linkWater, backgroundColor: Color.white },
     filterChipActive: { backgroundColor: Color.endeavour, borderColor: Color.endeavour },
     filterChipText: { fontSize: 12, color: Color.mako, fontWeight: "500" },

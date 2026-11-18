@@ -47,6 +47,7 @@ function publicUser(row) {
     phone: row.phone,
     email: row.email,
     disclaimerVersion: row.disclaimer_version,
+    guideSeen: !!row.guide_seen_at,
     isDemo: row.is_demo,
     // First name as typed, and spelled in every app language's letters (see names.js).
     displayName: row.display_name || null,
@@ -96,8 +97,12 @@ async function deleteSession(token) {
   if (typeof token === "string") await db.query("DELETE FROM sessions WHERE token_hash = $1", [sha256(token)]);
 }
 
-async function updateUser(userId, { disclaimerVersion, displayName }) {
+async function updateUser(userId, { disclaimerVersion, displayName, guideSeen }) {
   if (displayName !== undefined) await require("./names").setDisplayName(userId, displayName);
+  // A query of its own: if db/schema.sql wasn't run yet, only this fails, not the other changes.
+  if (guideSeen === true) {
+    await db.query("UPDATE users SET guide_seen_at = COALESCE(guide_seen_at, now()) WHERE id = $1", [userId]);
+  }
   const { rows } = await db.query(
     `UPDATE users SET disclaimer_version = COALESCE($2, disclaimer_version)
      WHERE id = $1 RETURNING *`,
