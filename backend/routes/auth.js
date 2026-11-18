@@ -3,7 +3,7 @@
  *
  * Sign-in with a one-time code sent by SMS or email. No passwords.
  *
- * GET  /api/auth/options        → { phone, email, demo, testCode } which sign-in methods work
+ * GET  /api/auth/options        → { phone, email, demo, testCode, realCodes } which sign-in methods work
  * POST /api/auth/request-code   { phone } | { email }          → { sent: true }
  *                               demo phone "123" (when DEMO_LOGIN=true) signs in at once:
  *                               → { token, user }
@@ -49,6 +49,8 @@ router.get("/options", (_req, res) => {
     demo: demoEnabled(),
     // Test mode: the code is the same for everyone, so the login screen shows it.
     testCode: otp.isTestMode() ? process.env.OTP_TEST_CODE : null,
+    // Where a real code is sent too (then the screen says either one works).
+    realCodes: { phone: otp.canSend("phone"), email: otp.canSend("email") },
   });
 });
 

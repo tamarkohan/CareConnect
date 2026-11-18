@@ -9,13 +9,20 @@
  *
  * Sending:
  *   SMS   via Twilio  – TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM
- *   Email via Resend  – RESEND_API_KEY, OTP_EMAIL_FROM (e.g. "CareConnect <login@yourdomain>")
+ *   Email via Resend  – RESEND_API_KEY, OTP_EMAIL_FROM (e.g. "CareConnect <login@yourdomain>"),
+ *                       needs your own domain
+ *   Email via Gmail   – GMAIL_SCRIPT_URL, GMAIL_SCRIPT_SECRET: a small Google Apps Script
+ *                       (backend/gmail-sender/Code.gs) that sends from a Gmail account. Free,
+ *                       no domain, about 100 emails a day. Over HTTPS, so it also works where
+ *                       the host blocks email ports (DigitalOcean does).
  * With no provider configured the code is printed in the server log, but only
  * outside production (NODE_ENV !== "production"), for local testing.
  *
- * Test mode: OTP_TEST_CODE=123456 makes that the code for EVERY phone number and
- * email, and nothing is sent. Lets testers create as many accounts as they want.
- * Turn it off (remove it) before real users sign up.
+ * Test mode: OTP_TEST_CODE=123456 makes that code work for EVERY phone number and
+ * email. Where a real code can be sent (e.g. email via Gmail), it is sent too, and
+ * either one signs in; where nothing can be sent (e.g. SMS without Twilio), only the
+ * test code works. Lets testers create as many accounts as they want. Anyone who
+ * knows the test code can sign in to any account: remove it before real users.
  */
 
 const crypto = require("crypto");
@@ -33,11 +40,15 @@ const testCode = () => (/^\d{6}$/.test(process.env.OTP_TEST_CODE || "") ? proces
 const isTestMode = () => testCode() !== null;
 const isProduction = () => process.env.NODE_ENV === "production";
 
+const hasResend = () => !!(process.env.RESEND_API_KEY && process.env.OTP_EMAIL_FROM);
+const hasGmail = () => !!(process.env.GMAIL_SCRIPT_URL && process.env.GMAIL_SCRIPT_SECRET);
+
+/** True when a real code can be sent to this kind of identifier. */
 function canSend(kind) {
   if (kind === "phone") {
     return !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_FROM);
   }
-  return !!(process.env.RESEND_API_KEY && process.env.OTP_EMAIL_FROM);
+  return hasResend() || hasGmail();
 }
 
 /** True when codes can reach this kind of identifier (or dev logging is on). */
@@ -56,7 +67,23 @@ async function sendSms(to, body) {
   if (!res.ok) throw new Error(`SMS provider answered ${res.status}`);
 }
 
+// Gmail: the Apps Script web app sends the email (it writes the text itself).
+async function sendEmailViaGmail(to, code) {
+  const res = await fetch(process.env.GMAIL_SCRIPT_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify({ secret: process.env.GMAIL_SCRIPT_SECRET, to, code }),
+    redirect: "follow",                        // the script answers through a Google redirect
+    signal: AbortSignal.timeout(20000),
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !data?.ok) {
+    throw new Error(`Gmail script answered ${res.status}${data?.error ? `: ${data.error}` : " (not the expected reply – check GMAIL_SCRIPT_URL)"}`);
+  }
+}
+
 async function sendEmail(to, code) {
+  if (!hasResend()) return sendEmailViaGmail(to, code);
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -84,15 +111,25 @@ async function requestCode(id) {
   const prev = pending.get(key);
   if (prev && Date.now() - prev.sentAt < RESEND_AFTER_MS) return { ok: false, reason: "wait" };
 
-  const code = testCode() ?? crypto.randomInt(0, 1_000_000).toString().padStart(6, "0");
+  // A real code whenever it can be sent; in test mode without a way to send, just the
+  // test code. (In test mode the test code is accepted as well, see verifyCode.)
+  const sending = canSend(id.kind);
+  const code = !sending && isTestMode() ? testCode() : crypto.randomInt(0, 1_000_000).toString().padStart(6, "0");
   pending.set(key, { hash: sha256(`${key}:${code}`), expiresAt: Date.now() + CODE_TTL_MS, attempts: 0, sentAt: Date.now() });
 
-  if (isTestMode()) {
-    // Test mode: nothing is sent, the fixed test code works.
-  } else if (canSend(id.kind)) {
-    if (id.kind === "phone") await sendSms(id.value, `Your CareConnect code is ${code}`);
-    else await sendEmail(id.value, code);
-  } else {
+  if (sending) {
+    try {
+      if (id.kind === "phone") await sendSms(id.value, `Your CareConnect code is ${code}`);
+      else await sendEmail(id.value, code);
+    } catch (err) {
+      if (!isTestMode()) {
+        pending.delete(key);   // so the user can ask again right away
+        throw err;
+      }
+      // Test mode: the test code still works, so signing in isn't blocked.
+      console.error(`[otp] sending failed (the test code still works): ${err.message}`);
+    }
+  } else if (!isTestMode()) {
     console.log(`[otp] (dev only, no provider configured) code for ${id.value}: ${code}`);
   }
   return { ok: true };
@@ -109,8 +146,12 @@ function verifyCode(id, code) {
   if (entry.attempts >= MAX_ATTEMPTS) return "locked";
   entry.attempts++;
 
-  const given = Buffer.from(sha256(`${key}:${String(code ?? "").trim()}`));
-  if (!crypto.timingSafeEqual(given, Buffer.from(entry.hash))) return "invalid";
+  const typed = String(code ?? "").trim();
+  const given = Buffer.from(sha256(`${key}:${typed}`));
+  const rightCode = crypto.timingSafeEqual(given, Buffer.from(entry.hash));
+  // Test mode: the test code works too, next to the code that was sent.
+  const theTestCode = isTestMode() && typed === testCode();
+  if (!rightCode && !theTestCode) return "invalid";
   pending.delete(key);
   return "ok";
 }
@@ -121,4 +162,4 @@ setInterval(() => {
   for (const [k, v] of pending) if (v.expiresAt < now) pending.delete(k);
 }, 60 * 1000).unref();
 
-module.exports = { requestCode, verifyCode, isAvailable, isTestMode };
+module.exports = { requestCode, verifyCode, isAvailable, isTestMode, canSend };

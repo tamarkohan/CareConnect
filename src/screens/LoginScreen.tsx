@@ -159,9 +159,14 @@ export default function LoginScreen({ navigation }: Props) {
     const [error, setError] = React.useState<string | null>(null);
     // Set when the server runs in test mode (same code for everyone).
     const [testCode, setTestCode] = React.useState<string | null>(null);
+    // Where a real code is sent too (then either one works).
+    const [realCodes, setRealCodes] = React.useState({ phone: false, email: false });
 
     React.useEffect(() => {
-        getAuthOptions().then((o) => setTestCode(o.testCode)).catch(() => {});
+        getAuthOptions().then((o) => {
+            setTestCode(o.testCode);
+            if (o.realCodes) setRealCodes(o.realCodes);
+        }).catch(() => {});
     }, []);
     const t = T[lang];
     const b = BOT_T[lang as LangCode];
@@ -356,7 +361,9 @@ export default function LoginScreen({ navigation }: Props) {
                         />
                         {testCode && (
                             <View style={s.testBox}>
-                                <Text style={s.testText}>🧪 {b.testModeHint.replace("{code}", testCode)}</Text>
+                                <Text style={s.testText}>
+                                    🧪 {(realCodes[tab] ? b.testModeHintAlso : b.testModeHint).replace("{code}", testCode)}
+                                </Text>
                             </View>
                         )}
                         <Pressable onPress={handleContinue} hitSlop={8} disabled={busy}>
