@@ -33,9 +33,13 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
     const [error, setError] = React.useState<string | null>(null);
     const [added, setAdded] = React.useState<Kind | null>(null);
     const [testCode, setTestCode] = React.useState<string | null>(null);
+    const [realCodes, setRealCodes] = React.useState({ phone: false, email: false });
 
     React.useEffect(() => {
-        getAuthOptions().then((o) => setTestCode(o.testCode)).catch(() => { });
+        getAuthOptions().then((o) => {
+            setTestCode(o.testCode);
+            if (o.realCodes) setRealCodes(o.realCodes);
+        }).catch(() => { });
     }, []);
 
     if (!user) return null;
@@ -147,7 +151,11 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
                                 autoFocus
                                 onSubmitEditing={confirm}
                             />
-                            {testCode && <Text style={s.hint}>🧪 {b.testModeHint.replace("{code}", testCode)}</Text>}
+                            {testCode && adding && (
+                                <Text style={s.hint}>
+                                    🧪 {(realCodes[adding] ? b.testModeHintAlso : b.testModeHint).replace("{code}", testCode)}
+                                </Text>
+                            )}
                         </>
                     )}
                     {error && <Text style={s.error}>⚠ {error}</Text>}

@@ -61,7 +61,8 @@ services:
       # - key: OTP_TEST_CODE, value: "123456"
       # One-time codes by SMS / email – add when you have an account:
       # - key: TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN / TWILIO_FROM   (SMS)
-      # - key: RESEND_API_KEY / OTP_EMAIL_FROM                         (email)
+      # - key: GMAIL_SCRIPT_URL / GMAIL_SCRIPT_SECRET                  (email from Gmail, free)
+      # - key: RESEND_API_KEY / OTP_EMAIL_FROM                         (email, own domain)
       #   scope: RUN_TIME, type: SECRET
 
 static_sites:

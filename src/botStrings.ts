@@ -20,6 +20,7 @@ type Strings = {
     errUnavailable: string;
     errNetwork: string;
     testModeHint: string;      // {code}
+    testModeHintAlso: string;  // {code} – when a real code was emailed too
     signedInAs: string;
     demoAccount: string;
     guestAccount: string;
@@ -109,6 +110,7 @@ export const BOT_T: Record<LangCode, Strings> = {
         errUnavailable: "Signing in this way isn't available yet.",
         errNetwork: "Could not reach the server. Please check your connection.",
         testModeHint: "Test mode: the code is {code}",
+        testModeHintAlso: "Test mode: the code from the email or {code} – both work",
         signedInAs: "Signed in as",
         demoAccount: "Demo account",
         guestAccount: "Not signed in (nothing is saved)",
@@ -208,6 +210,7 @@ export const BOT_T: Record<LangCode, Strings> = {
         errUnavailable: "Hindi pa available ang ganitong pag-sign in.",
         errNetwork: "Hindi maabot ang server. Pakisuri ang iyong koneksyon.",
         testModeHint: "Test mode: ang code ay {code}",
+        testModeHintAlso: "Test mode: gumagana ang code sa email o ang {code}",
         signedInAs: "Naka-sign in bilang",
         demoAccount: "Demo account",
         guestAccount: "Hindi naka-sign in (walang mase-save)",
@@ -307,6 +310,7 @@ export const BOT_T: Record<LangCode, Strings> = {
         errUnavailable: "ഈ രീതിയിലുള്ള സൈൻ ഇൻ ഇപ്പോൾ ലഭ്യമല്ല.",
         errNetwork: "സെർവറിൽ എത്താനായില്ല. നിങ്ങളുടെ കണക്ഷൻ പരിശോധിക്കുക.",
         testModeHint: "ടെസ്റ്റ് മോഡ്: കോഡ് {code} ആണ്",
+        testModeHintAlso: "ടെസ്റ്റ് മോഡ്: ഇമെയിലിലെ കോഡോ {code} എന്ന കോഡോ – രണ്ടും പ്രവർത്തിക്കും",
         signedInAs: "സൈൻ ഇൻ ചെയ്തത്",
         demoAccount: "ഡെമോ അക്കൗണ്ട്",
         guestAccount: "സൈൻ ഇൻ ചെയ്തിട്ടില്ല (ഒന്നും സേവ് ചെയ്യില്ല)",
@@ -406,6 +410,7 @@ export const BOT_T: Record<LangCode, Strings> = {
         errUnavailable: "Вход этим способом пока недоступен.",
         errNetwork: "Нет связи с сервером. Проверьте подключение.",
         testModeHint: "Тестовый режим: код {code}",
+        testModeHintAlso: "Тестовый режим: подойдёт код из письма или {code}",
         signedInAs: "Вы вошли как",
         demoAccount: "Демо-аккаунт",
         guestAccount: "Вы не вошли (ничего не сохраняется)",
@@ -505,6 +510,7 @@ export const BOT_T: Record<LangCode, Strings> = {
         errUnavailable: "इस तरह साइन इन करना अभी उपलब्ध नहीं है।",
         errNetwork: "सर्वर तक नहीं पहुँच सके। कृपया अपना इंटरनेट जाँचें।",
         testModeHint: "टेस्ट मोड: कोड है {code}",
+        testModeHintAlso: "टेस्ट मोड: ईमेल वाला कोड या {code} – दोनों चलेंगे",
         signedInAs: "इस खाते से साइन इन:",
         demoAccount: "डेमो खाता",
         guestAccount: "साइन इन नहीं (कुछ भी सहेजा नहीं जाता)",
@@ -604,6 +610,7 @@ export const BOT_T: Record<LangCode, Strings> = {
         errUnavailable: "இந்த வழியில் உள்நுழைவது இன்னும் கிடைக்கவில்லை.",
         errNetwork: "சர்வரை அடைய முடியவில்லை. இணைய இணைப்பைச் சரிபார்க்கவும்.",
         testModeHint: "சோதனை முறை: குறியீடு {code}",
+        testModeHintAlso: "சோதனை முறை: மின்னஞ்சலில் வந்த குறியீடு அல்லது {code} – இரண்டும் வேலை செய்யும்",
         signedInAs: "உள்நுழைந்த கணக்கு:",
         demoAccount: "டெமோ கணக்கு",
         guestAccount: "உள்நுழையவில்லை (எதுவும் சேமிக்கப்படாது)",

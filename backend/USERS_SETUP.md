@@ -36,13 +36,52 @@ bytes: they are encrypted with `CONTRACT_ENCRYPTION_KEY`.
 |---|---|---|
 | `DEMO_LOGIN` | `true` | Phone **123** signs in to the demo account without a code. Set `false` for real users. |
 | `NODE_ENV` | `production` | Already in `.do/app.yaml`. |
-| `OTP_TEST_CODE` | `123456` | Test mode: **any** phone number or email signs in with this code, nothing is sent, and the login screen shows the code. For testing with many accounts. Remove before real users. |
+| `OTP_TEST_CODE` | `123456` | Test mode: **any** phone number or email signs in with this code, and the login screen shows it. Where a real code can be sent (email via Gmail or Resend), it is sent too and **either one** works; where nothing can be sent (SMS without Twilio), only this code works. For testing with many accounts. Anyone who knows it can sign in to any account: remove it before real users. |
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM` | from twilio.com | Optional: real SMS codes (paid per SMS). |
-| `RESEND_API_KEY`, `OTP_EMAIL_FROM` | from resend.com | Optional: real email codes (free tier: 3,000/month, needs your own domain). |
+| `GMAIL_SCRIPT_URL`, `GMAIL_SCRIPT_SECRET` | see below | Optional: real email codes from a Gmail account. Free, no domain, about 100 emails a day. |
+| `RESEND_API_KEY`, `OTP_EMAIL_FROM` | from resend.com | Optional: real email codes (free tier: 3,000/month, needs your own domain). Used instead of Gmail when both are set. |
 
 Without an SMS/email provider, the live app shows "Sign-in by SMS isn't
 available yet" and offers **Continue without an account** (nothing saved).
 Locally (`npm run dev`), the code is printed in the backend terminal instead.
+
+### Email codes from Gmail (free, no domain)
+
+The codes are sent from a Gmail account by a small Google Apps Script
+([`gmail-sender/Code.gs`](gmail-sender/Code.gs)) that the backend calls over HTTPS.
+(Gmail's usual SMTP way doesn't work here: DigitalOcean blocks the email ports.)
+About 15 minutes, once:
+
+1. **A Gmail account for the app**, e.g. `careconnect.codes@gmail.com` – the codes come from this
+   address. (Your own works too, but a separate one keeps your inbox apart.)
+2. **A secret:** make up a long random text, e.g. 30 letters and numbers. It only lets the backend
+   use the script.
+3. Signed in with that Gmail, open **script.google.com** → **New project**. Name it
+   `CareConnect codes`. Delete what's in `Code.gs` and paste all of
+   [`gmail-sender/Code.gs`](gmail-sender/Code.gs). On the line
+   `const SECRET = "PASTE-THE-SAME-SECRET-AS-GMAIL_SCRIPT_SECRET";` put your secret between the
+   quotes. **Save** (💾).
+4. **Allow it to send email:** in the list at the top choose `testSend` → **▶ Run** →
+   **Review permissions** → choose the Gmail account. Google shows "Google hasn't verified this
+   app" (it's your own script): **Advanced** → **Go to CareConnect codes (unsafe)** → **Allow**.
+   A "CareConnect test" email arrives in that Gmail.
+5. **Deploy** (top right) → **New deployment** → ⚙️ **Select type** → **Web app**.
+   *Execute as:* **Me**. *Who has access:* **Anyone**. → **Deploy** → copy the **Web app URL**
+   (`https://script.google.com/macros/s/…/exec`). ("Anyone" is needed so the backend can reach it;
+   without the secret it sends nothing.)
+6. **DigitalOcean** → the app → backend → **Settings → Environment Variables** → add
+   `GMAIL_SCRIPT_URL` = the Web app URL and `GMAIL_SCRIPT_SECRET` = your secret (mark it
+   **Encrypt**) → **Save** (the backend restarts).
+7. **Try it:** in the app, **Email** → your address → **Continue**. The email
+   "CareConnect code: …" arrives within a few seconds (look in Spam the first time and
+   mark it "Not spam"). With `OTP_TEST_CODE` still set, the emailed code and `123456` both work.
+
+If no email comes, the backend log (DigitalOcean → **Runtime Logs**) says why, e.g.
+`Gmail script answered 200: wrong secret` (the secrets differ), or "not the expected reply"
+(the URL is wrong or the deployment isn't "Anyone"). After changing `Code.gs`, deploy again with
+**Deploy → Manage deployments → ✏️ → Version: New version → Deploy** – the URL stays the same.
+Gmail allows about 100 emails a day from a script; after that, codes stop until the next day
+(with `OTP_TEST_CODE` set, `123456` still works).
 
 ## 3. The demo account
 
