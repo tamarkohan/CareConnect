@@ -2,7 +2,19 @@
 // Texts of the Tasks and Journal pages (adding, completing, sharing and deleting)
 // in every app language. Tagalog, Malayalam, Russian, Hindi and Tamil should be
 // checked by native speakers. Headings and the example texts are in translations.ts.
-import { LangCode } from "./translations";
+import { LangCode, T } from "./translations";
+import type { Task } from "./api/client";
+
+// Example tasks for new users have one of these keys instead of a text (T.task1… in translations.ts).
+const TASK_EXAMPLE_KEYS = ["task1", "task2", "task3", "task4", "task5"] as const;
+type TaskExampleKey = (typeof TASK_EXAMPLE_KEYS)[number];
+const isTaskExampleKey = (k: string | null): k is TaskExampleKey => (TASK_EXAMPLE_KEYS as readonly (string | null)[]).includes(k);
+
+/** A task's text in the app language: the example's text, its translation, or as it was written. */
+export function taskText(task: Task, lang: LangCode): string {
+    if (isTaskExampleKey(task.exampleKey)) return T[lang][task.exampleKey];
+    return task.translations[lang] ?? task.label ?? "";
+}
 
 type Strings = {
     // Tasks
@@ -40,6 +52,8 @@ type Strings = {
     chooseBook: string;
     showAll: string;
     noEntriesInBook: string;
+    showOriginal: string;        // an entry shown translated into the app language
+    showTranslation: string;
     // Both
     example: string;
     share: string;
@@ -86,6 +100,8 @@ export const TJ_T: Record<LangCode, Strings> = {
         chooseBook: "Choose a book above to write in it.",
         showAll: "Show all entries",
         noEntriesInBook: "No entries in this book yet.",
+        showOriginal: "Show original",
+        showTranslation: "Show translation",
         example: "Example",
         share: "Share",
         copied: "Copied ✓",
@@ -129,6 +145,8 @@ export const TJ_T: Record<LangCode, Strings> = {
         chooseBook: "Pumili ng book sa itaas para makapagsulat.",
         showAll: "Ipakita lahat ng entry",
         noEntriesInBook: "Wala pang entry sa book na ito.",
+        showOriginal: "Ipakita ang orihinal",
+        showTranslation: "Ipakita ang salin",
         example: "Halimbawa",
         share: "Ibahagi",
         copied: "Nakopya ✓",
@@ -172,6 +190,8 @@ export const TJ_T: Record<LangCode, Strings> = {
         chooseBook: "എഴുതാൻ മുകളിൽ നിന്ന് ഒരു പുസ്തകം തിരഞ്ഞെടുക്കുക.",
         showAll: "എല്ലാ എൻട്രികളും കാണിക്കുക",
         noEntriesInBook: "ഈ പുസ്തകത്തിൽ ഇതുവരെ എൻട്രികൾ ഇല്ല.",
+        showOriginal: "യഥാർത്ഥം കാണിക്കുക",
+        showTranslation: "വിവർത്തനം കാണിക്കുക",
         example: "ഉദാഹരണം",
         share: "പങ്കിടുക",
         copied: "കോപ്പി ചെയ്തു ✓",
@@ -215,6 +235,8 @@ export const TJ_T: Record<LangCode, Strings> = {
         chooseBook: "Выберите книгу выше, чтобы писать в ней.",
         showAll: "Показать все записи",
         noEntriesInBook: "В этой книге пока нет записей.",
+        showOriginal: "Показать оригинал",
+        showTranslation: "Показать перевод",
         example: "Пример",
         share: "Поделиться",
         copied: "Скопировано ✓",
@@ -258,6 +280,8 @@ export const TJ_T: Record<LangCode, Strings> = {
         chooseBook: "लिखने के लिए ऊपर से एक किताब चुनें।",
         showAll: "सारी बातें दिखाएँ",
         noEntriesInBook: "इस किताब में अभी कुछ नहीं लिखा गया।",
+        showOriginal: "मूल दिखाएँ",
+        showTranslation: "अनुवाद दिखाएँ",
         example: "उदाहरण",
         share: "शेयर करें",
         copied: "कॉपी हो गया ✓",
@@ -301,6 +325,8 @@ export const TJ_T: Record<LangCode, Strings> = {
         chooseBook: "எழுத மேலே ஒரு புத்தகத்தைத் தேர்ந்தெடுக்கவும்.",
         showAll: "எல்லாப் பதிவுகளையும் காட்டு",
         noEntriesInBook: "இந்தப் புத்தகத்தில் இன்னும் பதிவுகள் இல்லை.",
+        showOriginal: "மூலத்தைக் காட்டு",
+        showTranslation: "மொழிபெயர்ப்பைக் காட்டு",
         example: "உதாரணம்",
         share: "பகிர்",
         copied: "நகலெடுக்கப்பட்டது ✓",

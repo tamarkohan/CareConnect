@@ -1,12 +1,13 @@
 // ── WelcomeGuide.tsx ─────────────────────────────────────────────────
 // A short guide shown after an account's first sign-in: one card that explains each
-// button of the bottom navigation bar. It opens again from Menu → App Guide.
+// button of the bottom navigation bar, with "More" for a few tips on each page.
+// It opens again from Menu → App Guide.
 // Open/closed state lives in AppContext (guideOpen), so it is rendered once in App.tsx.
 import * as React from "react";
 import { Modal, View, Text, Pressable, ScrollView, StyleSheet } from "react-native";
 import { useApp } from "../AppContext";
 import { T } from "../translations";
-import { GUIDE_T } from "../guideStrings";
+import { GUIDE_T, GUIDE_DETAILS } from "../guideStrings";
 
 const Color = {
     aliceBlue: "#f3faff",
@@ -31,7 +32,11 @@ export default function WelcomeGuide() {
     const { lang, user, guideOpen, setGuideOpen } = useApp();
     const t = T[lang];
     const g = GUIDE_T[lang];
-    const close = () => setGuideOpen(false);
+    const [openPage, setOpenPage] = React.useState<string | null>(null);   // the page whose tips show
+    const close = () => {
+        setGuideOpen(false);
+        setOpenPage(null);
+    };
 
     return (
         <Modal visible={!!user && guideOpen} transparent animationType="fade" onRequestClose={close}>
@@ -49,6 +54,21 @@ export default function WelcomeGuide() {
                                 <View style={s.rowText}>
                                     <Text style={s.name}>{t[item.nameKey]}</Text>
                                     <Text style={s.desc}>{g[item.textKey]}</Text>
+                                    {openPage === item.textKey &&
+                                        GUIDE_DETAILS[lang][item.textKey].map((tip, i) => (
+                                            <View key={i} style={s.tipRow}>
+                                                <Text style={s.tipDot}>•</Text>
+                                                <Text style={s.tipText}>{tip}</Text>
+                                            </View>
+                                        ))}
+                                    <Pressable
+                                        onPress={() => setOpenPage(openPage === item.textKey ? null : item.textKey)}
+                                        hitSlop={6}
+                                        accessibilityRole="button"
+                                        aria-expanded={openPage === item.textKey}
+                                    >
+                                        <Text style={s.more}>{openPage === item.textKey ? g.less : g.more}</Text>
+                                    </Pressable>
                                 </View>
                             </View>
                         ))}
@@ -99,6 +119,10 @@ const s = StyleSheet.create({
     rowText: { flex: 1, gap: 2 },
     name: { fontSize: 15, fontWeight: "700", color: Color.endeavour },
     desc: { fontSize: 13, lineHeight: 18, color: Color.mako },
+    tipRow: { flexDirection: "row", gap: 6, marginTop: 4 },
+    tipDot: { fontSize: 13, lineHeight: 18, color: Color.endeavour },
+    tipText: { flex: 1, fontSize: 13, lineHeight: 18, color: Color.blackPearl },
+    more: { fontSize: 13, fontWeight: "700", color: Color.endeavour, marginTop: 2 },
     btn: {
         marginTop: 8,
         backgroundColor: Color.endeavour,

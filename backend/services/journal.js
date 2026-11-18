@@ -8,13 +8,18 @@
  * stored with an exampleKey instead of a text, so the app shows them in its
  * current language, can't be edited (they stay examples), and are removed as soon
  * as the user has an entry of their own.
+ *
+ * translateEntries() adds a translation of an entry into each app language the
+ * user reads it in, once each (translations); editing an entry drops them.
  */
 
 const db = require("./db");
 const { encryptJson, decryptJson } = require("./crypto");
+const { translateItems, LANG_NAMES } = require("./translateItems");
 
 const MAX_ENTRIES = 1000;       // per user (~1 KB each)
 const MAX_TEXT = 4000;
+const TRANSLATE_AT_ONCE = 30;   // entries per translate request (newest first); the app asks again for more
 const BOOKS = ["burden", "gratitude"];
 const MOODS = ["😢", "😐", "🙂", "😊", "😄"];   // same as the app's mood row
 const context = (userId) => `journal:${userId}`;
@@ -28,8 +33,8 @@ const EXAMPLES = [
 const userError = (message, code, status = 400) => Object.assign(new Error(message), { expose: true, status, code });
 
 function toEntry(row, userId) {
-  const { book, mood, text = null, exampleKey = null } = decryptJson(row, context(userId));
-  return { id: String(row.id), book, mood, text, exampleKey, createdAt: row.created_at };
+  const { book, mood, text = null, exampleKey = null, translations = {} } = decryptJson(row, context(userId));
+  return { id: String(row.id), book, mood, text, exampleKey, translations, createdAt: row.created_at };
 }
 
 async function insert(client, userId, entry, createdAt = new Date()) {
@@ -120,6 +125,44 @@ async function updateEntry(userId, id, { mood, text }) {
   return updated.rows.length ? toEntry(updated.rows[0], userId) : null;
 }
 
+/**
+ * Translates the newest entries that have no translation into `lang` yet (up to
+ * TRANSLATE_AT_ONCE) and keeps the translations.
+ * @returns {Promise<Record<string, string>>} id → translation, for the entries translated now
+ */
+async function translateEntries(userId, lang) {
+  if (!LANG_NAMES[lang]) throw userError("Unknown language.");
+  const { rows } = await db.query(
+    `SELECT id, ciphertext, iv, auth_tag, created_at FROM journal_entries
+     WHERE user_id = $1 ORDER BY created_at DESC, id DESC`,
+    [userId]
+  );
+  const todo = rows
+    .flatMap((r) => {
+      try {
+        return [toEntry(r, userId)];
+      } catch {
+        return [];
+      }
+    })
+    .filter((e) => e.text && !e.translations[lang])
+    .slice(0, TRANSLATE_AT_ONCE);
+  if (!todo.length) return {};
+  const done = await translateItems(todo.map((e) => ({ id: e.id, text: e.text })), lang, "private diary entries", MAX_TEXT * 2);
+  for (const e of todo) {
+    if (!done.has(e.id)) continue;
+    const { ciphertext, iv, authTag } = encryptJson(
+      { book: e.book, mood: e.mood, text: e.text, translations: { ...e.translations, [lang]: done.get(e.id) } },
+      context(userId)
+    );
+    await db.query(
+      "UPDATE journal_entries SET ciphertext = $3, iv = $4, auth_tag = $5 WHERE id = $1 AND user_id = $2",
+      [e.id, userId, ciphertext, iv, authTag]
+    );
+  }
+  return Object.fromEntries(done);
+}
+
 async function deleteEntry(userId, id) {
   await db.query("DELETE FROM journal_entries WHERE id = $1 AND user_id = $2", [id, userId]);
 }
@@ -128,4 +171,4 @@ async function clearEntries(userId) {
   await db.query("DELETE FROM journal_entries WHERE user_id = $1", [userId]);
 }
 
-module.exports = { addExamplesOnce, listEntries, addEntry, updateEntry, deleteEntry, clearEntries };
+module.exports = { addExamplesOnce, listEntries, addEntry, updateEntry, deleteEntry, clearEntries, translateEntries };

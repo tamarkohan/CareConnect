@@ -144,9 +144,24 @@ export default function CommunityScreen({ navigation }: Props) {
                 contentContainerStyle={s.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
-                {/* "Find:" and the categories – first on the page. They wrap, so all of them show. */}
+                {/* "Find:", the search (opens the map with what you typed) and the categories –
+                    first on the page, the same in every category. The categories wrap, so all of them show. */}
                 <View style={s.findHeader}>
                     <Text style={s.sectionTitle}>{c.findTitle}</Text>
+                    <View style={s.searchRow}>
+                        <TextInput
+                            style={s.searchInput}
+                            placeholder={t.communitySearch}
+                            placeholderTextColor={Color.mako}
+                            value={searchText}
+                            onChangeText={setSearchText}
+                            onSubmitEditing={searchMap}
+                            returnKeyType="search"
+                        />
+                        <Pressable style={s.searchBtn} onPress={searchMap} accessibilityLabel={c.searchOnMap}>
+                            <Text style={s.searchIcon}>🔍</Text>
+                        </Pressable>
+                    </View>
                     <View style={s.filterRow}>
                         {CATEGORIES.map(({ id, emoji }) => (
                             <Pressable
@@ -164,30 +179,12 @@ export default function CommunityScreen({ navigation }: Props) {
                     </View>
                 </View>
 
+                {/* Real map (free Google Maps embed) + where the user is */}
                 {showsMap && (
-                    <>
-                        {/* Real map (free Google Maps embed) + where the user is */}
-                        <View style={s.mapContainer}>
-                            <CommunityMap query={mapQuery} emptyText={c.pickCityFirst} openLabel={c.openMap} />
-                            <LocationPicker value={location} onChange={setLocation} />
-                        </View>
-
-                        {/* Search the map for anything else */}
-                        <View style={s.searchRow}>
-                            <TextInput
-                                style={s.searchInput}
-                                placeholder={t.communitySearch}
-                                placeholderTextColor={Color.mako}
-                                value={searchText}
-                                onChangeText={setSearchText}
-                                onSubmitEditing={searchMap}
-                                returnKeyType="search"
-                            />
-                            <Pressable style={s.searchBtn} onPress={searchMap} accessibilityLabel={c.searchOnMap}>
-                                <Text style={s.searchIcon}>🔍</Text>
-                            </Pressable>
-                        </View>
-                    </>
+                    <View style={s.mapContainer}>
+                        <CommunityMap query={mapQuery} emptyText={c.pickCityFirst} openLabel={c.openMap} />
+                        <LocationPicker value={location} onChange={setLocation} />
+                    </View>
                 )}
 
                 {/* Caregivers: join the list, contact requests (no chat, no location) */}

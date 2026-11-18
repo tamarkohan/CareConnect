@@ -37,12 +37,13 @@ type Props = {
 export default function TopBar({ title, navigation }: Props) {
     const { lang, setLang, signOut, user, setGuideOpen } = useLang();
     const b = BOT_T[lang];
-    // Shown in the menu so testers know which account they are using.
+    // Shown in the menu so testers know which account they are using: the phone
+    // and the email, when both are on the account (Menu → Profile).
     const account = user
         ? user.isDemo
-            ? `${b.demoAccount} (123)`
-            : user.phone ?? user.email ?? ""
-        : b.guestAccount;
+            ? [`${b.demoAccount} (123)`]
+            : [user.phone, user.email].filter((x): x is string => !!x)
+        : [b.guestAccount];
     const [showMenu, setShowMenu] = React.useState(false);
     const [showLangs, setShowLangs] = React.useState(false);
 
@@ -84,18 +85,32 @@ export default function TopBar({ title, navigation }: Props) {
 
                                 <View style={s.accountBox}>
                                     {user && <Text style={s.accountLabel}>{b.signedInAs}</Text>}
-                                    <Text style={s.accountValue}>{account}</Text>
+                                    {account.map((line) => (
+                                        <Text key={line} style={s.accountValue}>{line}</Text>
+                                    ))}
                                 </View>
 
                                 <View style={s.menuDivider} />
 
                                 {/* Items */}
-                                <Pressable style={s.menuItem} onPress={() => setShowMenu(false)}>
+                                <Pressable
+                                    style={s.menuItem}
+                                    onPress={() => {
+                                        setShowMenu(false);
+                                        navigation?.navigate("Settings");
+                                    }}
+                                >
                                     <Text style={s.menuItemIcon}>⚙</Text>
                                     <Text style={s.menuItemText}>{t.settings}</Text>
                                 </Pressable>
 
-                                <Pressable style={s.menuItem} onPress={() => setShowMenu(false)}>
+                                <Pressable
+                                    style={s.menuItem}
+                                    onPress={() => {
+                                        setShowMenu(false);
+                                        navigation?.navigate("Profile");
+                                    }}
+                                >
                                     <Text style={s.menuItemIcon}>👤</Text>
                                     <Text style={s.menuItemText}>{t.profile}</Text>
                                 </Pressable>
