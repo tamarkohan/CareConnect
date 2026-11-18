@@ -17,6 +17,7 @@ import {
     ActivityIndicator,
     Modal,
 } from "react-native";
+import EmailInput from "../components/EmailInput";
 import { themedColors, themedStyles } from "../theme";
 
 // ── Tokens ───────────────────────────────────────────────────────────
@@ -300,17 +301,29 @@ export default function LoginScreen({ navigation }: Props) {
                                     <Text style={s.countryCodeText}>+972</Text>
                                 </View>
                             )}
-                            <TextInput
-                                style={[s.input, tab === "phone" && s.inputWithCode]}
-                                placeholder={tab === "phone" ? t.phonePh : t.emailPh}
-                                placeholderTextColor={Color.silver}
-                                keyboardType={tab === "phone" ? "phone-pad" : "email-address"}
-                                autoCapitalize="none"
-                                autoComplete={tab === "phone" ? "tel" : "email"}
-                                value={value}
-                                onChangeText={(v) => { setValue(v); setError(null); }}
-                                onSubmitEditing={handleContinue}
-                            />
+                            {tab === "phone" ? (
+                                <TextInput
+                                    style={[s.input, s.inputWithCode]}
+                                    placeholder={t.phonePh}
+                                    placeholderTextColor={Color.silver}
+                                    keyboardType="phone-pad"
+                                    autoCapitalize="none"
+                                    autoComplete="tel"
+                                    value={value}
+                                    onChangeText={(v) => { setValue(v); setError(null); }}
+                                    onSubmitEditing={handleContinue}
+                                />
+                            ) : (
+                                // Offers @gmail.com, @campus.haifa.ac.il… while typing; still free text.
+                                <EmailInput
+                                    style={s.input}
+                                    placeholder={t.emailPh}
+                                    placeholderTextColor={Color.silver}
+                                    value={value}
+                                    onChangeText={(v) => { setValue(v); setError(null); }}
+                                    onSubmitEditing={handleContinue}
+                                />
+                            )}
                         </View>
 
                         {/* Hint */}

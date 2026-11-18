@@ -6,6 +6,13 @@ People sign in with a **phone number or an email** and a one-time code (no
 passwords). Their data is tied to the one they used, so the login screen tells
 them to keep signing in the same way.
 
+**Email shortcuts:** while typing an email (sign-in, and adding one in Profile), a list under the
+field offers the common endings – `@gmail.com`, `@campus.haifa.ac.il`, `@icloud.com`,
+`@rafael.co.il`, `@outlook.com` first, then `@hotmail.com`, `@yahoo.com`, `@walla.co.il` after
+typing their first letters. Tapping one fills it in and the field stays plain text, so it can still
+be edited (e.g. `@campus.haifa.ac.il` → `@is.haifa.ac.il`); an ending that isn't on the list is
+just typed. The list is `EMAIL_DOMAINS` in `src/components/EmailInput.tsx`.
+
 ## 1. Update the database (once)
 
 Supabase → **SQL Editor** → **New query** → paste all of [`db/schema.sql`](db/schema.sql)
