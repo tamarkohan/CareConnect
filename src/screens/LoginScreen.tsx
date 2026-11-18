@@ -2,6 +2,7 @@ import * as React from "react";
 import { useApp } from "../AppContext";
 import { LangCode } from "../translations";
 import { BOT_T } from "../botStrings";
+import { MENU_T } from "../menuStrings";
 import { requestCode, verifyCode, getAuthOptions, Identifier, SignInResponse } from "../api/client";
 
 import {
@@ -147,7 +148,7 @@ const T: Record<string, Record<string, string>> = {
 type Props = { navigation?: any };
 
 export default function LoginScreen({ navigation }: Props) {
-    const { lang: globalLang, setLang: setGlobalLang, signIn } = useApp();
+    const { lang: globalLang, setLang: setGlobalLang, signIn, dark, setAppearance } = useApp();
     const [lang, setLang] = React.useState<string>(globalLang);
     const [tab, setTab] = React.useState<"phone" | "email">("phone");
     const [value, setValue] = React.useState("");
@@ -170,6 +171,7 @@ export default function LoginScreen({ navigation }: Props) {
     }, []);
     const t = T[lang];
     const b = BOT_T[lang as LangCode];
+    const m = MENU_T[lang as LangCode];
     const currentLang = LANGUAGES.find(l => l.code === lang)!;
 
     const identifier = (): Identifier =>
@@ -232,6 +234,19 @@ export default function LoginScreen({ navigation }: Props) {
                 <View style={s.heroPlaceholder}>
                     <Text style={s.heroText}>🤝</Text>
                 </View>
+
+                {/* Light / dark switch — top left. Shows the look it switches to;
+                    "Same as phone" is in Menu → Settings → Appearance. */}
+                <Pressable
+                    style={s.themePill}
+                    onPress={() => setAppearance(dark ? "light" : "dark")}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${m.appearanceTitle}: ${dark ? m.appearanceLight : m.appearanceDark}`}
+                >
+                    <Text style={s.langPillText}>
+                        {dark ? `☀️ ${m.appearanceLight}` : `🌙 ${m.appearanceDark}`}
+                    </Text>
+                </Pressable>
 
                 {/* Language picker pill — top right */}
                 <Pressable style={s.langPill} onPress={() => setShowLangs(v => !v)}>
@@ -446,6 +461,14 @@ const s = themedStyles({
         paddingVertical: 6,
     },
     langPillText: { fontSize: 13, fontWeight: "600", color: Color.blackPearl },
+    themePill: {
+        position: "absolute",
+        top: 52, left: 16,
+        backgroundColor: "rgba(255,255,255,0.85)",
+        borderRadius: 20,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+    },
 
     // Language dropdown
     langDropdown: {
