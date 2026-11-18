@@ -2,7 +2,6 @@ import * as React from "react";
 import {
     View,
     Text,
-    StyleSheet,
     Pressable,
     ScrollView,
     TextInput,
@@ -17,9 +16,10 @@ import {
     ApiError, JournalBook, JournalEntry, addJournalEntry, deleteJournalEntry, getJournal, translateJournal, updateJournalEntry,
 } from "../api/client";
 import { confirmAction, shareText, showAlert } from "../api/platform";
+import { themedColors, themedStyles } from "../theme";
 
 // ── Tokens ───────────────────────────────────────────────────────────
-const Color = {
+const Color = themedColors({
     aliceBlue: "#f3faff",
     blackPearl: "#071e27",
     endeavour: "#005dac",
@@ -33,7 +33,7 @@ const Color = {
     greenText: "#2e7d32",
     lightPurple: "#f3e8ff",
     purple: "#7c3aed",
-};
+});
 
 // ── Nav items ─────────────────────────────────────────────────────────
 const NAV_ITEMS = [
@@ -426,7 +426,7 @@ export default function JournalScreen({ navigation }: Props) {
 }
 
 // ════════════════════════════════════════════════════════════════════
-const s = StyleSheet.create({
+const s = themedStyles({
     root: { flex: 1, backgroundColor: Color.aliceBlue },
     scroll: { flex: 1 },
     scrollContent: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24, gap: 16 },

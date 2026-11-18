@@ -1,5 +1,5 @@
 import * as React from "react";
-import { StyleSheet, View, Pressable, Text } from "react-native";
+import { View, Pressable, Text } from "react-native";
 import { BlurView } from "expo-blur";
 import Divnavitem1 from "../assets/div-nav-item.svg";
 import {
@@ -11,6 +11,7 @@ import {
     FontSize,
     Color,
 } from "../GlobalStyles";
+import { themedStyles } from "../theme";
 
 const NavbottomNav = () => {
     return (
@@ -98,7 +99,7 @@ const NavbottomNav = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
     viewLayout: {
         height: "100%",
         width: "100%",

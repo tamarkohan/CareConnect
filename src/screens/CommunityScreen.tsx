@@ -2,7 +2,6 @@ import * as React from "react";
 import {
     View,
     Text,
-    StyleSheet,
     Pressable,
     ScrollView,
     TextInput,
@@ -27,9 +26,10 @@ import {
     INFLUENCERS,
     RELIGIOUS_PLACES,
 } from "../translations";
+import { tc, themedColors, themedStyles } from "../theme";
 
 // ── Tokens ───────────────────────────────────────────────────────────
-const Color = {
+const Color = themedColors({
     aliceBlue: "#f3faff",
     blackPearl: "#071e27",
     endeavour: "#005dac",
@@ -42,7 +42,7 @@ const Color = {
     greenText: "#2e7d32",
     yellow: "#ffd600",
     lightYellow: "#fff8e1",
-};
+});
 
 // ── Nav items ─────────────────────────────────────────────────────────
 const NAV_ITEMS = [
@@ -216,7 +216,7 @@ export default function CommunityScreen({ navigation }: Props) {
                                     <View style={s.religiousBody}>
                                         <View style={s.religiousTagRow}>
                                             <View style={[s.religiousTag, { backgroundColor: Color.lightYellow }]}>
-                                                <Text style={[s.religiousTagText, { color: "#b45309" }]}>
+                                                <Text style={[s.religiousTagText, { color: tc("#b45309") }]}>
                                                     {t.religiousSiteTag}
                                                 </Text>
                                             </View>
@@ -257,7 +257,7 @@ export default function CommunityScreen({ navigation }: Props) {
                         <Text style={s.sectionTitle}>{t.localNetworks}</Text>
                         <View style={s.networkRow}>
                             {SUPPORT_NETWORKS.map((n) => (
-                                <Pressable key={n.id} style={[s.networkCard, s.demoCard, { backgroundColor: n.bg }]} onPress={demo}>
+                                <Pressable key={n.id} style={[s.networkCard, s.demoCard, { backgroundColor: tc(n.bg) }]} onPress={demo}>
                                     <Text style={s.demoBadge}>{c.demo}</Text>
                                     <Text style={s.networkEmoji}>{n.emoji}</Text>
                                     <Text style={s.networkName}>{n.name}</Text>
@@ -320,7 +320,7 @@ export default function CommunityScreen({ navigation }: Props) {
 }
 
 // ════════════════════════════════════════════════════════════════════
-const s = StyleSheet.create({
+const s = themedStyles({
     root: { flex: 1, backgroundColor: Color.aliceBlue },
     scroll: { flex: 1 },
     scrollContent: { width: "100%", maxWidth: 720, alignSelf: "center", paddingHorizontal: 16, paddingTop: 12, paddingBottom: 24, gap: 12 },

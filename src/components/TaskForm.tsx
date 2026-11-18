@@ -2,13 +2,14 @@
 // Adding or editing a task: what to do, a time chosen from a list (optional),
 // and whether it repeats – every day, or on the days chosen.
 import * as React from "react";
-import { View, Text, Pressable, TextInput, StyleSheet } from "react-native";
+import { View, Text, Pressable, TextInput } from "react-native";
 import { useLang } from "../AppContext";
 import { WEEKDAYS_SHORT } from "../translations";
 import { TJ_T } from "../tasksJournalStrings";
 import TimePicker from "./TimePicker";
+import { themedColors, themedStyles } from "../theme";
 
-const Color = {
+const Color = themedColors({
     blackPearl: "#071e27",
     endeavour: "#005dac",
     linkWater: "#cfe6f2",
@@ -16,7 +17,7 @@ const Color = {
     white: "#fff",
     aliceBlue: "#f3faff",
     red: "#c62828",
-};
+});
 
 export const EVERY_DAY = [0, 1, 2, 3, 4, 5, 6];
 type Repeat = "none" | "daily" | "days";
@@ -127,7 +128,7 @@ export default function TaskForm({ initial, saving, error, onSave, onCancel }: P
     );
 }
 
-const s = StyleSheet.create({
+const s = themedStyles({
     card: {
         backgroundColor: Color.white,
         borderRadius: 12,

@@ -2,15 +2,16 @@
 // Building blocks of the home-screen pages: the page frame (top bar, back
 // button, scrolling content) and the renderer for the sections in infoPages.ts.
 import * as React from "react";
-import { View, Text, StyleSheet, Pressable, ScrollView, Linking } from "react-native";
+import { View, Text, Pressable, ScrollView, Linking } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import TopBar from "./TopBar";
 import { useLang } from "../AppContext";
 import { InfoSection } from "../infoPages";
 import { Faq } from "../infoFaq";
 import { PAGE_T } from "../pageStrings";
+import { themedColors, themedStyles } from "../theme";
 
-export const PageColor = {
+export const PageColor = themedColors({
     bg: "#f3faff",
     ink: "#071e27",
     muted: "#414752",
@@ -21,7 +22,7 @@ export const PageColor = {
     cream: "#ffdfa0",
     gold: "#f8bd2a",
     brown: "#775800",
-};
+});
 
 /** Top bar + "‹ Back" + scrolling content. */
 export function PageFrame({ title, navigation, children }: { title: string; navigation: any; children: React.ReactNode }) {
@@ -106,7 +107,7 @@ export function FaqList({ items }: { items: Faq[] }) {
     );
 }
 
-export const s = StyleSheet.create({
+export const s = themedStyles({
     root: { flex: 1, backgroundColor: PageColor.bg },
     content: { width: "100%", maxWidth: 720, alignSelf: "center", paddingHorizontal: 16, paddingTop: 8, gap: 14 },
     // A clear, finger-sized button (not just blue text).

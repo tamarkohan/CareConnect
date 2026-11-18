@@ -2,7 +2,6 @@ import * as React from "react";
 import {
     ScrollView,
     Text,
-    StyleSheet,
     View,
     Pressable,
     Linking,
@@ -13,9 +12,10 @@ import NameEditor from "../components/NameEditor";
 import { useLang } from "../AppContext";
 import { T } from "../translations";
 import { NAME_T, nameIn } from "../nameStrings";
+import { themedColors, themedStyles } from "../theme";
 
 // ── Colour & style tokens (from your GlobalStyles) ──────────────────
-const Color = {
+const Color = themedColors({
     aliceBlue: "#f3faff",
     blackPearl: "#071e27",
     cinnamon: "#775800",
@@ -26,7 +26,7 @@ const Color = {
     mako: "#414752",
     white: "#fff",
     silver: "rgba(193,198,212,0.3)",
-};
+});
 
 // ── Tool card data ───────────────────────────────────────────────────
 // Each card opens its page: InfoScreen shows the content in infoPages.ts.
@@ -168,7 +168,7 @@ export default function HomeDashboard({ navigation }: any) {
 }
 
 // ════════════════════════════════════════════════════════════════════
-const s = StyleSheet.create({
+const s = themedStyles({
     root: {
         flex: 1,
         backgroundColor: Color.aliceBlue,

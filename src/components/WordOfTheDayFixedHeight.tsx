@@ -1,5 +1,5 @@
 import * as React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import Spanmaterialsymbolsoutlined1 from "../assets/span-material-symbols-outlined1.svg";
 import Spanmaterialsymbolsoutlined2 from "../assets/span-material-symbols-outlined2.svg";
 import {
@@ -14,6 +14,7 @@ import {
     LineHeight,
     FontFamily,
 } from "../GlobalStyles";
+import { themedStyles } from "../theme";
 
 const WordOfTheDayFixedHeight = () => {
     return (
@@ -54,7 +55,7 @@ const WordOfTheDayFixedHeight = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
     divflexFlexBox1: {
         justifyContent: "space-between",
         alignItems: "flex-start",

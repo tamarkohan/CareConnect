@@ -4,7 +4,7 @@
 // so the user can sign in with either one – it's the same account. A phone or
 // email that another account uses can't be added (nothing is ever merged).
 import * as React from "react";
-import { View, Text, Pressable, TextInput, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, TextInput, ActivityIndicator } from "react-native";
 import { useApp } from "../AppContext";
 import { T } from "../translations";
 import { BOT_T } from "../botStrings";
@@ -12,8 +12,9 @@ import { MENU_T } from "../menuStrings";
 import { PageFrame } from "../components/InfoSections";
 import NameEditor from "../components/NameEditor";
 import { getAuthOptions, requestLinkCode, verifyLinkCode, Identifier } from "../api/client";
+import { themedColors, themedStyles } from "../theme";
 
-const C = { blue: "#005dac", ink: "#071e27", muted: "#414752", line: "#cfe6f2", bg: "#f3faff", white: "#fff", red: "#c62828", green: "#2e7d32" };
+const C = themedColors({ blue: "#005dac", ink: "#071e27", muted: "#414752", line: "#cfe6f2", bg: "#f3faff", white: "#fff", red: "#c62828", green: "#2e7d32" });
 
 type Kind = "phone" | "email";
 
@@ -185,7 +186,7 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
     );
 }
 
-const s = StyleSheet.create({
+const s = themedStyles({
     card: { backgroundColor: C.white, borderRadius: 12, borderWidth: 1, borderColor: C.line, padding: 16, gap: 10 },
     cardTitle: { fontSize: 16, fontWeight: "700", color: C.ink },
     hint: { fontSize: 13, color: C.muted, lineHeight: 18 },

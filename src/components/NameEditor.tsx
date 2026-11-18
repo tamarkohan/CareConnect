@@ -8,8 +8,9 @@ import { useLang } from "../AppContext";
 import { LANGUAGES, T } from "../translations";
 import { NAME_T, NAME_MAX, nameInput, nameError } from "../nameStrings";
 import { updateMe } from "../api/client";
+import { themedColors, themedStyles } from "../theme";
 
-const C = { blue: "#005dac", ink: "#071e27", muted: "#414752", line: "#cfe6f2", bg: "#f3faff", white: "#fff", red: "#c62828" };
+const C = themedColors({ blue: "#005dac", ink: "#071e27", muted: "#414752", line: "#cfe6f2", bg: "#f3faff", white: "#fff", red: "#c62828" });
 
 export default function NameEditor({ visible, onClose }: { visible: boolean; onClose: () => void }) {
     const { lang, user, setUser } = useLang();
@@ -84,7 +85,7 @@ export default function NameEditor({ visible, onClose }: { visible: boolean; onC
     );
 }
 
-const s = StyleSheet.create({
+const s = themedStyles({
     backdrop: { flex: 1, backgroundColor: "rgba(7,30,39,0.4)", justifyContent: "center", padding: 16 },
     sheet: { backgroundColor: C.white, borderRadius: 14, padding: 16, gap: 10, maxWidth: 480, width: "100%", alignSelf: "center" },
     title: { fontSize: 17, fontWeight: "700", color: C.ink },

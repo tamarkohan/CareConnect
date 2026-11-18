@@ -17,6 +17,7 @@ import {
     getPayslips, uploadPayslip, deletePayslip, getPayslipFiles, explainPayslipLine, Payslip, ContractFile,
 } from "../api/client";
 import { showAlert, confirmAction, uriToBase64, saveFile } from "../api/platform";
+import { tc, themedStyles } from "../theme";
 
 const MAX_UPLOAD_BYTES = 7 * 1024 * 1024;
 // Payslips per selection. Each one is a Gemini call (the free plan allows
@@ -324,7 +325,7 @@ export default function PayslipsScreen({ navigation }: any) {
                 </View>
             ) : null}
             {result ? (
-                <View style={[x.checks, !result.failed.length && { backgroundColor: "#e8f5e9" }]}>
+                <View style={[x.checks, !result.failed.length && { backgroundColor: tc("#e8f5e9") }]}>
                     <Text style={page.body}>{result.failed.length ? "⚠ " : "✓ "}{fill(p.uploadSummary, { ok: String(result.ok), total: String(result.total) })}</Text>
                     {result.failed.length ? (
                         <>
@@ -388,7 +389,7 @@ export default function PayslipsScreen({ navigation }: any) {
     );
 }
 
-const x = StyleSheet.create({
+const x = themedStyles({
     reading: { flexDirection: "row", alignItems: "center", gap: 10 },
     year: { borderTopWidth: 1, borderTopColor: PageColor.line, paddingTop: 6, gap: 4 },
     yearHead: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 6 },

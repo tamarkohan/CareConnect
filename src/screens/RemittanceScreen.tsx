@@ -12,6 +12,7 @@ import { REMITTANCE_SECTIONS } from "../infoPages";
 import { FAQ } from "../infoFaq";
 import { PageFrame, InfoSections, FaqList, s as page, PageColor } from "../components/InfoSections";
 import { getRates, Rates } from "../api/client";
+import { themedStyles } from "../theme";
 
 // "country" is shown and searched, so people find their currency by country.
 const CURRENCIES: { code: string; flag: string; name: string; country: string }[] = [
@@ -237,7 +238,7 @@ function CurrencyPicker({ visible, title, searchPlaceholder, cancel, exclude, av
     );
 }
 
-const c = StyleSheet.create({
+const c = themedStyles({
     row: { flexDirection: "row", alignItems: "center", gap: 8 },
     currency: {
         flexDirection: "row", alignItems: "center", gap: 6, minWidth: 104,

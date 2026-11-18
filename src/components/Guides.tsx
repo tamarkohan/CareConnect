@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useMemo } from "react";
-import { StyleSheet, View, Text, ImageSourcePropType } from "react-native";
+import { View, Text, ImageSourcePropType } from "react-native";
 import { Image } from "expo-image";
 import {
     Width,
@@ -14,6 +14,7 @@ import {
     LineHeight,
     FontFamily,
 } from "../GlobalStyles";
+import { themedStyles } from "../theme";
 
 export type GuidesType = {
     icon?: ImageSourcePropType;
@@ -56,7 +57,7 @@ const Guides = ({
     );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
     guides: {
         width: Width.width_165,
         height: Height.height_100,
