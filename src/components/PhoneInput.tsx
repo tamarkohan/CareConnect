@@ -122,7 +122,8 @@ export default function PhoneInput({ value, onChangeText, onSubmitEditing, lang,
                 autoComplete="tel"
                 autoFocus={autoFocus}
                 value={value}
-                onChangeText={onChangeText}
+                // Only what a phone number can contain (letters typed on a computer are dropped).
+                onChangeText={(text) => onChangeText(text.replace(/[^\d\s+().-]/g, ""))}
                 onSubmitEditing={onSubmitEditing}
                 onFocus={() => {
                     clearTimeout(blurTimer.current);

@@ -148,7 +148,10 @@ export default function LoginScreen({ navigation }: Props) {
     const { lang: globalLang, setLang: setGlobalLang, signIn, dark, setAppearance } = useApp();
     const [lang, setLang] = React.useState<string>(globalLang);
     const [tab, setTab] = React.useState<"phone" | "email">("phone");
-    const [value, setValue] = React.useState("");
+    // What was typed in each tab, kept when switching between Phone and Email.
+    const [typed, setTyped] = React.useState({ phone: "", email: "" });
+    const value = typed[tab];
+    const setValue = (v: string) => setTyped((prev) => ({ ...prev, [tab]: v }));
     const [showLangs, setShowLangs] = React.useState(false);
     // "id" = enter phone/email, "code" = enter the code we sent
     const [step, setStep] = React.useState<"id" | "code">("id");
@@ -306,7 +309,7 @@ export default function LoginScreen({ navigation }: Props) {
                         <View style={s.tabs}>
                             <Pressable
                                 style={[s.tab, tab === "phone" && s.tabActive]}
-                                onPress={() => { setTab("phone"); setValue(""); setError(null); }}
+                                onPress={() => { setTab("phone"); setError(null); }}
                             >
                                 <Text style={[s.tabText, tab === "phone" && s.tabTextActive]}>
                                     {t.phone}
@@ -314,7 +317,7 @@ export default function LoginScreen({ navigation }: Props) {
                             </Pressable>
                             <Pressable
                                 style={[s.tab, tab === "email" && s.tabActive]}
-                                onPress={() => { setTab("email"); setValue(""); setError(null); }}
+                                onPress={() => { setTab("email"); setError(null); }}
                             >
                                 <Text style={[s.tabText, tab === "email" && s.tabTextActive]}>
                                     {t.email}
@@ -364,12 +367,7 @@ export default function LoginScreen({ navigation }: Props) {
                         <Pressable style={s.backBtn} onPress={backToId} accessibilityRole="button">
                             <Text style={s.backBtnText}>‹ {PAGE_T[lang as LangCode].back}</Text>
                         </Pressable>
-                        <View style={s.sentRow}>
-                            <Text style={s.hintText}>{b.codeSent.replace("{to}", sentTo)}</Text>
-                            <Pressable onPress={backToId} hitSlop={8}>
-                                <Text style={s.linkText}>{b.change}</Text>
-                            </Pressable>
-                        </View>
+                        <Text style={s.hintText}>{b.codeSent.replace("{to}", sentTo)}</Text>
                         <Text style={s.inputLabel}>{b.codeLabel}</Text>
                         <TextInput
                             style={[s.input, s.codeInput]}
@@ -586,7 +584,6 @@ const s = themedStyles({
     ctaText: { fontSize: 16, fontWeight: "700", color: Color.white },
 
     // Code step
-    sentRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
     // Like the "‹ Back" of the home pages: a clear, finger-sized button.
     backBtn: {
         alignSelf: "flex-start",

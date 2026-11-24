@@ -24,8 +24,9 @@ const KNOWN_CODES = ["972", "63", "91", "94", "977", "373", "998", "380", "7"];
 /** An Israeli number without its country code ("052…" or "52…") → "+97252…". */
 function israeliPhone(rest) {
   const digits = rest.replace(/^0/, "");
-  // Israeli mobile/landline numbers have 8–9 digits after the country code.
-  return /^\d{8,9}$/.test(digits) ? { kind: "phone", value: `+972${digits}` } : null;
+  // Israeli numbers have 8–9 digits after the country code, the first one 2–9
+  // (mobile 5x, landline 2/3/4/8/9, 7x).
+  return /^[2-9]\d{7,8}$/.test(digits) ? { kind: "phone", value: `+972${digits}` } : null;
 }
 
 /**
@@ -40,6 +41,8 @@ function normaliseIdentifier({ phone, email }) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) && e.length <= 254 ? { kind: "email", value: e } : null;
   }
   if (typeof phone === "string" && phone.trim()) {
+    // Only digits and the usual separators: "q111111111" is not a phone number.
+    if (!/^[\d\s+().-]+$/.test(phone.trim())) return null;
     let digits = phone.replace(/[^\d+]/g, "");
     if (digits === DEMO_PHONE) return { kind: "phone", value: DEMO_PHONE };
     if (digits.startsWith("00")) digits = `+${digits.slice(2)}`;
