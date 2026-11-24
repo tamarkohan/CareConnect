@@ -17,9 +17,21 @@ const { sha256, randomToken } = require("./crypto");
 const SESSION_TTL_DAYS = Number(process.env.SESSION_TTL_DAYS) || 180;
 const DEMO_PHONE = "123";
 
+// Country codes the app offers in its phone field (src/components/PhoneInput.tsx).
+// A 0 typed right after one of them ("+63 0912…") isn't dialled from abroad: dropped.
+const KNOWN_CODES = ["972", "63", "91", "94", "977", "373", "998", "380", "7"];
+
+/** An Israeli number without its country code ("052…" or "52…") → "+97252…". */
+function israeliPhone(rest) {
+  const digits = rest.replace(/^0/, "");
+  // Israeli mobile/landline numbers have 8–9 digits after the country code.
+  return /^\d{8,9}$/.test(digits) ? { kind: "phone", value: `+972${digits}` } : null;
+}
+
 /**
  * Normalises what the user typed into the form we store.
- * Phone: Israeli numbers, typed with or without the leading 0 or +972.
+ * Phone: with a country code ("+63 912…", "0063…") from any country; without one
+ * it's an Israeli number, typed with or without the leading 0 (or as 972…).
  * @returns {{ kind: "phone"|"email", value: string } | null}
  */
 function normaliseIdentifier({ phone, email }) {
@@ -30,11 +42,17 @@ function normaliseIdentifier({ phone, email }) {
   if (typeof phone === "string" && phone.trim()) {
     let digits = phone.replace(/[^\d+]/g, "");
     if (digits === DEMO_PHONE) return { kind: "phone", value: DEMO_PHONE };
-    if (digits.startsWith("+972")) digits = digits.slice(4);
-    else if (digits.startsWith("972")) digits = digits.slice(3);
-    if (digits.startsWith("0")) digits = digits.slice(1);
-    // Israeli mobile/landline numbers have 8–9 digits after the country code.
-    return /^\d{8,9}$/.test(digits) ? { kind: "phone", value: `+972${digits}` } : null;
+    if (digits.startsWith("00")) digits = `+${digits.slice(2)}`;
+    if (digits.startsWith("+")) {
+      digits = `+${digits.slice(1).replace(/\+/g, "")}`;
+      if (digits.startsWith("+972")) return israeliPhone(digits.slice(4));
+      const code = KNOWN_CODES.find((c) => digits.startsWith(`+${c}`));
+      if (code && digits[1 + code.length] === "0") digits = `+${code}${digits.slice(2 + code.length)}`;
+      // International form: a country code and the number, 8–15 digits in all.
+      return /^\+[1-9]\d{7,14}$/.test(digits) ? { kind: "phone", value: digits } : null;
+    }
+    if (digits.startsWith("972")) digits = digits.slice(3);
+    return israeliPhone(digits);
   }
   return null;
 }

@@ -17,8 +17,11 @@ import {
     Platform,
     ActivityIndicator,
     Modal,
+    BackHandler,
 } from "react-native";
 import EmailInput from "../components/EmailInput";
+import PhoneInput, { phoneForDisplay } from "../components/PhoneInput";
+import { PAGE_T } from "../pageStrings";
 import { themedColors, themedStyles } from "../theme";
 
 // ── Tokens ───────────────────────────────────────────────────────────
@@ -53,7 +56,6 @@ const T: Record<string, Record<string, string>> = {
         email: "Email",
         phoneLabel: "Phone Number",
         emailLabel: "Email",
-        phonePh: "50-123-4567",
         emailPh: "account@example.com",
         hint: "We'll send a secure code to verify it's you. No password needed.",
         cta: "Continue →",
@@ -69,7 +71,6 @@ const T: Record<string, Record<string, string>> = {
         email: "Email",
         phoneLabel: "Numero ng Telepono",
         emailLabel: "Email",
-        phonePh: "50-123-4567",
         emailPh: "account@example.com",
         hint: "Magpapadala kami ng secure code upang kumpirmahin na ikaw ito. Hindi na kailangan ng password.",
         cta: "Magpatuloy →",
@@ -85,7 +86,6 @@ const T: Record<string, Record<string, string>> = {
         email: "ഇമെയിൽ",
         phoneLabel: "ഫോൺ നമ്പർ",
         emailLabel: "ഇമെയിൽ",
-        phonePh: "50-123-4567",
         emailPh: "account@example.com",
         hint: "നിങ്ങളാണെന്ന് സ്ഥിരീകരിക്കാൻ ഞങ്ങൾ ഒരു സുരക്ഷിത കോഡ് അയക്കും. പാസ്‌വേഡ് ആവശ്യമില്ല.",
         cta: "തുടരുക →",
@@ -101,7 +101,6 @@ const T: Record<string, Record<string, string>> = {
         email: "Электронная почта",
         phoneLabel: "Телефон",
         emailLabel: "Электронная почта",
-        phonePh: "50-123-4567",
         emailPh: "account@example.com",
         hint: "Мы отправим вам код безопасности для подтверждения личности.",
         cta: "Продолжить →",
@@ -117,7 +116,6 @@ const T: Record<string, Record<string, string>> = {
         email: "ईमेल",
         phoneLabel: "फ़ोन नंबर",
         emailLabel: "ईमेल",
-        phonePh: "50-123-4567",
         emailPh: "account@example.com",
         hint: "आपकी पहचान की पुष्टि के लिए हम एक सुरक्षित कोड भेजेंगे। पासवर्ड की ज़रूरत नहीं।",
         cta: "जारी रखें →",
@@ -133,7 +131,6 @@ const T: Record<string, Record<string, string>> = {
         email: "மின்னஞ்சல்",
         phoneLabel: "தொலைபேசி எண்",
         emailLabel: "மின்னஞ்சல்",
-        phonePh: "50-123-4567",
         emailPh: "account@example.com",
         hint: "நீங்கள் தான் என்பதை உறுதிப்படுத்த பாதுகாப்பான குறியீட்டை அனுப்புவோம். கடவுச்சொல் தேவையில்லை.",
         cta: "தொடரவும் →",
@@ -222,7 +219,23 @@ export default function LoginScreen({ navigation }: Props) {
         }
     };
 
-    const sentTo = tab === "phone" ? `+972 ${value.trim().replace(/^0/, "")}` : value.trim();
+    const sentTo = tab === "phone" ? phoneForDisplay(value) : value.trim();
+
+    // Back from the code to the phone / email, which stays as typed so it can be corrected.
+    const backToId = () => {
+        setStep("id");
+        setCode("");
+        setError(null);
+    };
+    // The phone's own back button (Android) does the same on the code step.
+    React.useEffect(() => {
+        if (step !== "code") return;
+        const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+            backToId();
+            return true;
+        });
+        return () => sub.remove();
+    }, [step]);
 
     return (
         <KeyboardAvoidingView
@@ -316,19 +329,12 @@ export default function LoginScreen({ navigation }: Props) {
 
                         {/* Input row */}
                         <View style={s.inputRow}>
-                            {tab === "phone" && (
-                                <View style={s.countryCode}>
-                                    <Text style={s.countryCodeText}>+972</Text>
-                                </View>
-                            )}
                             {tab === "phone" ? (
-                                <TextInput
-                                    style={[s.input, s.inputWithCode]}
-                                    placeholder={t.phonePh}
+                                // Country codes to choose from (+972, +63, +91…); any other can be typed.
+                                <PhoneInput
+                                    style={s.input}
+                                    lang={lang as LangCode}
                                     placeholderTextColor={Color.silver}
-                                    keyboardType="phone-pad"
-                                    autoCapitalize="none"
-                                    autoComplete="tel"
                                     value={value}
                                     onChangeText={(v) => { setValue(v); setError(null); }}
                                     onSubmitEditing={handleContinue}
@@ -354,9 +360,13 @@ export default function LoginScreen({ navigation }: Props) {
                     </>
                 ) : (
                     <>
+                        {/* Back to the phone / email, e.g. to fix a typing mistake */}
+                        <Pressable style={s.backBtn} onPress={backToId} accessibilityRole="button">
+                            <Text style={s.backBtnText}>‹ {PAGE_T[lang as LangCode].back}</Text>
+                        </Pressable>
                         <View style={s.sentRow}>
                             <Text style={s.hintText}>{b.codeSent.replace("{to}", sentTo)}</Text>
-                            <Pressable onPress={() => { setStep("id"); setError(null); }} hitSlop={8}>
+                            <Pressable onPress={backToId} hitSlop={8}>
                                 <Text style={s.linkText}>{b.change}</Text>
                             </Pressable>
                         </View>
@@ -547,15 +557,6 @@ const s = themedStyles({
         marginBottom: -8,
     },
     inputRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-    countryCode: {
-        borderWidth: 1,
-        borderColor: Color.linkWater,
-        borderRadius: 8,
-        paddingHorizontal: 12,
-        paddingVertical: 13,
-        backgroundColor: Color.lightGray,
-    },
-    countryCodeText: { fontSize: 14, color: Color.blackPearl, fontWeight: "600" },
     input: {
         flex: 1,
         borderWidth: 1,
@@ -567,7 +568,6 @@ const s = themedStyles({
         color: Color.blackPearl,
         backgroundColor: Color.white,
     },
-    inputWithCode: { flex: 1 },
 
     // Hint
     hintRow: { flexDirection: "row", gap: 8, alignItems: "flex-start" },
@@ -587,6 +587,17 @@ const s = themedStyles({
 
     // Code step
     sentRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
+    // Like the "‹ Back" of the home pages: a clear, finger-sized button.
+    backBtn: {
+        alignSelf: "flex-start",
+        backgroundColor: Color.white,
+        borderWidth: 1,
+        borderColor: Color.linkWater,
+        borderRadius: 999,
+        paddingVertical: 7,
+        paddingHorizontal: 14,
+    },
+    backBtnText: { color: Color.endeavour, fontSize: 15, fontWeight: "700" },
     linkText: { fontSize: 13, color: Color.endeavour, fontWeight: "600" },
     codeInput: { flex: 0, fontSize: 22, letterSpacing: 8, textAlign: "center" },
 

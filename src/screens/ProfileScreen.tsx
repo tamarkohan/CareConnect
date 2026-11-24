@@ -12,6 +12,7 @@ import { MENU_T } from "../menuStrings";
 import { PageFrame } from "../components/InfoSections";
 import NameEditor from "../components/NameEditor";
 import EmailInput from "../components/EmailInput";
+import PhoneInput, { phoneForDisplay } from "../components/PhoneInput";
 import { getAuthOptions, requestLinkCode, verifyLinkCode, Identifier } from "../api/client";
 import { themedColors, themedStyles } from "../theme";
 
@@ -126,21 +127,19 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
                             onSubmitEditing={sendCode}
                         />
                     ) : step === "id" ? (
-                        <TextInput
+                        // Country codes to choose from (+972, +63, +91…); any other can be typed.
+                        <PhoneInput
                             style={s.input}
-                            placeholder={t.phonePh}
+                            lang={lang}
                             placeholderTextColor={C.muted}
                             value={value}
                             onChangeText={setValue}
-                            keyboardType="phone-pad"
-                            autoCapitalize="none"
-                            autoCorrect={false}
                             autoFocus
                             onSubmitEditing={sendCode}
                         />
                     ) : (
                         <>
-                            <Text style={s.hint}>{m.codeSentTo.replace("{to}", value.trim())}</Text>
+                            <Text style={s.hint}>{m.codeSentTo.replace("{to}", adding === "phone" ? phoneForDisplay(value) : value.trim())}</Text>
                             <TextInput
                                 style={[s.input, s.codeInput]}
                                 placeholder="••••••"

@@ -6,6 +6,15 @@ People sign in with a **phone number or an email** and a one-time code (no
 passwords). Their data is tied to the one they used, so the login screen tells
 them to keep signing in the same way.
 
+**Phone numbers from any country:** the phone field has no fixed +972. While it's empty, a list
+offers the country codes of the people who use the app (🇮🇱 +972, 🇵🇭 +63, 🇮🇳 +91, 🇱🇰 +94,
+🇳🇵 +977, 🇲🇩 +373, 🇺🇿 +998, 🇺🇦 +380, 🇷🇺 +7 – `COUNTRIES` in `src/components/PhoneInput.tsx`);
+any other code can be typed. A number without a code that starts with 0 (05…) is Israeli, as
+before, so existing accounts keep working. The server stores numbers as `+<code><number>`
+(`normaliseIdentifier` in `services/users.js`; a 0 typed right after a listed code is dropped).
+After "Continue", **‹ Back** on the code screen returns to the phone / email, still filled in,
+to correct a mistake (so does the phone's own back button on Android).
+
 **Email shortcuts:** while typing an email (sign-in, and adding one in Profile), a list under the
 field offers the common endings – `@gmail.com`, `@campus.haifa.ac.il`, `@icloud.com`,
 `@rafael.co.il`, `@outlook.com` first, then `@hotmail.com`, `@yahoo.com`, `@walla.co.il` after
@@ -356,6 +365,8 @@ Both pages save to the server, per account, encrypted (`services/tasks.js`,
   phone, per account. They need the phone app (`expo-notifications`); a web page can't remind
   anyone once it's closed, so the web build shows that note instead of the switch. If the app isn't
   opened for a week, reminders stop until it is opened again.
+- **Home pages** (guides, Payments, money transfer, Settings, Profile): the **‹ Back** button stays
+  under the top bar while the page scrolls.
 - **The guide to the six pages:** after an account's first sign-in it opens with just a short
   text for each page. From **Menu → App Guide** it has a "More" button on each page with a few
   tips (`GUIDE_DETAILS` in `src/guideStrings.ts`). A tap outside the card closes it, like the menu.

@@ -24,14 +24,15 @@ export const PageColor = themedColors({
     brown: "#775800",
 });
 
-/** Top bar + "‹ Back" + scrolling content. */
+/** Top bar + "‹ Back" (stays in place while the page scrolls) + scrolling content. */
 export function PageFrame({ title, navigation, children }: { title: string; navigation: any; children: React.ReactNode }) {
     const insets = useSafeAreaInsets();
     const { lang } = useLang();
     return (
         <View style={[s.root, { paddingTop: insets.top }]}>
             <TopBar title={title} navigation={navigation} />
-            <ScrollView contentContainerStyle={[s.content, { paddingBottom: 40 + insets.bottom }]} keyboardShouldPersistTaps="handled">
+            {/* Outside the scrolling part, so it's always in the same place to tap. */}
+            <View style={s.backBar}>
                 <Pressable
                     onPress={() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate("Home"))}
                     style={s.back}
@@ -39,6 +40,8 @@ export function PageFrame({ title, navigation, children }: { title: string; navi
                 >
                     <Text style={s.backText}>‹ {PAGE_T[lang].back}</Text>
                 </Pressable>
+            </View>
+            <ScrollView contentContainerStyle={[s.content, { paddingBottom: 40 + insets.bottom }]} keyboardShouldPersistTaps="handled">
                 {children}
             </ScrollView>
         </View>
@@ -109,7 +112,8 @@ export function FaqList({ items }: { items: Faq[] }) {
 
 export const s = themedStyles({
     root: { flex: 1, backgroundColor: PageColor.bg },
-    content: { width: "100%", maxWidth: 720, alignSelf: "center", paddingHorizontal: 16, paddingTop: 8, gap: 14 },
+    content: { width: "100%", maxWidth: 720, alignSelf: "center", paddingHorizontal: 16, paddingTop: 4, gap: 14 },
+    backBar: { width: "100%", maxWidth: 720, alignSelf: "center", paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8, zIndex: 1 },
     // A clear, finger-sized button (not just blue text).
     back: {
         alignSelf: "flex-start",
@@ -121,7 +125,6 @@ export const s = themedStyles({
         borderRadius: 999,
         paddingVertical: 8,
         paddingHorizontal: 16,
-        marginTop: 4,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.06,
