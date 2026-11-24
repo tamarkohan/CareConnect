@@ -18,6 +18,13 @@ After "Continue", **‹ Back** on the code screen returns to the phone / email, 
 to correct a mistake (so does the phone's own back button on Android). The Phone and Email tabs
 each keep what was typed in them when switching between them.
 
+**A new code at most every 5 minutes** (per phone number / email). On the code screen,
+"⏳ Send a new code in 4:59" counts down; then "↻ Send a new code" can be pressed, shows a
+spinner while sending and "✓ A new code was sent. Use the newest one." (the older code stops
+working). Pressing Continue again with the same phone / email within the 5 minutes goes
+straight to the code screen: the code already sent still works. The server enforces the wait
+too (`429` with `retryAfter`); `OTP_RESEND_WAIT_SECONDS` changes it (e.g. for testing).
+
 **Email shortcuts:** while typing an email (sign-in, and adding one in Profile), a list under the
 field offers the common endings – `@gmail.com`, `@campus.haifa.ac.il`, `@icloud.com`,
 `@rafael.co.il`, `@outlook.com` first, then `@hotmail.com`, `@yahoo.com`, `@walla.co.il` after

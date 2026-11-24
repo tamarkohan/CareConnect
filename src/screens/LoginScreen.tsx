@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useApp } from "../AppContext";
 import { LangCode } from "../translations";
-import { BOT_T } from "../botStrings";
+import { BOT_T, fillWait } from "../botStrings";
 import { MENU_T } from "../menuStrings";
 import { requestCode, verifyCode, getAuthOptions, Identifier, SignInResponse } from "../api/client";
 
@@ -182,7 +182,7 @@ export default function LoginScreen({ navigation }: Props) {
             invalid: step === "code" ? b.errInvalidCode : b.errInvalidId,
             expired: b.errExpired,
             locked: b.errLocked,
-            wait: b.errWait,
+            wait: fillWait(b.errWait, err?.retryAfter),
             unavailable: b.errUnavailable,
         };
         return byCode[err?.code] ?? (err?.status ? err.message : b.errNetwork);
@@ -193,19 +193,62 @@ export default function LoginScreen({ navigation }: Props) {
         await signIn(res.token, res.user);
     };
 
+    // A new code can be asked for only every 5 minutes (the server says how long is left).
+    const [resendAt, setResendAt] = React.useState(0);
+    const [now, setNow] = React.useState(Date.now());
+    const [resending, setResending] = React.useState(false);
+    const [resent, setResent] = React.useState(false);       // "✓ A new code was sent"
+    const waitLeft = Math.max(0, Math.ceil((resendAt - now) / 1000));
+    const startWait = (seconds = 300) => {
+        setResendAt(Date.now() + seconds * 1000);
+        setNow(Date.now());
+    };
+    React.useEffect(() => {
+        if (step !== "code") return;
+        const timer = setInterval(() => setNow(Date.now()), 1000);
+        return () => clearInterval(timer);
+    }, [step]);
+
     const handleContinue = async () => {
         if (!value.trim() || busy) return;
         setBusy(true);
         setError(null);
+        setResent(false);
         try {
             const res = await requestCode(identifier());
             if ("token" in res) return await finish(res);   // demo number: no code needed
             setCode("");
+            startWait(res.retryAfter);
             setStep("code");
         } catch (err: any) {
-            setError(errorText(err));
+            if (err?.code === "wait") {
+                // A code was sent to this phone / email a few minutes ago: it still works.
+                startWait(err.retryAfter);
+                setStep("code");
+            } else {
+                setError(errorText(err));
+            }
         } finally {
             setBusy(false);
+        }
+    };
+
+    const handleResend = async () => {
+        if (resending || waitLeft > 0) return;
+        setResending(true);
+        setError(null);
+        setResent(false);
+        try {
+            const res = await requestCode(identifier());
+            if ("token" in res) return await finish(res);
+            setCode("");
+            startWait(res.retryAfter);
+            setResent(true);
+        } catch (err: any) {
+            if (err?.code === "wait") startWait(err.retryAfter);
+            else setError(errorText(err));
+        } finally {
+            setResending(false);
         }
     };
 
@@ -229,6 +272,7 @@ export default function LoginScreen({ navigation }: Props) {
         setStep("id");
         setCode("");
         setError(null);
+        setResent(false);
     };
     // The phone's own back button (Android) does the same on the code step.
     React.useEffect(() => {
@@ -389,8 +433,22 @@ export default function LoginScreen({ navigation }: Props) {
                                 </Text>
                             </View>
                         )}
-                        <Pressable onPress={handleContinue} hitSlop={8} disabled={busy}>
-                            <Text style={[s.linkText, { textAlign: "center" }]}>{b.resend}</Text>
+                        {/* A new code: shows that it's sending, that it was sent, and how long until the next one. */}
+                        {resent && <Text style={s.resentText}>{b.codeResent}</Text>}
+                        <Pressable
+                            onPress={handleResend}
+                            disabled={resending || waitLeft > 0}
+                            style={({ pressed }) => [s.resendBtn, pressed && s.resendBtnPressed]}
+                            accessibilityRole="button"
+                            aria-disabled={resending || waitLeft > 0}
+                        >
+                            {resending ? (
+                                <ActivityIndicator size="small" color={Color.endeavour} />
+                            ) : (
+                                <Text style={[s.resendText, waitLeft > 0 && s.resendTextWaiting]}>
+                                    {waitLeft > 0 ? `⏳ ${fillWait(b.resendIn, waitLeft)}` : `↻ ${b.resend}`}
+                                </Text>
+                            )}
                         </Pressable>
                     </>
                 )}
@@ -595,6 +653,23 @@ const s = themedStyles({
         paddingHorizontal: 14,
     },
     backBtnText: { color: Color.endeavour, fontSize: 15, fontWeight: "700" },
+    resentText: { fontSize: 13, color: "#2e7d32", fontWeight: "600", textAlign: "center" },
+    resendBtn: {
+        alignSelf: "center",
+        minWidth: 180,
+        minHeight: 38,
+        alignItems: "center",
+        justifyContent: "center",
+        borderWidth: 1,
+        borderColor: Color.linkWater,
+        borderRadius: 999,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        backgroundColor: Color.white,
+    },
+    resendBtnPressed: { backgroundColor: "#dcebf7" },
+    resendText: { fontSize: 14, color: Color.endeavour, fontWeight: "700" },
+    resendTextWaiting: { color: Color.mako, fontWeight: "500" },
     linkText: { fontSize: 13, color: Color.endeavour, fontWeight: "600" },
     codeInput: { flex: 0, fontSize: 22, letterSpacing: 8, textAlign: "center" },
 

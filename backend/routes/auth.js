@@ -4,7 +4,7 @@
  * Sign-in with a one-time code sent by SMS or email. No passwords.
  *
  * GET  /api/auth/options        → { phone, email, demo, testCode, realCodes } which sign-in methods work
- * POST /api/auth/request-code   { phone } | { email }          → { sent: true }
+ * POST /api/auth/request-code   { phone } | { email }          → { sent: true, retryAfter } (429 "wait" + retryAfter: a new code only every 5 min)
  *                               demo phone "123" (when DEMO_LOGIN=true) signs in at once:
  *                               → { token, user }
  * POST /api/auth/verify-code    { phone | email, code }        → { token, user }
@@ -15,7 +15,7 @@
  * POST /api/auth/logout         (signed in)                    → { success: true }
  *
  * Profile (signed in; not for the demo account):
- * POST /api/auth/link/request-code  { phone } | { email }       → { sent: true }
+ * POST /api/auth/link/request-code  { phone } | { email }       → { sent: true, retryAfter }
  *                               adds a phone or email to the account, so the user can sign in
  *                               with either one; code "alreadyUsed" when another account has it
  * POST /api/auth/link/verify    { phone | email, code }        → { user }
@@ -54,6 +54,13 @@ router.get("/options", (_req, res) => {
   });
 });
 
+// A new code for the same phone / email only every few minutes (services/otp.js).
+const waitReply = (seconds) => ({
+  error: `Please wait ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")} before asking for a new code.`,
+  code: "wait",
+  retryAfter: seconds,
+});
+
 router.post("/request-code", async (req, res, next) => {
   try {
     const id = users.normaliseIdentifier(req.body || {});
@@ -66,7 +73,7 @@ router.post("/request-code", async (req, res, next) => {
 
     const result = await otp.requestCode(id);
     if (!result.ok && result.reason === "wait") {
-      return res.status(429).json({ error: "Please wait 30 seconds before asking for a new code.", code: "wait" });
+      return res.status(429).json(waitReply(result.retryAfter));
     }
     if (!result.ok) {
       return res.status(503).json({
@@ -76,7 +83,7 @@ router.post("/request-code", async (req, res, next) => {
         code: "unavailable",
       });
     }
-    return res.json({ sent: true });
+    return res.json({ sent: true, retryAfter: result.retryAfter });
   } catch (err) {
     console.error("[auth/request-code] Error:", err.message);
     next(Object.assign(new Error("Could not send the code. Please try again."), { expose: true, status: 502 }));
@@ -160,7 +167,7 @@ router.post("/link/request-code", users.requireAuth, async (req, res, next) => {
     if (!id) return;
     const result = await otp.requestCode(id);
     if (!result.ok && result.reason === "wait") {
-      return res.status(429).json({ error: "Please wait 30 seconds before asking for a new code.", code: "wait" });
+      return res.status(429).json(waitReply(result.retryAfter));
     }
     if (!result.ok) {
       return res.status(503).json({
@@ -168,7 +175,7 @@ router.post("/link/request-code", users.requireAuth, async (req, res, next) => {
         code: "unavailable",
       });
     }
-    return res.json({ sent: true });
+    return res.json({ sent: true, retryAfter: result.retryAfter });
   } catch (err) {
     console.error("[auth/link/request-code] Error:", err.message);
     next(Object.assign(new Error("Could not send the code. Please try again."), { expose: true, status: 502 }));

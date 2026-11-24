@@ -30,7 +30,9 @@ const { sha256 } = require("./crypto");
 
 const CODE_TTL_MS = 10 * 60 * 1000;
 const MAX_ATTEMPTS = 5;
-const RESEND_AFTER_MS = 30 * 1000;
+// A new code for the same phone / email at most every 5 minutes
+// (OTP_RESEND_WAIT_SECONDS changes it, e.g. for testing).
+const RESEND_AFTER_MS = (Number(process.env.OTP_RESEND_WAIT_SECONDS) || 5 * 60) * 1000;
 
 /** key ("phone:+972…" / "email:…") → { hash, expiresAt, attempts, sentAt } */
 const pending = new Map();
@@ -102,14 +104,17 @@ async function sendEmail(to, code) {
 
 /**
  * Creates and sends a code.
- * @returns {Promise<{ ok: true } | { ok: false, reason: "wait" | "unavailable" }>}
+ * retryAfter: seconds until a new code can be asked for.
+ * @returns {Promise<{ ok: true, retryAfter: number } | { ok: false, reason: "wait", retryAfter: number } | { ok: false, reason: "unavailable" }>}
  */
 async function requestCode(id) {
   if (!isAvailable(id.kind)) return { ok: false, reason: "unavailable" };
 
   const key = keyOf(id);
   const prev = pending.get(key);
-  if (prev && Date.now() - prev.sentAt < RESEND_AFTER_MS) return { ok: false, reason: "wait" };
+  if (prev && Date.now() - prev.sentAt < RESEND_AFTER_MS) {
+    return { ok: false, reason: "wait", retryAfter: Math.ceil((RESEND_AFTER_MS - (Date.now() - prev.sentAt)) / 1000) };
+  }
 
   // A real code whenever it can be sent; in test mode without a way to send, just the
   // test code. (In test mode the test code is accepted as well, see verifyCode.)
@@ -132,7 +137,7 @@ async function requestCode(id) {
   } else if (!isTestMode()) {
     console.log(`[otp] (dev only, no provider configured) code for ${id.value}: ${code}`);
   }
-  return { ok: true };
+  return { ok: true, retryAfter: RESEND_AFTER_MS / 1000 };
 }
 
 /** @returns {"ok" | "invalid" | "expired" | "locked"} */

@@ -7,7 +7,7 @@ import * as React from "react";
 import { View, Text, Pressable, TextInput, ActivityIndicator } from "react-native";
 import { useApp } from "../AppContext";
 import { T } from "../translations";
-import { BOT_T } from "../botStrings";
+import { BOT_T, fillWait } from "../botStrings";
 import { MENU_T } from "../menuStrings";
 import { PageFrame } from "../components/InfoSections";
 import NameEditor from "../components/NameEditor";
@@ -54,7 +54,7 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
             invalid: step === "code" ? b.errInvalidCode : b.errInvalidId,
             expired: b.errExpired,
             locked: b.errLocked,
-            wait: b.errWait,
+            wait: fillWait(b.errWait, err?.retryAfter),
             unavailable: b.errUnavailable,
         };
         return byCode[err?.code] ?? (err?.status ? err.message : b.errNetwork);
@@ -77,8 +77,10 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
             await requestLinkCode(identifier());
             setCode("");
             setStep("code");
-        } catch (err) {
-            setError(errorText(err));
+        } catch (err: any) {
+            // A code was sent to it a few minutes ago: that one still works.
+            if (err?.code === "wait") setStep("code");
+            else setError(errorText(err));
         } finally {
             setBusy(false);
         }

@@ -46,10 +46,13 @@ export function setAuthToken(token: string | null) {
 export class ApiError extends Error {
     status: number;
     code?: string;
-    constructor(message: string, status: number, code?: string) {
+    /** "wait": seconds until a new code can be asked for. */
+    retryAfter?: number;
+    constructor(message: string, status: number, code?: string, retryAfter?: number) {
         super(message);
         this.status = status;
         this.code = code;
+        this.retryAfter = retryAfter;
     }
 }
 
@@ -72,7 +75,7 @@ async function apiFetch<T>(
     const data = await res.json().catch(() => null);
 
     if (!res.ok) {
-        throw new ApiError(data?.error ?? `HTTP ${res.status}`, res.status, data?.code);
+        throw new ApiError(data?.error ?? `HTTP ${res.status}`, res.status, data?.code, data?.retryAfter);
     }
 
     return data as T;
@@ -107,7 +110,7 @@ export const getAuthOptions = () =>
 
 /** Sends a code. The demo number signs in at once and returns a token instead. */
 export const requestCode = (id: Identifier) =>
-    apiFetch<{ sent: true } | SignInResponse>("/api/auth/request-code", id);
+    apiFetch<{ sent: true; retryAfter?: number } | SignInResponse>("/api/auth/request-code", id);
 
 export const verifyCode = (id: Identifier, code: string) =>
     apiFetch<SignInResponse>("/api/auth/verify-code", { ...id, code });
@@ -121,7 +124,7 @@ export const logout = () => apiFetch<{ success: true }>("/api/auth/logout", {});
 
 // ── Profile: a second way to sign in, deleting the account ───────────────────
 /** Sends a code to a phone / email to add to the account (code "alreadyUsed" if another account has it). */
-export const requestLinkCode = (id: Identifier) => apiFetch<{ sent: true }>("/api/auth/link/request-code", id);
+export const requestLinkCode = (id: Identifier) => apiFetch<{ sent: true; retryAfter?: number }>("/api/auth/link/request-code", id);
 export const verifyLinkCode = (id: Identifier, code: string) =>
     apiFetch<{ user: User }>("/api/auth/link/verify", { ...id, code });
 /** Deletes the account and everything in it, for good. */
