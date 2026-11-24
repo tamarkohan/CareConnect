@@ -16,7 +16,9 @@ type Strings = {
     errInvalidCode: string;
     errExpired: string;
     errLocked: string;
-    errWait: string;
+    errWait: string;           // {time}, e.g. 4:59
+    resendIn: string;          // {time} – the "send a new code" button while waiting
+    codeResent: string;
     errUnavailable: string;
     errNetwork: string;
     testModeHint: string;      // {code}
@@ -107,7 +109,9 @@ export const BOT_T: Record<LangCode, Strings> = {
         errInvalidCode: "That code is not correct.",
         errExpired: "The code has expired. Please ask for a new one.",
         errLocked: "Too many wrong tries. Please ask for a new code.",
-        errWait: "Please wait 30 seconds before asking for a new code.",
+        errWait: "Please wait {time} before asking for a new code.",
+        resendIn: "Send a new code in {time}",
+        codeResent: "✓ A new code was sent. Use the newest one.",
         errUnavailable: "Signing in this way isn't available yet.",
         errNetwork: "Could not reach the server. Please check your connection.",
         testModeHint: "Test mode: the code is {code}",
@@ -208,7 +212,9 @@ export const BOT_T: Record<LangCode, Strings> = {
         errInvalidCode: "Mali ang code.",
         errExpired: "Nag-expire na ang code. Humingi ng bago.",
         errLocked: "Masyadong maraming maling subok. Humingi ng bagong code.",
-        errWait: "Maghintay ng 30 segundo bago humingi ng bagong code.",
+        errWait: "Maghintay ng {time} bago humingi ng bagong code.",
+        resendIn: "Bagong code pagkalipas ng {time}",
+        codeResent: "✓ May bagong code na naipadala. Gamitin ang pinakabago.",
         errUnavailable: "Hindi pa available ang ganitong pag-sign in.",
         errNetwork: "Hindi maabot ang server. Pakisuri ang iyong koneksyon.",
         testModeHint: "Test mode: ang code ay {code}",
@@ -309,7 +315,9 @@ export const BOT_T: Record<LangCode, Strings> = {
         errInvalidCode: "ഈ കോഡ് ശരിയല്ല.",
         errExpired: "കോഡിന്റെ കാലാവധി കഴിഞ്ഞു. പുതിയത് ആവശ്യപ്പെടുക.",
         errLocked: "വളരെയധികം തെറ്റായ ശ്രമങ്ങൾ. പുതിയ കോഡ് ആവശ്യപ്പെടുക.",
-        errWait: "പുതിയ കോഡ് ചോദിക്കുന്നതിന് മുമ്പ് 30 സെക്കൻഡ് കാത്തിരിക്കുക.",
+        errWait: "പുതിയ കോഡ് ചോദിക്കുന്നതിന് മുമ്പ് {time} കാത്തിരിക്കുക.",
+        resendIn: "{time} കഴിഞ്ഞ് പുതിയ കോഡ് അയയ്ക്കാം",
+        codeResent: "✓ പുതിയ കോഡ് അയച്ചു. ഏറ്റവും പുതിയത് ഉപയോഗിക്കുക.",
         errUnavailable: "ഈ രീതിയിലുള്ള സൈൻ ഇൻ ഇപ്പോൾ ലഭ്യമല്ല.",
         errNetwork: "സെർവറിൽ എത്താനായില്ല. നിങ്ങളുടെ കണക്ഷൻ പരിശോധിക്കുക.",
         testModeHint: "ടെസ്റ്റ് മോഡ്: കോഡ് {code} ആണ്",
@@ -410,7 +418,9 @@ export const BOT_T: Record<LangCode, Strings> = {
         errInvalidCode: "Неверный код.",
         errExpired: "Срок действия кода истёк. Запросите новый.",
         errLocked: "Слишком много неверных попыток. Запросите новый код.",
-        errWait: "Подождите 30 секунд, прежде чем запросить новый код.",
+        errWait: "Подождите {time}, прежде чем запросить новый код.",
+        resendIn: "Новый код можно запросить через {time}",
+        codeResent: "✓ Новый код отправлен. Используйте последний.",
         errUnavailable: "Вход этим способом пока недоступен.",
         errNetwork: "Нет связи с сервером. Проверьте подключение.",
         testModeHint: "Тестовый режим: код {code}",
@@ -511,7 +521,9 @@ export const BOT_T: Record<LangCode, Strings> = {
         errInvalidCode: "यह कोड सही नहीं है।",
         errExpired: "कोड की समय-सीमा खत्म हो गई। कृपया नया कोड मांगें।",
         errLocked: "बहुत बार गलत कोड डाला गया। कृपया नया कोड मांगें।",
-        errWait: "नया कोड मांगने से पहले 30 सेकंड रुकें।",
+        errWait: "नया कोड मांगने से पहले {time} रुकें।",
+        resendIn: "{time} बाद नया कोड भेज सकते हैं",
+        codeResent: "✓ नया कोड भेज दिया गया है। सबसे नया कोड इस्तेमाल करें।",
         errUnavailable: "इस तरह साइन इन करना अभी उपलब्ध नहीं है।",
         errNetwork: "सर्वर तक नहीं पहुँच सके। कृपया अपना इंटरनेट जाँचें।",
         testModeHint: "टेस्ट मोड: कोड है {code}",
@@ -612,7 +624,9 @@ export const BOT_T: Record<LangCode, Strings> = {
         errInvalidCode: "இந்தக் குறியீடு சரியில்லை.",
         errExpired: "குறியீட்டின் காலம் முடிந்தது. புதிய குறியீட்டைக் கேளுங்கள்.",
         errLocked: "பல முறை தவறாக உள்ளிட்டீர்கள். புதிய குறியீட்டைக் கேளுங்கள்.",
-        errWait: "புதிய குறியீடு கேட்கும் முன் 30 வினாடிகள் காத்திருங்கள்.",
+        errWait: "புதிய குறியீடு கேட்கும் முன் {time} காத்திருங்கள்.",
+        resendIn: "{time} பிறகு புதிய குறியீட்டை அனுப்பலாம்",
+        codeResent: "✓ புதிய குறியீடு அனுப்பப்பட்டது. சமீபத்தியதைப் பயன்படுத்தவும்.",
         errUnavailable: "இந்த வழியில் உள்நுழைவது இன்னும் கிடைக்கவில்லை.",
         errNetwork: "சர்வரை அடைய முடியவில்லை. இணைய இணைப்பைச் சரிபார்க்கவும்.",
         testModeHint: "சோதனை முறை: குறியீடு {code}",
@@ -702,3 +716,7 @@ export const BOT_T: Record<LangCode, Strings> = {
         exportSources: "ஆதாரங்கள்",
     },
 };
+
+/** Puts a wait time into a text: fillWait("…in {time}", 299) → "…in 4:59". */
+export const fillWait = (text: string, seconds = 300) =>
+    text.replace("{time}", `${Math.floor(seconds / 60)}:${String(Math.max(0, seconds) % 60).padStart(2, "0")}`);
