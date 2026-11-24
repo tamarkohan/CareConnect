@@ -9,11 +9,14 @@ them to keep signing in the same way.
 **Phone numbers from any country:** the phone field has no fixed +972. While it's empty, a list
 offers the country codes of the people who use the app (🇮🇱 +972, 🇵🇭 +63, 🇮🇳 +91, 🇱🇰 +94,
 🇳🇵 +977, 🇲🇩 +373, 🇺🇿 +998, 🇺🇦 +380, 🇷🇺 +7 – `COUNTRIES` in `src/components/PhoneInput.tsx`);
-any other code can be typed. A number without a code that starts with 0 (05…) is Israeli, as
-before, so existing accounts keep working. The server stores numbers as `+<code><number>`
+any other code can be typed. Only digits, spaces, +, -, ( ) and . can be typed; the server also
+refuses anything else ("q111111111"). A number without a code that starts with 0 (05…) is
+Israeli, as before, so existing accounts keep working; it must look like one (8–9 digits after
+the 0, the first of them 2–9). The server stores numbers as `+<code><number>`
 (`normaliseIdentifier` in `services/users.js`; a 0 typed right after a listed code is dropped).
 After "Continue", **‹ Back** on the code screen returns to the phone / email, still filled in,
-to correct a mistake (so does the phone's own back button on Android).
+to correct a mistake (so does the phone's own back button on Android). The Phone and Email tabs
+each keep what was typed in them when switching between them.
 
 **Email shortcuts:** while typing an email (sign-in, and adding one in Profile), a list under the
 field offers the common endings – `@gmail.com`, `@campus.haifa.ac.il`, `@icloud.com`,
